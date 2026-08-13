@@ -23,6 +23,17 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
+
   const navLinks = [
     { href: '/', label: 'Beranda' },
     { href: '/work', label: 'Portofolio' },
@@ -33,14 +44,14 @@ export function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-        ? 'bg-zinc-950/85 backdrop-blur-md py-4 border-b border-zinc-800/60 shadow-2xl'
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || mobileMenuOpen
+        ? 'bg-zinc-950 backdrop-blur-md py-4 border-b border-zinc-800/60 shadow-2xl'
         : 'bg-gradient-to-b from-black/80 via-black/40 to-transparent py-6'
         }`}
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="group flex items-center gap-3">
+        <Link href="/" className="group flex items-center gap-3 relative z-50" onClick={() => setMobileMenuOpen(false)}>
           <Image
             src="/logo.png"
             alt="MargaSera Logo"
@@ -87,17 +98,17 @@ export function Navbar() {
         {/* Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-zinc-300 hover:text-white focus:outline-none"
+          className="lg:hidden p-2 text-zinc-300 hover:text-white focus:outline-none relative z-50"
           aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6 text-[#0066CC]" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Drawer Navigation (Solid bg-zinc-950, No transparency bleed) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-[73px] bg-zinc-950/95 backdrop-blur-xl z-40 flex flex-col justify-between px-8 py-10 border-t border-zinc-800 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex flex-col gap-6">
+        <div className="lg:hidden fixed inset-0 top-[70px] bg-zinc-950 z-40 flex flex-col justify-between px-8 py-8 border-t border-zinc-800 overflow-y-auto min-h-[calc(100vh-70px)]">
+          <div className="flex flex-col gap-5 pt-2">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -105,7 +116,7 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`text-lg tracking-widest uppercase flex items-center justify-between py-2 border-b border-zinc-900 ${isActive ? 'text-[#0066CC] font-semibold' : 'text-zinc-300'
+                  className={`text-base tracking-widest uppercase flex items-center justify-between py-3 border-b border-zinc-900 ${isActive ? 'text-[#0066CC] font-semibold' : 'text-zinc-300'
                     }`}
                 >
                   {link.label}
@@ -115,16 +126,16 @@ export function Navbar() {
             })}
           </div>
 
-          <div className="pt-8 flex flex-col gap-4">
+          <div className="pt-8 pb-6 flex flex-col gap-4">
             <Link
               href="/booking"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-widest uppercase shadow-md"
+              className="w-full text-center py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-widest uppercase shadow-lg rounded-xl"
             >
               Pesan Sesi Foto Sekarang
             </Link>
-            <p className="text-center text-xs text-zinc-500 tracking-wider">
-              @margasera.id • Medan, North Sumatra
+            <p className="text-center text-xs text-zinc-500 tracking-wider font-mono">
+              @margasera.id • Pamekasan, Madura
             </p>
           </div>
         </div>
