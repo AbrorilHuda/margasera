@@ -72,11 +72,30 @@ export interface GalleryImage {
   aspectRatio?: 'portrait' | 'landscape' | 'square';
 }
 
+export interface WeddingSlot {
+  id: string;
+  name: string; // 'Sesi 1 (Pagi / Siang)' | 'Sesi 2 (Sore / Malam)'
+  startTime: string; // '08:00'
+  endTime: string; // '14:00'
+  timeRange: string; // '08:00 - 14:00 WIB'
+  isBooked: boolean;
+  bookedBy?: string;
+}
+
+export interface BookedTimeSlot {
+  startTime: string;
+  endTime: string;
+  serviceCategory: string;
+  bookingCode?: string;
+}
+
 export interface Availability {
   id: string;
   date: string; // YYYY-MM-DD
   status: AvailabilityStatus;
   notes?: string;
+  weddingSlots?: WeddingSlot[];
+  bookedTimeSlots?: BookedTimeSlot[];
 }
 
 export interface Booking {
@@ -93,6 +112,7 @@ export interface Booking {
   bookingDate: string;
   startTime?: string;
   endTime?: string;
+  slotType?: 'wedding_morning' | 'wedding_afternoon' | 'wedding_fullday' | 'custom';
   location: string;
   eventType?: string;
   notes?: string;

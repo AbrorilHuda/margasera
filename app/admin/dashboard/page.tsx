@@ -45,12 +45,33 @@ import {
   Eye,
   MessageCircle,
   Phone,
-  Globe,
   TrendingUp,
   Activity,
-  ArrowUpRight
+  ArrowUpRight,
+  ArrowUpDown,
+  Globe
 } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
+
+function generateGoogleCalendarUrl(b: Booking): string {
+  const title = encodeURIComponent(`[Margasera] ${b.serviceName || 'Photography'} - ${b.customerName} (${b.bookingCode})`);
+  const cleanDate = b.bookingDate.replace(/-/g, '');
+  const startT = (b.startTime || '08:00').replace(':', '') + '00';
+  const endT = (b.endTime || '14:00').replace(':', '') + '00';
+  const dates = `${cleanDate}T${startT}/${cleanDate}T${endT}`;
+  const details = encodeURIComponent(
+    `Kode Booking: ${b.bookingCode}\n` +
+    `Client: ${b.customerName}\n` +
+    `WhatsApp: ${b.whatsapp}\n` +
+    `Layanan: ${b.serviceName || '-'} (${b.packageName || '-'})\n` +
+    `Jam Sesi: ${b.startTime || '08:00'} - ${b.endTime || '14:00'} WIB\n` +
+    `Lokasi: ${b.location || '-'}\n` +
+    `Catatan: ${b.notes || '-'}`
+  );
+  const loc = encodeURIComponent(b.location || 'Medan');
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${loc}`;
+}
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'portfolio' | 'pricing' | 'calendar' | 'settings'>('overview');
@@ -65,6 +86,7 @@ export default function AdminDashboardPage() {
 
   // Filter States
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
+  const [bookingSort, setBookingSort] = useState<'newest' | 'oldest' | 'upcoming_event'>('newest');
   const [bookingSearch, setBookingSearch] = useState<string>('');
   const [portfolioCategoryFilter, setPortfolioCategoryFilter] = useState<string>('all');
   const [selectedServiceIdForPricing, setSelectedServiceIdForPricing] = useState<string>('s-wedding');
@@ -250,14 +272,27 @@ export default function AdminDashboardPage() {
   };
 
   // Computed Filters
-  const filteredBookings = bookings.filter((b) => {
-    const matchStatus = bookingStatusFilter === 'all' || b.status === bookingStatusFilter;
-    const matchSearch =
-      b.bookingCode.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-      b.customerName.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-      b.whatsapp.includes(bookingSearch);
-    return matchStatus && matchSearch;
-  });
+  const filteredBookings = bookings
+    .filter((b) => {
+      const matchStatus = bookingStatusFilter === 'all' || b.status === bookingStatusFilter;
+      const matchSearch =
+        b.bookingCode.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+        b.customerName.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+        b.whatsapp.includes(bookingSearch);
+      return matchStatus && matchSearch;
+    })
+    .sort((a, b) => {
+      if (bookingSort === 'newest') {
+        return new Date(b.createdAt || b.bookingDate).getTime() - new Date(a.createdAt || a.bookingDate).getTime();
+      }
+      if (bookingSort === 'oldest') {
+        return new Date(a.createdAt || a.bookingDate).getTime() - new Date(b.createdAt || b.bookingDate).getTime();
+      }
+      if (bookingSort === 'upcoming_event') {
+        return new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime();
+      }
+      return 0;
+    });
 
   const filteredProjects = projects.filter((p) =>
     portfolioCategoryFilter === 'all' ? true : p.category === portfolioCategoryFilter
@@ -333,8 +368,8 @@ export default function AdminDashboardPage() {
                   key={item.id}
                   onClick={() => { setActiveTab(item.id as any); setSidebarOpen(false); }}
                   className={`flex items-center justify-between px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 ${isActive
-                      ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.35)] border border-[#0066CC]/50'
-                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
+                    ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.35)] border border-[#0066CC]/50'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
                     }`}
                 >
                   <div className="flex items-center gap-3">
@@ -576,8 +611,8 @@ export default function AdminDashboardPage() {
                           </td>
                           <td className="p-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${b.status === 'confirmed'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
                               }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${b.status === 'confirmed' ? 'bg-emerald-400' : 'bg-[#0066CC]'}`} />
                               {b.status}
@@ -599,14 +634,14 @@ export default function AdminDashboardPage() {
               <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
                 <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
                   <Filter className="w-4 h-4 text-[#0066CC] shrink-0" />
-                  <span className="text-xs text-zinc-400 uppercase tracking-wider whitespace-nowrap font-mono">Filter Status:</span>
+                  <span className="text-xs text-zinc-400 uppercase tracking-wider whitespace-nowrap font-mono">Status:</span>
                   {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map((st) => (
                     <button
                       key={st}
                       onClick={() => setBookingStatusFilter(st)}
                       className={`px-3 py-1.5 text-xs tracking-wider uppercase rounded-md transition-colors whitespace-nowrap font-medium ${bookingStatusFilter === st
-                          ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
-                          : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
+                        : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
                         }`}
                     >
                       {st}
@@ -614,8 +649,22 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <div className="relative w-full md:w-64">
+                <div className="flex items-center gap-3 w-full md:w-auto flex-wrap sm:flex-nowrap">
+                  {/* SORT SELECTOR */}
+                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-md">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
+                    <select
+                      value={bookingSort}
+                      onChange={(e) => setBookingSort(e.target.value as any)}
+                      className="bg-transparent text-zinc-100 text-xs font-mono focus:outline-none cursor-pointer"
+                    >
+                      <option value="newest" className="bg-zinc-900">🔥 Booking Terbaru</option>
+                      <option value="upcoming_event" className="bg-zinc-900">📅 Jadwal Acara Terdekat</option>
+                      <option value="oldest" className="bg-zinc-900">⏳ Booking Terlama</option>
+                    </select>
+                  </div>
+
+                  <div className="relative w-full sm:w-48">
                     <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
@@ -667,19 +716,26 @@ export default function AdminDashboardPage() {
                               <span className="text-[10px] text-zinc-400">{b.packageName}</span>
                             </div>
                           </td>
-                          <td className="p-4 text-zinc-300">{formatDate(b.bookingDate)}</td>
+                          <td className="p-4">
+                            <div className="flex flex-col">
+                              <span className="text-zinc-300 font-medium">{formatDate(b.bookingDate)}</span>
+                              <span className="text-[10px] text-amber-400 font-mono">
+                                {b.startTime ? `${b.startTime} – ${b.endTime} WIB` : '08:00 – 14:00 WIB'}
+                              </span>
+                            </div>
+                          </td>
                           <td className="p-4 text-zinc-400 max-w-[140px] truncate">{b.location}</td>
                           <td className="p-4 font-serif-editorial text-base font-semibold text-[#0066CC]">
                             {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
                           </td>
                           <td className="p-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${b.status === 'confirmed'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : b.status === 'completed'
-                                  ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
-                                  : b.status === 'pending'
-                                    ? 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
-                                    : 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : b.status === 'completed'
+                                ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
+                                : b.status === 'pending'
+                                  ? 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
+                                  : 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
                               }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${b.status === 'confirmed' ? 'bg-emerald-400' : b.status === 'completed' ? 'bg-blue-400' : 'bg-[#0066CC]'
                                 }`} />
@@ -695,6 +751,16 @@ export default function AdminDashboardPage() {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
+                              <a
+                                href={generateGoogleCalendarUrl(b)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 rounded flex items-center gap-1 text-[10px] font-mono transition-colors"
+                                title="Tambah ke Google Calendar"
+                              >
+                                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="hidden sm:inline">+ GCal</span>
+                              </a>
                               {b.status === 'pending' && (
                                 <button
                                   onClick={() => handleUpdateBookingStatus(b.id, 'confirmed')}
@@ -740,8 +806,8 @@ export default function AdminDashboardPage() {
                       key={cat.id}
                       onClick={() => setPortfolioCategoryFilter(cat.id)}
                       className={`px-3 py-1.5 text-xs tracking-wider uppercase rounded-md transition-colors whitespace-nowrap font-medium ${portfolioCategoryFilter === cat.id
-                          ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
-                          : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
+                        : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
                         }`}
                     >
                       {cat.label}
@@ -852,8 +918,8 @@ export default function AdminDashboardPage() {
                       key={srv.id}
                       onClick={() => setSelectedServiceIdForPricing(srv.id)}
                       className={`px-4 py-2 text-xs tracking-wider uppercase rounded-md transition-all whitespace-nowrap font-medium ${selectedServiceIdForPricing === srv.id
-                          ? 'bg-[#0066CC] text-white font-semibold shadow-md'
-                          : 'bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white'
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-md'
+                        : 'bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white'
                         }`}
                     >
                       {srv.name}
@@ -987,10 +1053,10 @@ export default function AdminDashboardPage() {
                           <td className="p-4 font-mono text-zinc-200">{formatDate(av.date)}</td>
                           <td className="p-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${av.status === 'booked'
-                                ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
-                                : av.status === 'blocked'
-                                  ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                                  : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
+                              ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                              : av.status === 'blocked'
+                                ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                                : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
                               }`}>
                               {av.status.replace('_', ' ')}
                             </span>
@@ -1423,8 +1489,10 @@ export default function AdminDashboardPage() {
                 <strong>{selectedBookingForDetail.serviceName} ({selectedBookingForDetail.packageName})</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-zinc-800/60">
-                <span className="text-zinc-500 font-mono">Tanggal Sesi:</span>
-                <strong>{formatDate(selectedBookingForDetail.bookingDate)}</strong>
+                <span className="text-zinc-500 font-mono">Tanggal & Sesi Jam:</span>
+                <strong className="text-amber-400 font-mono">
+                  {formatDate(selectedBookingForDetail.bookingDate)} ({selectedBookingForDetail.startTime || '08:00'} – {selectedBookingForDetail.endTime || '14:00'} WIB)
+                </strong>
               </div>
               <div className="flex justify-between py-1 border-b border-zinc-800/60">
                 <span className="text-zinc-500 font-mono">Lokasi / Venue:</span>
@@ -1438,13 +1506,12 @@ export default function AdminDashboardPage() {
               </div>
               <div className="flex justify-between py-1 border-b border-zinc-800/60">
                 <span className="text-zinc-500 font-mono">Status Pembayaran:</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
-                  selectedBookingForDetail.paymentStatus === 'paid_full'
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${selectedBookingForDetail.paymentStatus === 'paid_full'
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                     : selectedBookingForDetail.paymentStatus === 'dp_paid'
-                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                }`}>
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  }`}>
                   {selectedBookingForDetail.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : selectedBookingForDetail.paymentStatus === 'dp_paid' ? 'DP TERBAYAR (30%)' : 'BELUM DP'}
                 </span>
               </div>
@@ -1489,7 +1556,16 @@ export default function AdminDashboardPage() {
                 className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase text-center rounded-lg flex items-center justify-center gap-2 shadow-md transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Chat Client via WA</span>
+                <span>Chat Client WA</span>
+              </a>
+              <a
+                href={generateGoogleCalendarUrl(selectedBookingForDetail)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs tracking-wider uppercase text-center rounded-lg flex items-center justify-center gap-2 shadow-md transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>+ Sync Google Cal</span>
               </a>
             </div>
           </div>

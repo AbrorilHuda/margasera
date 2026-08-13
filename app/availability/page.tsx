@@ -10,7 +10,7 @@ export default function AvailabilityPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-8 pb-20">
       <div className="text-center max-w-3xl mx-auto px-6 mb-4">
-        <span className="text-xs font-semibold tracking-[0.3em] uppercase text-amber-400">
+        <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
           Availability Calendar
         </span>
         <h1 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">

@@ -18,8 +18,8 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
           <div className="md:col-span-6 relative h-[480px] w-full overflow-hidden group border border-zinc-800">
             <Image
-              src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=1600&auto=format&fit=crop"
-              alt="Marga Sera Photography Philosophy"
+              src="/about.jpeg"
+              alt="Margasera Photography Philosophy"
               fill
               className="object-cover img-editorial filter brightness-90"
               sizes="(max-width: 768px) 100vw, 50vw"
@@ -34,15 +34,15 @@ export default function Home() {
 
           <div className="md:col-span-6 flex flex-col gap-6">
             <span className="text-xs font-semibold tracking-[0.3em] uppercase text-amber-400">
-              Tentang Marga Sera
+              Tentang Margasera
             </span>
             <h2 className="font-serif-editorial text-4xl sm:text-5xl text-zinc-100 font-light tracking-wide uppercase leading-tight">
               Seni Visual Sinematik & Storytelling Abadi
             </h2>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Marga Sera Photography lahir dari passion untuk mengabadikan momen cinta, kebahagiaan, dan ekspresi paling otentik. Kami memadukan pendekatan visual editorial berstandar internasional dengan kehangatan rasa lokal Medan & Sumatera Utara.
+              Margasera Photography lahir dari passion untuk mengabadikan momen cinta, kebahagiaan, dan ekspresi paling otentik. Kami memadukan pendekatan visual editorial berstandar internasional dengan kehangatan rasa lokal Medan & Sumatera Utara.
             </p>
-            
+
             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-900">
               <div className="flex flex-col gap-1">
                 <span className="font-serif-editorial text-3xl text-amber-400 font-bold">500+</span>

@@ -331,15 +331,91 @@ export const MOCK_PROJECTS: GalleryProject[] = [
 
 // Sample availability data for August & September 2026
 export const MOCK_AVAILABILITY: Availability[] = [
-  { id: 'av-1', date: '2026-08-15', status: 'booked', notes: 'Wedding Bima & Dian' },
-  { id: 'av-2', date: '2026-08-16', status: 'blocked', notes: 'Internal Maintenance / Rest Day' },
-  { id: 'av-3', date: '2026-08-20', status: 'almost_full', notes: '1 Slot Remaining (Afternoon Only)' },
-  { id: 'av-4', date: '2026-08-22', status: 'booked', notes: 'Pre-Wedding Session' },
-  { id: 'av-5', date: '2026-08-23', status: 'booked', notes: 'Full Day Event' },
-  { id: 'av-6', date: '2026-08-28', status: 'almost_full', notes: 'Graduation Session Morning' },
-  { id: 'av-7', date: '2026-08-29', status: 'booked', notes: 'Wedding Reception' },
-  { id: 'av-8', date: '2026-09-05', status: 'blocked', notes: 'Outside Medan Project' },
-  { id: 'av-9', date: '2026-09-12', status: 'almost_full', notes: 'Couple Session Afternoon' },
+  {
+    id: 'av-1',
+    date: '2026-08-15',
+    status: 'booked',
+    notes: 'Wedding Bima & Dian (2 Slot Wedding Terisi Full)',
+    weddingSlots: [
+      { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true, bookedBy: 'Bima & Dian' },
+      { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: true, bookedBy: 'Rian & Sarah' },
+    ],
+  },
+  {
+    id: 'av-2',
+    date: '2026-08-16',
+    status: 'blocked',
+    notes: 'Internal Maintenance / Rest Day Studio',
+  },
+  {
+    id: 'av-3',
+    date: '2026-08-20',
+    status: 'almost_full',
+    notes: 'Sisa 1 Slot Wedding (Sesi Sore/Malam)',
+    weddingSlots: [
+      { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true, bookedBy: 'Farih & Nita' },
+      { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: false },
+    ],
+    bookedTimeSlots: [
+      { startTime: '08:00', endTime: '14:00', serviceCategory: 'wedding', bookingCode: 'MS-260820-009' }
+    ]
+  },
+  {
+    id: 'av-4',
+    date: '2026-08-22',
+    status: 'booked',
+    notes: 'Sesi Pre-Wedding Outdoor Full Day',
+    bookedTimeSlots: [
+      { startTime: '10:00', endTime: '18:00', serviceCategory: 'pre-wedding', bookingCode: 'MS-260822-011' }
+    ]
+  },
+  {
+    id: 'av-5',
+    date: '2026-08-23',
+    status: 'booked',
+    notes: 'Full Day Corporate Event Coverage',
+    bookedTimeSlots: [
+      { startTime: '08:00', endTime: '17:00', serviceCategory: 'event', bookingCode: 'MS-260823-014' }
+    ]
+  },
+  {
+    id: 'av-6',
+    date: '2026-08-28',
+    status: 'almost_full',
+    notes: '1 Slot Wedding Pagi Tersedia & Sesi Graduation Terisi',
+    weddingSlots: [
+      { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: false },
+      { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: true, bookedBy: 'Aldo & Maya' },
+    ],
+    bookedTimeSlots: [
+      { startTime: '15:00', endTime: '21:00', serviceCategory: 'wedding', bookingCode: 'MS-260828-005' }
+    ]
+  },
+  {
+    id: 'av-7',
+    date: '2026-08-29',
+    status: 'almost_full',
+    notes: 'Sesi Pagi Wedding Terisi, Sesi Sore Tersedia',
+    weddingSlots: [
+      { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true, bookedBy: 'Ahmad Rizky' },
+      { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: false },
+    ],
+  },
+  {
+    id: 'av-8',
+    date: '2026-09-05',
+    status: 'blocked',
+    notes: 'Outside Medan Project',
+  },
+  {
+    id: 'av-9',
+    date: '2026-09-12',
+    status: 'almost_full',
+    notes: 'Couple Session Afternoon Booked (13:00 - 17:00)',
+    bookedTimeSlots: [
+      { startTime: '13:00', endTime: '17:00', serviceCategory: 'couple', bookingCode: 'MS-260912-003' }
+    ]
+  },
 ];
 
 export const MOCK_BANK_ACCOUNTS = [
@@ -360,8 +436,9 @@ export const MOCK_BOOKINGS: Booking[] = [
     packageId: 'pkg-w-signature',
     packageName: 'Signature Wedding',
     bookingDate: '2026-08-29',
-    startTime: '09:00',
-    endTime: '19:00',
+    startTime: '08:00',
+    endTime: '14:00',
+    slotType: 'wedding_morning',
     location: 'Bangkalan, Madura',
     eventType: 'Akad & Resepsi Pernikahan',
     notes: 'Mohon fokus pada reaksi orang tua dan momen penyerahan mahar.',
@@ -387,6 +464,7 @@ export const MOCK_BOOKINGS: Booking[] = [
     bookingDate: '2026-09-15',
     startTime: '13:00',
     endTime: '21:00',
+    slotType: 'custom',
     location: 'Berastagi & Heritage District',
     eventType: 'Pre-Wedding Outdoor',
     notes: 'Konsep pakaian serba hitam & warna vintage pastel.',

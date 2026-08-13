@@ -7,16 +7,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, ChevronLeft, Calendar, Camera, Clock, User, Phone, Mail, MapPin, FileText, Copy, CheckCircle2, Sparkles } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
 import { MOCK_SERVICES, MOCK_PACKAGES } from '@/lib/mock-data';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod } from '@/lib/utils';
 
 export function BookingWizard() {
   const searchParams = useSearchParams();
 
   // Initial step states
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [selectedDate, setSelectedDate] = useState<string>('2026-08-29');
   const [selectedServiceId, setSelectedServiceId] = useState<string>('s-wedding');
   const [selectedPackageId, setSelectedPackageId] = useState<string>('pkg-w-signature');
+  const [selectedDate, setSelectedDate] = useState<string>('2026-08-29');
+
+  // Time & Slot states
+  const [startTime, setStartTime] = useState<string>('08:00');
+  const [endTime, setEndTime] = useState<string>('14:00');
+  const [slotType, setSlotType] = useState<'wedding_morning' | 'wedding_afternoon' | 'wedding_fullday' | 'custom'>('wedding_morning');
 
   // Customer details form
   const [customerName, setCustomerName] = useState('');
@@ -24,29 +29,58 @@ export function BookingWizard() {
   const [email, setEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [location, setLocation] = useState('');
-  const [eventType, setEventType] = useState('Wedding Reception');
   const [notes, setNotes] = useState('');
 
   // Generated Booking Code result
   const [bookingCode, setBookingCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const paramDate = searchParams?.get('date');
-    const paramService = searchParams?.get('serviceId');
-    const paramPackage = searchParams?.get('packageId');
-
-    if (paramDate) setSelectedDate(paramDate);
-    if (paramService) setSelectedServiceId(paramService);
-    if (paramPackage) setSelectedPackageId(paramPackage);
-  }, [searchParams]);
-
   const selectedService = MOCK_SERVICES.find((s) => s.id === selectedServiceId) || MOCK_SERVICES[0];
   const selectedPackage = MOCK_PACKAGES.find((p) => p.id === selectedPackageId) || MOCK_PACKAGES[0];
   const packagesForService = MOCK_PACKAGES.filter((p) => p.serviceId === selectedServiceId);
 
+  // Helper to extract duration in hours
+  const getHoursFromDuration = (durationStr: string): number => {
+    if (!durationStr) return 4;
+    if (durationStr.toLowerCase().includes('unlimited') || durationStr.toLowerCase().includes('full day')) return 12;
+    const match = durationStr.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 4;
+  };
+
+  // Helper to update custom start time and auto calculate end time
+  const handleSelectStartTime = (newStart: string) => {
+    setStartTime(newStart);
+    const durationHours = getHoursFromDuration(selectedPackage.duration);
+    const [h, m] = newStart.split(':').map(Number);
+    const endH = (h + durationHours) % 24;
+    const endFormatted = `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+    setEndTime(endFormatted);
+    setSlotType('custom');
+  };
+
+  useEffect(() => {
+    const paramDate = searchParams?.get('date');
+    const paramService = searchParams?.get('serviceId');
+    const paramPackage = searchParams?.get('packageId');
+    const paramTime = searchParams?.get('time');
+
+    if (paramService) setSelectedServiceId(paramService);
+    if (paramPackage) {
+      setSelectedPackageId(paramPackage);
+      const pkg = MOCK_PACKAGES.find(p => p.id === paramPackage);
+      if (pkg) {
+        const durationHours = getHoursFromDuration(pkg.duration);
+        const [h, m] = (paramTime || '08:00').split(':').map(Number);
+        const endH = (h + durationHours) % 24;
+        setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+      }
+    }
+    if (paramDate) setSelectedDate(paramDate);
+    if (paramTime) setStartTime(paramTime);
+  }, [searchParams]);
+
   const handleNextStep = () => {
-    if (currentStep < 5) setCurrentStep((prev) => prev + 1);
+    if (currentStep < 4) setCurrentStep((prev) => prev + 1);
   };
 
   const handlePrevStep = () => {
@@ -55,12 +89,11 @@ export function BookingWizard() {
 
   const handleSubmitBooking = (e: React.FormEvent) => {
     e.preventDefault();
-    // Generate code format: MS-YYMMDD-XXX
     const cleanDate = selectedDate.replace(/-/g, '').substring(2);
     const randomNum = String(Math.floor(Math.random() * 900) + 100);
     const code = `MS-${cleanDate}-${randomNum}`;
     setBookingCode(code);
-    setCurrentStep(6);
+    setCurrentStep(5);
   };
 
   const copyCodeToClipboard = () => {
@@ -71,20 +104,18 @@ export function BookingWizard() {
   };
 
   const steps = [
-    { number: 1, label: 'Tanggal' },
-    { number: 2, label: 'Layanan' },
-    { number: 3, label: 'Paket' },
-    { number: 4, label: 'Data Diri' },
-    { number: 5, label: 'Ringkasan' },
+    { number: 1, label: 'Layanan & Paket' },
+    { number: 2, label: 'Tanggal & Jam' },
+    { number: 3, label: 'Data Diri' },
+    { number: 4, label: 'Ringkasan' },
   ];
 
   return (
     <div className="w-full max-w-4xl mx-auto py-12 px-6">
       {/* Wizard Progress Stepper */}
-      {currentStep <= 5 && (
+      {currentStep <= 4 && (
         <div className="mb-12">
           <div className="flex items-center justify-between relative">
-            {/* Progress Line */}
             <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-zinc-800 -translate-y-1/2 z-0" />
             <div
               className="absolute top-1/2 left-0 h-[2px] bg-[#0066CC] -translate-y-1/2 z-0 transition-all duration-500"
@@ -97,19 +128,17 @@ export function BookingWizard() {
               return (
                 <div key={st.number} className="relative z-10 flex flex-col items-center gap-2">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
-                      isCompleted
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${isCompleted
                         ? 'bg-[#0066CC] text-white'
                         : isCurrent
-                        ? 'bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.4)]'
-                        : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
-                    }`}
+                          ? 'bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.4)]'
+                          : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                      }`}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : st.number}
                   </div>
-                  <span className={`text-[11px] font-semibold tracking-wider uppercase hidden sm:inline ${
-                    isCurrent ? 'text-[#0066CC]' : 'text-zinc-500'
-                  }`}>
+                  <span className={`text-[11px] font-semibold tracking-wider uppercase hidden sm:inline ${isCurrent ? 'text-[#0066CC]' : 'text-zinc-500'
+                    }`}>
                     {st.label}
                   </span>
                 </div>
@@ -120,47 +149,116 @@ export function BookingWizard() {
       )}
 
       {/* Step Content Panels */}
-      <div className="bg-zinc-950 border border-zinc-800 p-8 md:p-12 shadow-2xl">
+      <div className="bg-zinc-950 border border-zinc-800 p-8 md:p-12 shadow-2xl rounded-2xl">
         <AnimatePresence mode="wait">
-          {/* STEP 1: SELECT DATE */}
+          {/* STEP 1: SELECT SERVICE & PACKAGE FIRST */}
           {currentStep === 1 && (
             <motion.div
               key="step1"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-8"
             >
               <div>
-                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 1 dari 5</span>
-                <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Pilih Tanggal Sesi Foto</h3>
+                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 1 dari 4</span>
+                <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Pilih Layanan & Paket Dokumentasi</h3>
                 <p className="text-xs text-zinc-400 font-light mt-1">
-                  Masukkan tanggal acara yang Anda rencanakan. Sistem akan memverifikasi slot ketersediaan fotografer.
+                  Pilih kategori layanan dan paket foto terlebih dahulu agar durasi waktu sesi foto dapat disesuaikan secara presisi.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 max-w-md pt-4">
+              <div className="flex flex-col gap-3">
                 <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#0066CC]" />
-                  Tanggal Rencana Acara:
+                  <Camera className="w-4 h-4 text-[#0066CC]" /> 1. Kategori Layanan:
                 </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-4 rounded text-sm focus:outline-none transition-colors"
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {MOCK_SERVICES.map((srv) => (
+                    <button
+                      key={srv.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedServiceId(srv.id);
+                        const firstPkg = MOCK_PACKAGES.find((p) => p.serviceId === srv.id);
+                        if (firstPkg) {
+                          setSelectedPackageId(firstPkg.id);
+                          const durationHours = getHoursFromDuration(firstPkg.duration);
+                          const [h, m] = startTime.split(':').map(Number);
+                          const endH = (h + durationHours) % 24;
+                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+                        }
+                      }}
+                      className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${
+                        selectedServiceId === srv.id
+                          ? 'border-[#0066CC] bg-[#0066CC]/20 text-white shadow-[0_0_15px_rgba(0,102,204,0.3)]'
+                          : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                      }`}
+                    >
+                      <span className="text-xs font-medium">{srv.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded flex items-center gap-3 text-xs text-emerald-300 font-light mt-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span>Tanggal {formatDate(selectedDate)} saat ini <strong>Tersedia (Available)</strong> untuk pemesanan!</span>
+              <div className="flex flex-col gap-3 pt-2">
+                <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#0066CC]" /> 2. Pilih Paket Dokumentasi ({selectedService.name}):
+                  </span>
+                  <span className="text-[11px] text-amber-400 font-mono">Durasi Paket Pilihan Anda akan Menentukan Jam Selesai</span>
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {packagesForService.length > 0 ? (
+                    packagesForService.map((pkg) => (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPackageId(pkg.id);
+                          const durationHours = getHoursFromDuration(pkg.duration);
+                          const [h, m] = startTime.split(':').map(Number);
+                          const endH = (h + durationHours) % 24;
+                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+                        }}
+                        className={`p-6 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                          selectedPackageId === pkg.id
+                            ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'
+                            : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-serif-editorial text-2xl text-zinc-100">{pkg.name}</h4>
+                            {pkg.isPopular && (
+                              <span className="px-2 py-0.5 bg-[#0066CC] text-white text-[9px] font-bold tracking-widest uppercase rounded">Popular</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-400 font-light mb-4">{pkg.description}</p>
+                          <div className="text-2xl font-serif-editorial text-[#0066CC] font-semibold mb-4">
+                            {formatCurrency(pkg.price)}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-zinc-800/80 text-xs text-zinc-300 font-light flex items-center justify-between">
+                          <span className="text-amber-400 font-mono font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                            ⏱️ Durasi: {pkg.duration}
+                          </span>
+                          <span className="font-mono text-zinc-400">{pkg.photographerCount} Fotografer</span>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-2 p-8 text-center bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-light rounded-xl">
+                      Belum ada paket standar khusus untuk kategori ini. Anda dapat melanjutkan ke tahap penawaran kustom.
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: SELECT SERVICE */}
+          {/* STEP 2: SELECT DATE & TIME SLOT (ACCORDING TO PACKAGE DURATION) */}
           {currentStep === 2 && (
             <motion.div
               key="step2"
@@ -170,41 +268,131 @@ export function BookingWizard() {
               className="flex flex-col gap-6"
             >
               <div>
-                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 2 dari 5</span>
-                <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Pilih Kategori Layanan</h3>
+                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 2 dari 4</span>
+                <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Pilih Tanggal & Tentukan Jam Acara</h3>
                 <p className="text-xs text-zinc-400 font-light mt-1">
-                  Pilih jenis dokumentasi yang sesuai dengan kebutuhan momen Anda.
+                  Pilih tanggal dan tentukan Jam Mulai. Jam Selesai dihitung otomatis sesuai durasi paket pilihan Anda ({selectedPackage.name} — {selectedPackage.duration}).
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                {MOCK_SERVICES.map((srv) => (
-                  <button
-                    key={srv.id}
-                    onClick={() => {
-                      setSelectedServiceId(srv.id);
-                      // Auto pick first available package for this service
-                      const firstPkg = MOCK_PACKAGES.find((p) => p.serviceId === srv.id);
-                      if (firstPkg) setSelectedPackageId(firstPkg.id);
-                    }}
-                    className={`p-6 border text-left flex flex-col justify-between transition-all ${
-                      selectedServiceId === srv.id
-                        ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'
-                        : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-3">
-                      <span className="font-serif-editorial text-2xl text-zinc-100 font-light">{srv.name}</span>
-                      <Camera className={`w-5 h-5 ${selectedServiceId === srv.id ? 'text-[#0066CC]' : 'text-zinc-500'}`} />
+              <div className="p-3.5 bg-[#0066CC]/15 border border-[#0066CC]/40 rounded-xl flex items-center justify-between text-xs text-zinc-200">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#0066CC]" />
+                  <span>Paket Dipilih: <strong>{selectedPackage.name}</strong></span>
+                </span>
+                <span className="font-mono text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30">
+                  ⏱️ Durasi Paket: {selectedPackage.duration}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                <div className="flex flex-col gap-3">
+                  <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#0066CC]" />
+                    Tanggal Rencana Acara:
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-4 rounded-xl font-mono text-sm focus:outline-none transition-colors"
+                  />
+                  <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl flex items-center gap-2 text-xs text-emerald-300 font-light">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Tanggal {formatDate(selectedDate)} <strong>Tersedia (Available)</strong>!</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0066CC]" />
+                    Tentukan Jam Acara (Ditentukan oleh Client):
+                  </label>
+
+                  {selectedService.slug === 'wedding' && (
+                    <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-xl flex items-center justify-between text-xs text-amber-300">
+                      <span>💍 <strong>Kuota Wedding:</strong> Maksimal 2 booking per hari.</span>
+                      <span className="font-mono text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-400">
+                        Slot Tersedia
+                      </span>
                     </div>
-                    <p className="text-xs text-zinc-400 font-light line-clamp-2">{srv.description}</p>
-                  </button>
-                ))}
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-zinc-400">Jam Mulai Sesi:</span>
+                        <span className="text-amber-400 font-semibold">{getTimeOfDayLabel(startTime)}</span>
+                      </div>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => {
+                          const newStart = e.target.value;
+                          setStartTime(newStart);
+                          const durationHours = getHoursFromDuration(selectedPackage.duration);
+                          const [h, m] = newStart.split(':').map(Number);
+                          const endH = (h + durationHours) % 24;
+                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+                        }}
+                        className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-xl font-mono text-sm focus:outline-none transition-colors"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-zinc-400">Jam Selesai (Auto):</span>
+                        <span className="text-amber-400 font-semibold">{getTimeOfDayLabel(endTime)}</span>
+                      </div>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-xl font-mono text-sm focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 pt-2">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">Pilihan Jam Mulai Populer (Format 24 Jam / WIB):</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['07:00', '08:00', '09:00', '10:00', '13:00', '14:00', '15:00', '18:00', '19:00'].map((tStr) => (
+                        <button
+                          key={tStr}
+                          type="button"
+                          onClick={() => handleSelectStartTime(tStr)}
+                          className={`px-2.5 py-1.5 text-xs font-mono rounded-lg border transition-colors flex items-center gap-1 ${startTime === tStr
+                              ? 'bg-[#0066CC] border-[#0066CC] text-white font-bold shadow-md'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            }`}
+                        >
+                          <span>{tStr}</span>
+                          <span className={`text-[9px] uppercase font-normal ${startTime === tStr ? 'text-amber-200' : 'text-zinc-500'}`}>
+                            ({getTimeOfDayLabel(tStr)})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-900/90 border border-zinc-800 rounded-xl flex flex-col gap-1 text-xs text-zinc-300 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 font-medium">Rentang Jam Acara Disesuaikan Durasi:</span>
+                      <span className="font-mono text-amber-400 font-bold">
+                        {startTime} WIB ({getTimeOfDayLabel(startTime)}) s/d {endTime} WIB ({getTimeOfDayLabel(endTime)})
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono italic">
+                      💡 Jam Selesai ({endTime} WIB) otomatis disesuaikan dengan durasi paket {selectedPackage.name} ({selectedPackage.duration}).
+                    </span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 3: SELECT PACKAGE */}
+          {/* STEP 3: CUSTOMER CONTACT FORM */}
           {currentStep === 3 && (
             <motion.div
               key="step3"
@@ -214,67 +402,10 @@ export function BookingWizard() {
               className="flex flex-col gap-6"
             >
               <div>
-                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 3 dari 5</span>
-                <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Pilih Paket Dokumentasi</h3>
-                <p className="text-xs text-zinc-400 font-light mt-1">
-                  Paket tersedia untuk layanan: <strong>{selectedService.name}</strong>
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                {packagesForService.length > 0 ? (
-                  packagesForService.map((pkg) => (
-                    <button
-                      key={pkg.id}
-                      onClick={() => setSelectedPackageId(pkg.id)}
-                      className={`p-6 border text-left flex flex-col justify-between transition-all ${
-                        selectedPackageId === pkg.id
-                          ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'
-                          : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-serif-editorial text-2xl text-zinc-100">{pkg.name}</h4>
-                          {pkg.isPopular && (
-                            <span className="px-2 py-0.5 bg-[#0066CC] text-white text-[9px] font-bold tracking-widest uppercase">Popular</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-zinc-400 font-light mb-4">{pkg.description}</p>
-                        <div className="text-2xl font-serif-editorial text-[#0066CC] font-semibold mb-4">
-                          {formatCurrency(pkg.price)}
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-zinc-800/80 text-xs text-zinc-300 font-light flex items-center justify-between">
-                        <span>Durasi: {pkg.duration}</span>
-                        <span>{pkg.photographerCount} Fotografer</span>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="col-span-2 p-8 text-center bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-light">
-                    Belum ada paket standar khusus untuk kategori ini. Anda dapat memilih penawaran kustom pada tahap data diri.
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: CUSTOMER CONTACT FORM */}
-          {currentStep === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col gap-6"
-            >
-              <div>
-                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 4 dari 5</span>
+                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 3 dari 4</span>
                 <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Isi Data Diri Pelanggan</h3>
                 <p className="text-xs text-zinc-400 font-light mt-1">
-                  Lengkapi informasi kontak agar tim Marga Sera dapat menghubungi Anda untuk konfirmasi jadwal.
+                  Lengkapi informasi kontak agar tim Marga Sera dapat menghubungi Anda untuk koordinasi sesi foto.
                 </p>
               </div>
 
@@ -289,7 +420,7 @@ export function BookingWizard() {
                     placeholder="Contoh: Ahmad Rizky"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -303,7 +434,7 @@ export function BookingWizard() {
                     placeholder="Contoh: 081234567890"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -317,7 +448,7 @@ export function BookingWizard() {
                     placeholder="Contoh: ahmad@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -330,7 +461,7 @@ export function BookingWizard() {
                     placeholder="Contoh: @ahmad.rizky"
                     value={instagram}
                     onChange={(e) => setInstagram(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -344,7 +475,7 @@ export function BookingWizard() {
                     placeholder="Contoh: JW Marriott Medan"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -357,42 +488,48 @@ export function BookingWizard() {
                     placeholder="Tuliskan jika ada lokasi spesifik, outfit khusus, atau momen penting yang wajib didokumentasikan..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 5: SUMMARY & CONFIRMATION */}
-          {currentStep === 5 && (
+          {/* STEP 4: SUMMARY & CONFIRMATION */}
+          {currentStep === 4 && (
             <motion.div
-              key="step5"
+              key="step4"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               className="flex flex-col gap-6"
             >
               <div>
-                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 5 dari 5</span>
+                <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 4 dari 4</span>
                 <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light mt-1">Ringkasan Pemesanan</h3>
                 <p className="text-xs text-zinc-400 font-light mt-1">
                   Periksa kembali seluruh detail pemesanan sesi foto Anda sebelum dikirimkan ke sistem.
                 </p>
               </div>
 
-              <div className="p-6 bg-zinc-900 border border-zinc-800 flex flex-col gap-4 text-xs font-light text-zinc-300 divide-y divide-zinc-800">
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col gap-4 text-xs font-light text-zinc-300 divide-y divide-zinc-800">
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-zinc-500 uppercase tracking-wider">Tanggal Sesi:</span>
-                  <span className="font-semibold text-[#0066CC] text-sm">{formatDate(selectedDate)}</span>
-                </div>
-                <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">Layanan:</span>
                   <span className="font-semibold text-zinc-100">{selectedService.name}</span>
                 </div>
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">Paket Dipilih:</span>
                   <span className="font-semibold text-zinc-100">{selectedPackage.name} ({selectedPackage.duration})</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-zinc-500 uppercase tracking-wider">Tanggal Sesi:</span>
+                  <span className="font-semibold text-[#0066CC] text-sm">{formatDate(selectedDate)}</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-zinc-500 uppercase tracking-wider">Jam & Waktu Sesi:</span>
+                  <span className="font-semibold text-amber-400 font-mono text-xs">
+                    {startTime} WIB ({getTimeOfDayLabel(startTime)}) – {endTime} WIB ({getTimeOfDayLabel(endTime)})
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">Nama Pemesan:</span>
@@ -402,16 +539,6 @@ export function BookingWizard() {
                   <span className="text-zinc-500 uppercase tracking-wider">WhatsApp & Email:</span>
                   <span className="font-semibold text-zinc-100">{whatsapp || '081234567890'} • {email || 'ahmad@example.com'}</span>
                 </div>
-                {instagram && (
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-zinc-500 uppercase tracking-wider">Instagram Client:</span>
-                    <span className="font-semibold text-[#0066CC] font-mono">{instagram}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-zinc-500 uppercase tracking-wider">Lokasi Acara:</span>
-                  <span className="font-semibold text-zinc-100">{location || 'Medan'}</span>
-                </div>
                 <div className="flex items-center justify-between pt-3 text-sm">
                   <span className="text-[#0066CC] font-semibold uppercase tracking-wider">Total Est. Investasi:</span>
                   <span className="font-serif-editorial text-2xl text-[#0066CC] font-bold">{formatCurrency(selectedPackage.price)}</span>
@@ -419,46 +546,51 @@ export function BookingWizard() {
               </div>
 
               <button
+                type="button"
                 onClick={handleSubmitBooking}
-                className="w-full py-4 bg-gradient-to-r from-[#0066CC] to-[#0052A3] text-white font-semibold text-xs tracking-[0.25em] uppercase shadow-[0_0_30px_rgba(0,102,204,0.4)] hover:shadow-[0_0_40px_rgba(0,102,204,0.6)] transition-all mt-4"
+                className="w-full py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-[0.2em] uppercase transition-all rounded-xl shadow-[0_0_20px_rgba(0,102,204,0.4)] flex items-center justify-center gap-2"
               >
-                Kirimkan Pemesanan Sesi Foto Sekarang
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Kirim Pemesanan & Dapatkan Kode Booking</span>
               </button>
             </motion.div>
           )}
 
-          {/* STEP 6: CONFIRMATION SUCCESS & BOOKING CODE GENERATED */}
-          {currentStep === 6 && (
+          {/* STEP 5: BOOKING RECEIPT & PAYMENT INFO */}
+          {currentStep === 5 && bookingCode && (
             <motion.div
-              key="step6"
+              key="step5"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center text-center gap-6 py-6"
+              className="flex flex-col items-center text-center gap-6 py-4"
             >
-              <div className="w-16 h-16 rounded-full bg-[#0066CC]/15 border-2 border-[#0066CC] flex items-center justify-center shadow-[0_0_30px_rgba(0,102,204,0.3)]">
-                <Sparkles className="w-8 h-8 text-[#0066CC]" />
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
+                <Check className="w-8 h-8" />
               </div>
 
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">Pemesanan Berhasil Dikirim!</span>
-                <h3 className="font-serif-editorial text-3xl sm:text-4xl text-zinc-100 font-light">
-                  Terima Kasih, Pemesanan Anda Telah Kami Terima
+              <div>
+                <span className="text-xs font-semibold tracking-widest uppercase text-emerald-400">Pemesanan Berhasil Dikirim!</span>
+                <h3 className="font-serif-editorial text-3xl sm:text-4xl text-zinc-100 font-light mt-1">
+                  Terima Kasih, {customerName || 'Pelanggan Marga Sera'}
                 </h3>
-                <p className="text-xs text-zinc-400 font-light max-w-lg mx-auto">
+                <p className="text-xs text-zinc-400 font-light max-w-lg mx-auto mt-1">
                   Simpan <strong>Kode Booking</strong> Anda untuk mengecek perkembangan status persetujuan & jadwal sesi foto.
                 </p>
               </div>
 
               {/* Booking Code Display Box */}
-              <div className="w-full max-w-md p-6 bg-zinc-900 border border-[#0066CC]/50 rounded flex flex-col items-center gap-3">
-                <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-400">Kode Booking Anda:</span>
+              <div className="w-full max-w-md p-6 bg-zinc-900 border border-[#0066CC]/50 rounded-2xl flex flex-col items-center gap-3 shadow-xl">
+                <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-400 font-mono">Kode Booking Anda:</span>
                 <div className="font-mono text-3xl font-bold tracking-wider text-[#0066CC]">
                   {bookingCode}
+                </div>
+                <div className="text-xs text-zinc-300 font-mono pt-1 text-center">
+                  📅 {formatDate(selectedDate)} | ⏰ {startTime} WIB ({getTimeOfDayLabel(startTime)}) – {endTime} WIB ({getTimeOfDayLabel(endTime)})
                 </div>
 
                 <button
                   onClick={copyCodeToClipboard}
-                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold tracking-widest uppercase transition-colors"
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors"
                 >
                   {copied ? (
                     <>
@@ -474,33 +606,32 @@ export function BookingWizard() {
                 </button>
               </div>
 
-              {/* Studio Bank Payment Transfer Box */}
-              <div className="w-full max-w-md p-6 bg-zinc-900/90 border border-zinc-800 rounded-xl flex flex-col gap-4 text-left">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              {/* Payment Instructions Box */}
+              <div className="w-full max-w-md p-6 bg-zinc-900/90 border border-zinc-800 rounded-2xl text-left flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                   <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">Instruksi Pembayaran DP (Down Payment)</span>
                   <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">DP 30%</span>
                 </div>
-                
+
                 <p className="text-xs text-zinc-400 font-light">
                   Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 30% dari total investasi ke rekening resmi Margasera:
                 </p>
 
-                <div className="flex flex-col gap-2.5 pt-1">
-                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded flex justify-between items-center text-xs">
-                    <div>
-                      <span className="text-[10px] text-zinc-500 font-mono block">BANK BCA</span>
-                      <span className="font-mono font-bold text-zinc-100 text-sm">188-091-2345</span>
-                      <span className="text-[11px] text-zinc-400 block font-light">a.n Marga Sera Photography</span>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
+                    <span className="text-[10px] font-mono text-zinc-500 block">BANK BCA</span>
+                    <span className="font-mono text-sm font-bold text-zinc-100">188-091-2345</span>
+                    <span className="text-[10px] text-zinc-400 block">a.n Marga Sera Photography</span>
+                  </div>
+                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
+                    <span className="text-[10px] font-mono text-zinc-500 block">BANK MANDIRI</span>
+                    <span className="font-mono text-sm font-bold text-zinc-100">140-00-1928374-1</span>
+                    <span className="text-[10px] text-zinc-400 block">a.n Abroril Huda</span>
                   </div>
                 </div>
-
-                <p className="text-[11px] text-zinc-400 font-light italic">
-                  *Setelah melakukan transfer, silakan kirimkan bukti transfer ke WhatsApp resmi Margasera (0819-3110-7481) untuk konfirmasi otomatis.
-                </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+              <div className="flex items-center gap-4 pt-2">
                 <Link
                   href={`/booking/status?code=${bookingCode}`}
                   className="px-6 py-3.5 bg-[#0066CC] text-white text-xs font-semibold tracking-widest uppercase hover:bg-[#0052A3] transition-colors shadow-[0_0_20px_rgba(0,102,204,0.3)]"

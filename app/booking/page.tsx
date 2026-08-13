@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { BookingWizard } from '@/components/booking/booking-wizard';
 
 export const metadata = {
-  title: 'Pemesanan Sesi Foto - MargaSera Photography',
+  title: 'Pemesanan Sesi Foto - Margasera Photography',
   description: 'Formulir pemesanan sesi foto bertahap untuk wedding, pre-wedding, couple, & portrait Marga Sera.',
 };
 

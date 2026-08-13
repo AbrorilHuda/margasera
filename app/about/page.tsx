@@ -19,10 +19,10 @@ export default function AboutPage() {
               The Artist & Storyteller
             </span>
             <h1 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase leading-tight">
-              Cerita Di Balik Marga Sera
+              Cerita Di Balik Margasera
             </h1>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Marga Sera Photography didirikan dengan visi menghadirkan gaya penceritaan visual yang bermakna. Setiap jepretan dirancang untuk mengabadikan esensi, gestur yang tidak disengaja, serta kedalaman emosi dari momen spesial Anda.
+              Margasera Photography didirikan dengan visi menghadirkan gaya penceritaan visual yang bermakna. Setiap jepretan dirancang untuk mengabadikan esensi, gestur yang tidak disengaja, serta kedalaman emosi dari momen spesial Anda.
             </p>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
               Kami percaya bahwa fotografer bukan sekadar memegang kamera, melainkan mengarahkan cahaya, emosi, dan kenangan menjadi karya seni visual yang akan selalu dinikmati lintas generasi.
@@ -66,7 +66,7 @@ export default function AboutPage() {
             <div className="flex flex-col gap-4 text-xs text-zinc-300 font-light pt-4 border-t border-zinc-900">
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-[#0066CC] shrink-0" />
-                <span>Medan, Sumatera Utara & Available Destination Worldwide</span>
+                <span>Pamekasan</span>
               </div>
               <div className="flex items-center gap-3">
                 <InstagramIcon className="w-4 h-4 text-[#0066CC] shrink-0" />
