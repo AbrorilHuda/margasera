@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -27,13 +28,14 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-8 sm:p-10 shadow-2xl flex flex-col gap-8">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="w-12 h-12 rounded-full border border-[#0066CC]/40 flex items-center justify-center bg-black">
-            <Camera className="w-5 h-5 text-[#0066CC]" />
-          </div>
-          <span className="font-serif-editorial text-3xl tracking-[0.2em] font-semibold text-zinc-100 uppercase">
-            Marga Sera
-          </span>
-          <div className="inline-flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-[#0066CC] bg-[#0066CC]/10 px-3 py-1 rounded border border-[#0066CC]/30">
+          <Image
+            src="/logo.png"
+            alt="Margasera Logo"
+            width={160}
+            height={48}
+            className="h-10 w-auto object-contain"
+          />
+          <div className="inline-flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-[#0066CC] bg-[#0066CC]/10 px-3 py-1 rounded border border-[#0066CC]/30 mt-1">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Admin Portal</span>
           </div>

@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
-import { Navbar } from '@/components/navigation/navbar';
-import { Footer } from '@/components/navigation/footer';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -29,6 +27,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { LayoutWrapper } from '@/components/navigation/layout-wrapper';
+
 export default function RootLayout({
   children,
 }: {
@@ -36,12 +36,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${cormorant.variable} ${jakarta.variable} dark scroll-smooth`}>
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-amber-400 selection:text-black">
-        <Navbar />
-        <main className="flex-1 w-full pt-20">
+      <body className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#0066CC] selection:text-white">
+        <LayoutWrapper>
           {children}
-        </main>
-        <Footer />
+        </LayoutWrapper>
       </body>
     </html>
   );

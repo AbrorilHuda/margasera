@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, ChevronLeft, Calendar, Camera, Clock, User, Phone, Mail, MapPin, FileText, Copy, CheckCircle2, Sparkles } from 'lucide-react';
+import { InstagramIcon } from '@/components/ui/icons';
 import { MOCK_SERVICES, MOCK_PACKAGES } from '@/lib/mock-data';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ export function BookingWizard() {
   const [customerName, setCustomerName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
+  const [instagram, setInstagram] = useState('');
   const [location, setLocation] = useState('');
   const [eventType, setEventType] = useState('Wedding Reception');
   const [notes, setNotes] = useState('');
@@ -321,6 +323,19 @@ export function BookingWizard() {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                    <InstagramIcon className="w-3.5 h-3.5 text-[#0066CC]" /> Instagram Client (@username)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: @ahmad.rizky"
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded text-sm focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-[#0066CC]" /> Lokasi Acara / Venue *
                   </label>
                   <input
@@ -387,6 +402,12 @@ export function BookingWizard() {
                   <span className="text-zinc-500 uppercase tracking-wider">WhatsApp & Email:</span>
                   <span className="font-semibold text-zinc-100">{whatsapp || '081234567890'} • {email || 'ahmad@example.com'}</span>
                 </div>
+                {instagram && (
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-zinc-500 uppercase tracking-wider">Instagram Client:</span>
+                    <span className="font-semibold text-[#0066CC] font-mono">{instagram}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">Lokasi Acara:</span>
                   <span className="font-semibold text-zinc-100">{location || 'Medan'}</span>
@@ -453,7 +474,33 @@ export function BookingWizard() {
                 </button>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+              {/* Studio Bank Payment Transfer Box */}
+              <div className="w-full max-w-md p-6 bg-zinc-900/90 border border-zinc-800 rounded-xl flex flex-col gap-4 text-left">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">Instruksi Pembayaran DP (Down Payment)</span>
+                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">DP 30%</span>
+                </div>
+                
+                <p className="text-xs text-zinc-400 font-light">
+                  Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 30% dari total investasi ke rekening resmi Margasera:
+                </p>
+
+                <div className="flex flex-col gap-2.5 pt-1">
+                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-[10px] text-zinc-500 font-mono block">BANK BCA</span>
+                      <span className="font-mono font-bold text-zinc-100 text-sm">188-091-2345</span>
+                      <span className="text-[11px] text-zinc-400 block font-light">a.n Marga Sera Photography</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-zinc-400 font-light italic">
+                  *Setelah melakukan transfer, silakan kirimkan bukti transfer ke WhatsApp resmi Margasera (0819-3110-7481) untuk konfirmasi otomatis.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
                 <Link
                   href={`/booking/status?code=${bookingCode}`}
                   className="px-6 py-3.5 bg-[#0066CC] text-white text-xs font-semibold tracking-widest uppercase hover:bg-[#0052A3] transition-colors shadow-[0_0_20px_rgba(0,102,204,0.3)]"

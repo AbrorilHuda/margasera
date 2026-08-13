@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { StatusChecker } from '@/components/status/status-checker';
 
 export const metadata = {
-  title: 'Cek Status Booking — Marga Sera Photography',
+  title: 'Cek Status Booking - Margasera Photography',
   description: 'Pantau perkembangan status jadwal & persetujuan pemesanan sesi foto Marga Sera Photography.',
 };
 

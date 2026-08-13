@@ -342,6 +342,11 @@ export const MOCK_AVAILABILITY: Availability[] = [
   { id: 'av-9', date: '2026-09-12', status: 'almost_full', notes: 'Couple Session Afternoon' },
 ];
 
+export const MOCK_BANK_ACCOUNTS = [
+  { bankName: 'Bank BCA', accountNumber: '188-091-2345', accountHolder: 'Marga Sera Photography (Abroril Huda)' },
+  { bankName: 'Bank Mandiri', accountNumber: '140-00-1928374-1', accountHolder: 'Abroril Huda' },
+];
+
 export const MOCK_BOOKINGS: Booking[] = [
   {
     id: 'b-1',
@@ -349,6 +354,7 @@ export const MOCK_BOOKINGS: Booking[] = [
     customerName: 'Ahmad Rizky',
     whatsapp: '081234567890',
     email: 'ahmad.rizky@example.com',
+    instagram: '@ahmad.rizky',
     serviceId: 's-wedding',
     serviceName: 'Wedding Photography',
     packageId: 'pkg-w-signature',
@@ -356,10 +362,14 @@ export const MOCK_BOOKINGS: Booking[] = [
     bookingDate: '2026-08-29',
     startTime: '09:00',
     endTime: '19:00',
-    location: 'JW Marriott Hotel, Medan',
+    location: 'Bangkalan, Madura',
     eventType: 'Akad & Resepsi Pernikahan',
     notes: 'Mohon fokus pada reaksi orang tua dan momen penyerahan mahar.',
     status: 'confirmed',
+    paymentStatus: 'dp_paid',
+    downPayment: 4350000,
+    paidAmount: 4350000,
+    remainingAmount: 10150000,
     totalPrice: 14500000,
     createdAt: '2026-08-01T10:00:00Z',
   },
@@ -369,6 +379,7 @@ export const MOCK_BOOKINGS: Booking[] = [
     customerName: 'Priscillia & Daniel',
     whatsapp: '081987654321',
     email: 'priscillia@example.com',
+    instagram: '@priscillia.d',
     serviceId: 's-prewedding',
     serviceName: 'Pre-Wedding Story',
     packageId: 'pkg-pw-editorial',
@@ -376,10 +387,14 @@ export const MOCK_BOOKINGS: Booking[] = [
     bookingDate: '2026-09-15',
     startTime: '13:00',
     endTime: '21:00',
-    location: 'Berastagi & Medan Heritage District',
+    location: 'Berastagi & Heritage District',
     eventType: 'Pre-Wedding Outdoor',
     notes: 'Konsep pakaian serba hitam & warna vintage pastel.',
     status: 'pending',
+    paymentStatus: 'unpaid',
+    downPayment: 2340000,
+    paidAmount: 0,
+    remainingAmount: 7800000,
     totalPrice: 7800000,
     createdAt: '2026-08-10T14:30:00Z',
   },

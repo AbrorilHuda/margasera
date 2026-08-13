@@ -221,6 +221,39 @@ export function StatusChecker() {
                     <span>Est. Harga: <strong className="text-[#0066CC] font-serif-editorial text-lg">{formatCurrency(searchedBooking.totalPrice)}</strong></span>
                   </div>
                 )}
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <Clock className="w-4 h-4 text-[#0066CC]" />
+                  <span>Status Pembayaran: </span>
+                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    searchedBooking.paymentStatus === 'paid_full'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : searchedBooking.paymentStatus === 'dp_paid'
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  }`}>
+                    {searchedBooking.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : searchedBooking.paymentStatus === 'dp_paid' ? 'DP TERBAYAR (30%)' : 'BELUM DP'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Payment Information Box */}
+            <div className="p-6 bg-zinc-900 border border-zinc-800 rounded flex flex-col gap-4 text-xs font-light">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <span className="font-semibold text-[#0066CC] uppercase tracking-wider">Rekening Resmi Pembayaran Studio</span>
+                <span className="text-[10px] font-mono text-zinc-400">DP Min. 30%</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 bg-zinc-950 border border-zinc-800 rounded">
+                  <span className="text-[10px] font-mono text-zinc-500 block">BANK BCA</span>
+                  <span className="font-mono text-sm font-bold text-zinc-100">188-091-2345</span>
+                  <span className="text-[11px] text-zinc-400 block mt-0.5">a.n Marga Sera Photography</span>
+                </div>
+                <div className="p-3 bg-zinc-950 border border-zinc-800 rounded">
+                  <span className="text-[10px] font-mono text-zinc-500 block">BANK MANDIRI</span>
+                  <span className="font-mono text-sm font-bold text-zinc-100">140-00-1928374-1</span>
+                  <span className="text-[11px] text-zinc-400 block mt-0.5">a.n Abroril Huda</span>
+                </div>
               </div>
             </div>
 
@@ -230,12 +263,12 @@ export function StatusChecker() {
                 <MessageCircle className="w-6 h-6 text-emerald-400 shrink-0" />
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-zinc-100">Bantuan Langsung WhatsApp Tim Marga Sera</span>
-                  <span className="text-[11px] text-zinc-400 font-light">Tanyakan perkembangan atau koordinasi persiapan bersama fotografer.</span>
+                  <span className="text-[11px] text-zinc-400 font-light">Tanyakan perkembangan atau koordinasi konfirmasi bukti transfer pembayaran.</span>
                 </div>
               </div>
 
               <a
-                href={`https://wa.me/6281234567890?text=Halo%20Marga%20Sera,%20saya%20infin%20bertanya%20mengenai%20Booking%20Code:%20${searchedBooking.bookingCode}`}
+                href={`https://wa.me/6281931107481?text=Halo%20Marga%20Sera,%20saya%20ingin%20konfirmasi%20pembayaran%20Kode%20Booking:%20${searchedBooking.bookingCode}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs tracking-widest uppercase transition-colors whitespace-nowrap shrink-0"

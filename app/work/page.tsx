@@ -2,7 +2,7 @@ import React from 'react';
 import { FeaturedWorks } from '@/components/gallery/featured-works';
 
 export const metadata = {
-  title: 'Portofolio Gallery — Marga Sera Photography',
+  title: 'Portofolio Gallery - Margasera Photography',
   description: 'Galeri portofolio photography editorial untuk wedding, pre-wedding, couple, portrait, dan event di Medan.',
 };
 

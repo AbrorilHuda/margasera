@@ -2,7 +2,7 @@ import React from 'react';
 import { AvailabilityCalendar } from '@/components/calendar/availability-calendar';
 
 export const metadata = {
-  title: 'Kalender Ketersediaan Tanggal — Marga Sera Photography',
+  title: 'Kalender Ketersediaan Tanggal - Margasera Photography',
   description: 'Cek jadwal ketersediaan tanggal fotografer Marga Sera Photography secara real-time.',
 };
 

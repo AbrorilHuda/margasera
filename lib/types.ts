@@ -10,6 +10,13 @@ export type ServiceCategory =
 export type AvailabilityStatus = 'available' | 'almost_full' | 'booked' | 'blocked';
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type PaymentStatus = 'unpaid' | 'dp_paid' | 'paid_full';
+
+export interface BankAccount {
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+}
 
 export interface Service {
   id: string;
@@ -78,6 +85,7 @@ export interface Booking {
   customerName: string;
   whatsapp: string;
   email: string;
+  instagram?: string;
   serviceId: string;
   serviceName?: string;
   packageId: string;
@@ -89,6 +97,10 @@ export interface Booking {
   eventType?: string;
   notes?: string;
   status: BookingStatus;
+  paymentStatus?: PaymentStatus;
+  downPayment?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
   totalPrice?: number;
   createdAt: string;
 }

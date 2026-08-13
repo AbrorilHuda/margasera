@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const resolvedParams = await params;
   const project = MOCK_PROJECTS.find((p) => p.slug === resolvedParams.slug) || MOCK_PROJECTS[0];
   return {
-    title: `${project.title} — Marga Sera Photography`,
+    title: `${project.title} - Margasera Photography`,
     description: project.description,
   };
 }
@@ -77,9 +77,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         {project.images?.map((img, idx) => (
           <div
             key={img.id || idx}
-            className={`relative border border-zinc-800 bg-zinc-900 ${
-              img.aspectRatio === 'landscape' ? 'md:col-span-2 h-[500px]' : 'h-[600px]'
-            }`}
+            className={`relative border border-zinc-800 bg-zinc-900 ${img.aspectRatio === 'landscape' ? 'md:col-span-2 h-[500px]' : 'h-[600px]'
+              }`}
           >
             <Image
               src={img.imageUrl}
