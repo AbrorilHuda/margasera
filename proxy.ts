@@ -40,6 +40,21 @@ export async function proxy(request: NextRequest) {
       loginUrl.searchParams.set('redirectedFrom', pathname);
       return NextResponse.redirect(loginUrl);
     }
+
+    // Hanya admin/staff yang boleh masuk dashboard
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const role = profile?.role as string | undefined;
+    if (!role || !['admin', 'staff'].includes(role)) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/admin/login';
+      loginUrl.searchParams.set('redirectedFrom', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // If logged-in user visits /admin/login, redirect to dashboard

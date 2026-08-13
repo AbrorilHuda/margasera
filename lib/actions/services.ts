@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/actions/admin';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Service, Package } from '@/lib/types';
 
@@ -83,6 +84,7 @@ export async function getPackages(serviceId?: string): Promise<Package[]> {
 export async function upsertService(
   service: Omit<Service, 'id'> & { id?: string }
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const isExistingUUID = isValidUUID(service.id);
@@ -114,6 +116,7 @@ export async function upsertService(
 export async function deleteService(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
   const targetId = isValidUUID(id) ? id : null;
   if (!targetId) return { success: true };
@@ -127,6 +130,7 @@ export async function deleteService(
 export async function upsertPackage(
   pkg: Omit<Package, 'id'> & { id?: string }
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   let targetServiceId = isValidUUID(pkg.serviceId) ? pkg.serviceId : null;
@@ -188,6 +192,7 @@ export async function upsertPackage(
 export async function deletePackage(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
   const targetId = isValidUUID(id) ? id : null;
   if (!targetId) return { success: true };

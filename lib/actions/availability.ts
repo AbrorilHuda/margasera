@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/actions/admin';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Availability, AvailabilityStatus, WeddingSlot, BookedTimeSlot } from '@/lib/types';
 
@@ -75,6 +76,7 @@ export async function updateAvailabilityStatus(
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
     const payload = {
@@ -105,6 +107,7 @@ export async function resetAvailabilityDate(
   date: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
     const { error } = await (supabase as any)

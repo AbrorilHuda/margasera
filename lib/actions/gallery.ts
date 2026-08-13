@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/actions/admin';
 import type { Database } from '@/lib/supabase/database.types';
 import type { GalleryProject, GalleryImage } from '@/lib/types';
 
@@ -94,6 +95,7 @@ export async function getGalleryProjectBySlug(
 
 /** Ambil semua foto galeri (images) untuk project tertentu */
 export async function getProjectImages(projectId: string): Promise<GalleryImage[]> {
+  if (!(await requireAdmin())) return [];
   const supabase = createAdminClient();
 
   const { data, error } = await (supabase as any)
@@ -118,6 +120,7 @@ export async function getProjectImages(projectId: string): Promise<GalleryImage[
 export async function createGalleryProject(
   data: Omit<GalleryProject, 'id' | 'images'> & { coverImage?: string }
 ): Promise<{ success: boolean; error?: string; id?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const payload = {
@@ -162,6 +165,7 @@ export async function addGalleryImage(
   altText?: string,
   aspectRatio: 'landscape' | 'portrait' | 'square' = 'landscape'
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const { data: existing } = await (supabase as any)
@@ -189,6 +193,7 @@ export async function addGalleryImage(
 export async function deleteGalleryImage(
   imageId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const { error } = await (supabase as any).from('gallery_images').delete().eq('id', imageId);
@@ -201,6 +206,7 @@ export async function deleteGalleryImage(
 export async function deleteGalleryProject(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   await (supabase as any).from('gallery_images').delete().eq('project_id', id);
@@ -215,6 +221,7 @@ export async function toggleProjectFeatured(
   id: string,
   isFeatured: boolean
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const payload = {

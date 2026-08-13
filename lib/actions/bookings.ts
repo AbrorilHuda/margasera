@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/actions/admin';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 
@@ -137,6 +138,7 @@ export async function getBookingByCode(
 
 /** Admin: ambil semua booking */
 export async function getAllBookings(): Promise<Booking[]> {
+  if (!(await requireAdmin())) return [];
   const supabase = createAdminClient();
 
   const { data, error } = await (supabase as any)
@@ -153,6 +155,7 @@ export async function updateBookingStatus(
   id: string,
   status: BookingStatus
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const payload = {
@@ -171,6 +174,7 @@ export async function updatePaymentStatus(
   paymentStatus: PaymentStatus,
   paidAmount?: number
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const payload = {
@@ -188,6 +192,7 @@ export async function updatePaymentStatus(
 export async function createManualBooking(
   formData: Omit<Booking, 'id' | 'createdAt'>
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
   const payload = {
@@ -224,6 +229,7 @@ export async function createManualBooking(
 export async function deleteBooking(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
   const { error } = await (supabase as any).from('bookings').delete().eq('id', id);
   if (error) return { success: false, error: error.message };

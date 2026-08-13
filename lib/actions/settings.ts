@@ -1,5 +1,6 @@
 'use server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/actions/admin';
 import type { StudioSettings } from '@/lib/types';
 import { fetchStudioSettings } from '@/lib/data/settings';
 
@@ -9,6 +10,7 @@ export async function updateStudioSettings(
   settings: StudioSettings
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
     const payload = {

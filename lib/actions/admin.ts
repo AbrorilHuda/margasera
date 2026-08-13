@@ -6,6 +6,13 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
+/** Guard: wajib dipanggil di awal tiap server action admin.
+ *  Mengembalikan true jika user login dan role-nya admin/staff. */
+export async function requireAdmin(): Promise<boolean> {
+  const { isAdmin } = await getAdminSession();
+  return isAdmin;
+}
+
 /** Login admin dengan email & password */
 export async function signInAdmin(
   email: string,
