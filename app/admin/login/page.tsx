@@ -4,23 +4,30 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
+import { signInAdmin } from '@/lib/actions/admin';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    // Mock authentication transition
-    setTimeout(() => {
-      setLoading(false);
+    const result = await signInAdmin(email, password);
+
+    if (result.success) {
       router.push('/admin/dashboard');
-    }, 1000);
+      router.refresh();
+    } else {
+      setError(result.error ?? 'Login gagal. Coba lagi.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,13 +78,22 @@ export default function AdminLoginPage() {
             />
           </div>
 
+          {error && (
+            <p className="text-xs text-rose-400 font-medium text-center bg-rose-950/20 border border-rose-900/40 px-3 py-2 rounded">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold tracking-[0.2em] uppercase transition-colors shadow-[0_0_20px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2 mt-2"
+            className="w-full py-4 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold tracking-[0.2em] uppercase transition-colors shadow-[0_0_20px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
-              <span>Memverifikasi Akses...</span>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Memverifikasi Akses...</span>
+              </>
             ) : (
               <>
                 <span>Masuk Ke Dashboard</span>

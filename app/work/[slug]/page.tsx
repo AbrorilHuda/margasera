@@ -1,13 +1,14 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MOCK_PROJECTS } from '@/lib/mock-data';
+import { getGalleryProjectBySlug } from '@/lib/actions/gallery';
 import { MapPin, Calendar, ArrowLeft, Camera } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const project = MOCK_PROJECTS.find((p) => p.slug === resolvedParams.slug) || MOCK_PROJECTS[0];
+  const project = await getGalleryProjectBySlug(resolvedParams.slug);
+  if (!project) return { title: 'Portofolio - Margasera Photography' };
   return {
     title: `${project.title} - Margasera Photography`,
     description: project.description,
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const project = MOCK_PROJECTS.find((p) => p.slug === resolvedParams.slug) || MOCK_PROJECTS[0];
+  const project = await getGalleryProjectBySlug(resolvedParams.slug);
 
   if (!project) notFound();
 

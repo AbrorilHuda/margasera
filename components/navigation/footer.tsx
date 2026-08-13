@@ -3,8 +3,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, MessageCircle, Mail, MapPin, ArrowUpRight } from 'lucide-react';
 import { InstagramIcon, TikTokIcon } from '@/components/ui/icons';
+import { fetchStudioSettings } from '@/lib/data/settings';
 
-export function Footer() {
+export async function Footer() {
+  const s = await fetchStudioSettings();
+
+  // Build WA link: strip non-digits and prepend 62
+  const waNumber = s.whatsapp.replace(/\D/g, '');
+  const waLink = `https://wa.me/${waNumber.startsWith('0') ? '62' + waNumber.slice(1) : waNumber}`;
+
+  // Extract instagram handle
+  const igHandle = s.instagram
+    ? '@' + s.instagram.replace(/^https?:\/\/(www\.)?instagram\.com\/?/, '').replace(/\/$/, '')
+    : '@margasera.id';
+
   return (
     <footer className="bg-zinc-950 border-t border-zinc-900 text-zinc-400 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -21,43 +33,51 @@ export function Footer() {
               />
             </Link>
             <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-md">
-              Marga Sera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, & portraiture profesional di Medan dan seluruh Indonesia.
+              Margasera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, &amp; portraiture profesional di Medan dan seluruh Indonesia.
             </p>
             <div className="flex items-center gap-4 pt-2">
-              <a
-                href="https://instagram.com/margasera.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
-                aria-label="Instagram Marga Sera"
-              >
-                <InstagramIcon className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.tiktok.com/@margasera"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
-                aria-label="TikTok Marga Sera"
-              >
-                <TikTokIcon className="w-4 h-4" />
-              </a>
-              <a
-                href="https://wa.me/6281931107481"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
-                aria-label="WhatsApp Marga Sera"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </a>
-              <a
-                href="mailto:contact@margasera.id"
-                className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
-                aria-label="Email Marga Sera"
-              >
-                <Mail className="w-4 h-4" />
-              </a>
+              {s.instagram && (
+                <a
+                  href={s.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                  aria-label="Instagram Marga Sera"
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                </a>
+              )}
+              {s.tiktok && (
+                <a
+                  href={s.tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                  aria-label="TikTok Marga Sera"
+                >
+                  <TikTokIcon className="w-4 h-4" />
+                </a>
+              )}
+              {s.whatsapp && (
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                  aria-label="WhatsApp Marga Sera"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </a>
+              )}
+              {s.email && (
+                <a
+                  href={`mailto:${s.email}`}
+                  className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                  aria-label="Email Marga Sera"
+                >
+                  <Mail className="w-4 h-4" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -75,7 +95,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/services" className="hover:text-[#0066CC] transition-colors flex items-center gap-1 group">
-                  Layanan & Paket Harga
+                  Layanan &amp; Paket Harga
                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#0066CC]" />
                 </Link>
               </li>
@@ -103,21 +123,34 @@ export function Footer() {
           {/* Contact & Studio */}
           <div className="md:col-span-4 flex flex-col gap-4">
             <h4 className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">
-              Studio & Lokasi
+              Studio &amp; Lokasi
             </h4>
             <div className="flex flex-col gap-3 text-sm text-zinc-400 font-light">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-[#0066CC] shrink-0 mt-1" />
-                <span>Pamekasan</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <InstagramIcon className="w-4 h-4 text-[#0066CC] shrink-0" />
-                <span>@margasera.id</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <MessageCircle className="w-4 h-4 text-[#0066CC] shrink-0" />
-                <Link href="https://wa.me/6281931107481" target="_blank" rel="noopener noreferrer" className="hover:text-[#0066CC] transition-colors">WhatsApp: 0819-3110-7481</Link>
-              </div>
+              {s.address && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-[#0066CC] shrink-0 mt-1" />
+                  <span>{s.address}</span>
+                </div>
+              )}
+              {s.instagram && (
+                <div className="flex items-center gap-3">
+                  <InstagramIcon className="w-4 h-4 text-[#0066CC] shrink-0" />
+                  <span>{igHandle}</span>
+                </div>
+              )}
+              {s.whatsapp && (
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="w-4 h-4 text-[#0066CC] shrink-0" />
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#0066CC] transition-colors"
+                  >
+                    WhatsApp: {s.whatsapp}
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 p-4 rounded bg-zinc-900/60 border border-zinc-800/80">
@@ -136,9 +169,9 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-light">
-          <p>© {new Date().getFullYear()} MargaSera Photography. Hak Cipta Dilindungi. by <Link href="https://github.com/AbrorilHuda" target="_blank" rel="noopener noreferrer" className="hover:text-[#0066CC] transition-colors">Abroril Huda</Link></p>
+          <p>© {new Date().getFullYear()} {s.studioName}. Hak Cipta Dilindungi. by <Link href="https://github.com/AbrorilHuda" target="_blank" rel="noopener noreferrer" className="hover:text-[#0066CC] transition-colors">{s.ownerName || 'Abroril Huda'}</Link></p>
           <div className="flex items-center gap-6">
-            <span className="text-zinc-600">Cinematic & Editorial Visuals</span>
+            <span className="text-zinc-600">Cinematic &amp; Editorial Visuals</span>
           </div>
         </div>
       </div>

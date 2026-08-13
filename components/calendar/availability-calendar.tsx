@@ -1,17 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, CheckCircle2, AlertCircle, XCircle, Slash } from 'lucide-react';
-import { MOCK_AVAILABILITY } from '@/lib/mock-data';
-import { AvailabilityStatus } from '@/lib/types';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, CheckCircle2, AlertCircle, XCircle, Slash, Loader2 } from 'lucide-react';
+import { getAvailability } from '@/lib/actions/availability';
+import { Availability, AvailabilityStatus } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 
 export function AvailabilityCalendar() {
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(7); // 0-indexed: 7 = August 2026
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>('2026-08-20');
+  const now = new Date();
+  const [currentYear, setCurrentYear] = useState<number>(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(now.getMonth());
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [availabilityData, setAvailabilityData] = useState<Availability[]>([]);
+  const [isLoadingMonth, setIsLoadingMonth] = useState(false);
+
+  const fetchMonth = useCallback(async (year: number, month: number) => {
+    setIsLoadingMonth(true);
+    const yearMonth = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const data = await getAvailability(yearMonth);
+    setAvailabilityData(data);
+    setIsLoadingMonth(false);
+  }, []);
+
+  useEffect(() => {
+    fetchMonth(currentYear, currentMonth);
+  }, [currentYear, currentMonth, fetchMonth]);
 
   const monthNames = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -57,7 +72,10 @@ export function AvailabilityCalendar() {
     weddingSlots: Array<{ id: string; name: string; startTime: string; endTime: string; timeRange: string; isBooked: boolean; bookedBy?: string }>;
     bookedTimeSlots?: Array<{ startTime: string; endTime: string; serviceCategory: string }>;
   } => {
-    const found = MOCK_AVAILABILITY.find((a) => a.date === dateStr);
+    const found = availabilityData.find((a) => {
+      if (!a.date) return false;
+      return a.date.split('T')[0] === dateStr.split('T')[0];
+    });
     
     // Default wedding slots structure
     const defaultWeddingSlots = [
@@ -74,41 +92,10 @@ export function AvailabilityCalendar() {
       };
     }
 
-    // Default mock behavior for unconfigured dates
-    const day = parseInt(dateStr.split('-')[2], 10);
-    if (day % 7 === 0) {
-      return { 
-        status: 'booked', 
-        notes: 'Semua Slot Sesi Foto Full Booked',
-        weddingSlots: [
-          { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true, bookedBy: 'Booked Client' },
-          { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: true, bookedBy: 'Booked Client' },
-        ],
-      };
-    }
-    if (day % 5 === 0) {
-      return { 
-        status: 'almost_full', 
-        notes: '1 Slot Wedding Pagi Terisi, Slot Sore Tersedia',
-        weddingSlots: [
-          { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true, bookedBy: 'Booked Client' },
-          { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: false },
-        ],
-      };
-    }
-    if (day % 11 === 0) {
-      return { 
-        status: 'blocked', 
-        notes: 'Jadwal Libur Studio / Maintenance',
-        weddingSlots: [
-          { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: true },
-          { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: true },
-        ],
-      };
-    }
+    // Tanggal tidak ada di database = available
     return { 
-      status: 'available', 
-      notes: '2 Slot Wedding & Slot Non-Wedding Tersedia',
+      status: 'available' as AvailabilityStatus, 
+      notes: undefined,
       weddingSlots: defaultWeddingSlots,
     };
   };
@@ -174,7 +161,12 @@ export function AvailabilityCalendar() {
         </div>
 
         {/* Calendar Grid Cells */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 pt-4">
+        <div className={`grid grid-cols-7 gap-1 sm:gap-2 pt-4 relative transition-opacity duration-200 ${isLoadingMonth ? 'opacity-40 pointer-events-none' : ''}`}>
+          {isLoadingMonth && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <Loader2 className="w-8 h-8 text-[#0066CC] animate-spin" />
+            </div>
+          )}
           {/* Empty padding cells for start of month */}
           {Array.from({ length: startDayOffset }).map((_, i) => (
             <div key={`empty-${i}`} className="h-16 sm:h-22 md:h-26 opacity-0" />
@@ -192,7 +184,7 @@ export function AvailabilityCalendar() {
 
             // Calculate remaining wedding slots for preview
             const bookedWeddingCount = dateData.weddingSlots.filter(s => s.isBooked).length;
-            const weddingSlotSummary = status === 'blocked' ? 'Full' : `${2 - bookedWeddingCount}/2 Wed`;
+            const weddingSlotSummary = status === 'blocked' ? 'Blocked' : status === 'booked' ? 'Full' : `${2 - bookedWeddingCount}/2 Wed`;
 
             return (
               <button
@@ -278,100 +270,113 @@ export function AvailabilityCalendar() {
               </div>
             </div>
 
-            {/* Time Slot Details Breakdown Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* WEDDING SLOTS BREAKDOWN (MAX 2 PER DAY) */}
-              <div className="bg-zinc-950/80 border border-zinc-800/80 p-5 rounded">
-                <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-2">
-                  <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-                    💍 Kuota Wedding (Max 2 Booking/Hari)
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    {2 - selectedDateInfo.weddingSlots.filter(s => s.isBooked).length} dari 2 Slot Tersedia
-                  </span>
-                </div>
+            {/* Time Slot Details Breakdown Grid or Blocked Notice */}
+            {selectedDateInfo.status !== 'blocked' && selectedDateInfo.status !== 'booked' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* WEDDING SLOTS BREAKDOWN (MAX 2 PER DAY) */}
+                <div className="bg-zinc-950/80 border border-zinc-800/80 p-5 rounded">
+                  <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-2">
+                    <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                      💍 Kuota Wedding (Max 2 Booking/Hari)
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      {2 - selectedDateInfo.weddingSlots.filter(s => s.isBooked).length} dari 2 Slot Tersedia
+                    </span>
+                  </div>
 
-                <div className="flex flex-col gap-2.5">
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Client bebas menentukan Jam Acara (Jam Mulai & Selesai). Setiap hari dibatasi maksimal 2 booking tempat pernikahan.
-                  </p>
+                  <div className="flex flex-col gap-2.5">
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Client bebas menentukan Jam Acara (Jam Mulai & Selesai). Setiap hari dibatasi maksimal 2 booking tempat pernikahan.
+                    </p>
 
-                  {selectedDateInfo.weddingSlots.map((ws, idx) => (
-                    <div
-                      key={ws.id}
-                      className={`p-3 border flex items-center justify-between transition-colors ${
-                        ws.isBooked
-                          ? 'border-rose-900/40 bg-rose-950/10 text-zinc-500'
-                          : 'border-emerald-800/50 bg-emerald-950/20 text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium text-zinc-200">
-                          {ws.isBooked ? `Booking Wedding #${idx + 1}` : `Slot Wedding #${idx + 1} Available`}
-                        </span>
-                        <span className="text-[11px] text-amber-400/90 font-mono mt-0.5">
-                          {ws.isBooked ? `Jam Acara: ${ws.timeRange}` : 'Bebas Pilih Jam (Ditentukan Client)'}
-                        </span>
-                      </div>
-
-                      {ws.isBooked ? (
-                        <span className="px-2.5 py-1 bg-rose-950/60 text-rose-400 border border-rose-800/50 text-[10px] uppercase tracking-wider font-semibold">
-                          Terisi {ws.bookedBy ? `(${ws.bookedBy})` : ''}
-                        </span>
-                      ) : (
-                        <Link
-                          href={`/booking?date=${selectedDateStr}&serviceId=s-wedding`}
-                          className="px-3 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider transition-colors"
-                        >
-                          Isi Jam Acara
-                        </Link>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* NON-WEDDING / FLEKSIBEL SLOTS BREAKDOWN */}
-              <div className="bg-zinc-950/80 border border-zinc-800/80 p-5 rounded">
-                <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-2">
-                  <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">
-                    📷 Sesi Non-Wedding (Pre-Wedding, Portrait, dll.)
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    Sesuai Durasi Paket
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2 text-xs text-zinc-300 font-light">
-                  <p className="text-[11px] text-zinc-400 leading-relaxed mb-1">
-                    Untuk sesi selain pernikahan, Anda dapat menentukan jam mulai sesuai pilihan paket pada halaman booking.
-                  </p>
-
-                  {selectedDateInfo.bookedTimeSlots && selectedDateInfo.bookedTimeSlots.length > 0 ? (
-                    <div className="mt-1 flex flex-col gap-1.5">
-                      <span className="text-[10px] text-rose-400 font-semibold uppercase tracking-wider">Jam Terisi Hari Ini:</span>
-                      {selectedDateInfo.bookedTimeSlots.map((bts, idx) => (
-                        <div key={idx} className="p-2 bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 flex items-center justify-between">
-                          <span>{bts.startTime} - {bts.endTime} WIB</span>
-                          <span className="uppercase text-[9px] text-amber-400">({bts.serviceCategory})</span>
+                    {selectedDateInfo.weddingSlots.map((ws, idx) => (
+                      <div
+                        key={ws.id}
+                        className={`p-3 border flex items-center justify-between transition-colors ${
+                          ws.isBooked
+                            ? 'border-rose-900/40 bg-rose-950/10 text-zinc-500'
+                            : 'border-emerald-800/50 bg-emerald-950/20 text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-zinc-200">
+                            {ws.isBooked ? `Booking Wedding #${idx + 1}` : `Slot Wedding #${idx + 1} Available`}
+                          </span>
+                          <span className="text-[11px] text-amber-400/90 font-mono mt-0.5">
+                            {ws.isBooked ? `Jam Acara: ${ws.timeRange}` : 'Bebas Pilih Jam (Ditentukan Client)'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 text-emerald-300 text-[11px]">
-                      ✔ Bebas memilih jam sesi foto (Pagi, Siang, atau Sore).
-                    </div>
-                  )}
 
-                  <Link
-                    href={`/booking?date=${selectedDateStr}&serviceId=s-prewedding`}
-                    className="mt-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-[11px] font-semibold text-center uppercase tracking-wider transition-colors"
-                  >
-                    Pesan Sesi Non-Wedding
-                  </Link>
+                        {ws.isBooked ? (
+                          <span className="px-2.5 py-1 bg-rose-950/60 text-rose-400 border border-rose-800/50 text-[10px] uppercase tracking-wider font-semibold">
+                            Terisi {ws.bookedBy ? `(${ws.bookedBy})` : ''}
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/booking?date=${selectedDateStr}&serviceId=s-wedding`}
+                            className="px-3 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider transition-colors"
+                          >
+                            Isi Jam Acara
+                          </Link>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* NON-WEDDING / FLEKSIBEL SLOTS BREAKDOWN */}
+                <div className="bg-zinc-950/80 border border-zinc-800/80 p-5 rounded">
+                  <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-2">
+                    <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">
+                      📷 Sesi Non-Wedding (Pre-Wedding, Portrait, dll.)
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      Sesuai Durasi Paket
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2 text-xs text-zinc-300 font-light">
+                    <p className="text-[11px] text-zinc-400 leading-relaxed mb-1">
+                      Untuk sesi selain pernikahan, Anda dapat menentukan jam mulai sesuai pilihan paket pada halaman booking.
+                    </p>
+
+                    {selectedDateInfo.bookedTimeSlots && selectedDateInfo.bookedTimeSlots.length > 0 ? (
+                      <div className="mt-1 flex flex-col gap-1.5">
+                        <span className="text-[10px] text-rose-400 font-semibold uppercase tracking-wider">Jam Terisi Hari Ini:</span>
+                        {selectedDateInfo.bookedTimeSlots.map((bts, idx) => (
+                          <div key={idx} className="p-2 bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400 flex items-center justify-between">
+                            <span>{bts.startTime} - {bts.endTime} WIB</span>
+                            <span className="uppercase text-[9px] text-amber-400">({bts.serviceCategory})</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 text-emerald-300 text-[11px]">
+                        ✔ Bebas memilih jam sesi foto (Pagi, Siang, atau Sore).
+                      </div>
+                    )}
+
+                    <Link
+                      href={`/booking?date=${selectedDateStr}&serviceId=s-prewedding`}
+                      className="mt-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-[11px] font-semibold text-center uppercase tracking-wider transition-colors"
+                    >
+                      Pesan Sesi Non-Wedding
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-6 bg-zinc-950 border border-zinc-800/80 rounded-lg flex flex-col gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-rose-400 font-mono flex items-center gap-2">
+                  {selectedDateInfo.status === 'blocked' ? '🔒 Tanggal Dikunci / Libur Studio' : '⛔ Tanggal Terisi Penuh (Booked)'}
+                </span>
+                <p className="text-xs text-zinc-300 font-light leading-relaxed">
+                  {selectedDateInfo.notes
+                    ? `Keterangan: "${selectedDateInfo.notes}"`
+                    : 'Pemesanan jadwal sesi foto pada tanggal ini sedang ditutup atau sudah terisi penuh.'}
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

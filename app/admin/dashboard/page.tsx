@@ -1,23 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  MOCK_BOOKINGS,
-  MOCK_PROJECTS,
-  MOCK_SERVICES,
-  MOCK_PACKAGES,
-  MOCK_AVAILABILITY
-} from '@/lib/mock-data';
-import {
   Booking,
   GalleryProject,
+  GalleryImage,
   Package,
   Service,
-  BookingStatus
+  Availability,
+  BookingStatus,
+  StudioSettings
 } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getAllBookings, updateBookingStatus, updatePaymentStatus, createManualBooking, deleteBooking } from '@/lib/actions/bookings';
+import { getGalleryProjects, createGalleryProject, deleteGalleryProject, toggleProjectFeatured, getProjectImages, addGalleryImage, deleteGalleryImage } from '@/lib/actions/gallery';
+import { getServices, getPackages, upsertService, deleteService, upsertPackage, deletePackage } from '@/lib/actions/services';
+import { getAvailability, updateAvailabilityStatus, resetAvailabilityDate } from '@/lib/actions/availability';
+import { getStudioSettings, updateStudioSettings } from '@/lib/actions/settings';
+import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
+import { signOutAdmin } from '@/lib/actions/admin';
 import {
   LayoutDashboard,
   Calendar,
@@ -31,6 +34,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  Pencil,
   Sparkles,
   ExternalLink,
   Menu,
@@ -43,13 +47,16 @@ import {
   Settings,
   Check,
   Eye,
+  Images,
   MessageCircle,
   Phone,
   TrendingUp,
   Activity,
   ArrowUpRight,
   ArrowUpDown,
-  Globe
+  Globe,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
 
@@ -74,15 +81,45 @@ function generateGoogleCalendarUrl(b: Booking): string {
 }
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'portfolio' | 'pricing' | 'calendar' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'portfolio' | 'services' | 'pricing' | 'calendar' | 'settings'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
-  // Dynamic States for Interactive Demo
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS);
-  const [projects, setProjects] = useState<GalleryProject[]>(MOCK_PROJECTS);
-  const [services, setServices] = useState<Service[]>(MOCK_SERVICES);
-  const [packages, setPackages] = useState<Package[]>(MOCK_PACKAGES);
-  const [availability, setAvailability] = useState(MOCK_AVAILABILITY);
+  // Dynamic States initialized empty, populated from Supabase
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [projects, setProjects] = useState<GalleryProject[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [availability, setAvailability] = useState<Availability[]>([]);
+  const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
+
+  const refreshAllData = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const [bList, pList, sList, pkgList, availList, settingsData] = await Promise.all([
+        getAllBookings(),
+        getGalleryProjects(),
+        getServices(),
+        getPackages(),
+        getAvailability(),
+        getStudioSettings(),
+      ]);
+      setBookings(bList);
+      setProjects(pList);
+      setServices(sList);
+      setPackages(pkgList);
+      setAvailability(availList);
+      setStudioSettings(settingsData);
+    } catch (err) {
+      console.error('Failed to load dashboard data', err);
+    } finally {
+      setLoadingData(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => refreshAllData());
+  }, [refreshAllData]);
 
   // Filter States
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
@@ -91,22 +128,40 @@ export default function AdminDashboardPage() {
   const [portfolioCategoryFilter, setPortfolioCategoryFilter] = useState<string>('all');
   const [selectedServiceIdForPricing, setSelectedServiceIdForPricing] = useState<string>('s-wedding');
 
-  // Studio Settings State
-  const [studioSettings, setStudioSettings] = useState({
-    name: 'Margasera Photography',
-    owner: 'Abroril Huda',
-    whatsapp: '0819-3110-7481',
-    tiktok: 'https://www.tiktok.com/@margasera',
-    instagram: 'https://instagram.com/margasera.id',
-    location: 'Madura, Jawa Timur & Destination Worldwide',
-    savedNotice: false,
-  });
+  // Studio Settings State (loaded from Supabase)
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Modal States
+  const handleLogout = async () => {
+    if (window.confirm('Apakah Anda yakin ingin keluar dari Dashboard Admin?')) {
+      setIsLoggingOut(true);
+      await signOutAdmin();
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await updateStudioSettings(studioSettings);
+    if (res.success) {
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } else {
+      alert(`Gagal menyimpan pengaturan: ${res.error}`);
+    }
+  };
+
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [showAddPackageModal, setShowAddPackageModal] = useState(false);
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showAddAvailabilityModal, setShowAddAvailabilityModal] = useState(false);
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<Booking | null>(null);
+
+  const [availabilityForm, setAvailabilityForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    status: 'blocked' as any,
+    notes: '',
+  });
 
   // Form States for Modal
   const [newBookingForm, setNewBookingForm] = useState({
@@ -133,6 +188,54 @@ export default function AdminDashboardPage() {
     isFeatured: true,
   });
 
+  const [selectedProjectForImages, setSelectedProjectForImages] = useState<GalleryProject | null>(null);
+  const [projectImages, setProjectImages] = useState<GalleryImage[]>([]);
+  const [isLoadingProjectImages, setIsLoadingProjectImages] = useState(false);
+  const [newImageForm, setNewImageForm] = useState({
+    imageUrl: '',
+    altText: '',
+    aspectRatio: 'landscape' as 'landscape' | 'portrait' | 'square',
+  });
+
+  const handleOpenManageImages = async (proj: GalleryProject) => {
+    setSelectedProjectForImages(proj);
+    setIsLoadingProjectImages(true);
+    const imgs = await getProjectImages(proj.id);
+    setProjectImages(imgs);
+    setIsLoadingProjectImages(false);
+  };
+
+  const handleAddGalleryImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProjectForImages || !newImageForm.imageUrl) return;
+
+    const res = await addGalleryImage(
+      selectedProjectForImages.id,
+      newImageForm.imageUrl,
+      newImageForm.altText || selectedProjectForImages.title,
+      newImageForm.aspectRatio
+    );
+
+    if (res.success) {
+      const updatedImgs = await getProjectImages(selectedProjectForImages.id);
+      setProjectImages(updatedImgs);
+      setNewImageForm({ imageUrl: '', altText: '', aspectRatio: 'landscape' });
+    } else {
+      alert(`Gagal menambah foto: ${res.error}`);
+    }
+  };
+
+  const handleDeleteGalleryImage = async (imageId: string) => {
+    if (!selectedProjectForImages) return;
+    const res = await deleteGalleryImage(imageId);
+    if (res.success) {
+      const updatedImgs = await getProjectImages(selectedProjectForImages.id);
+      setProjectImages(updatedImgs);
+    } else {
+      alert(`Gagal menghapus foto: ${res.error}`);
+    }
+  };
+
   const [newPackageForm, setNewPackageForm] = useState({
     serviceId: 's-wedding',
     name: '',
@@ -141,33 +244,57 @@ export default function AdminDashboardPage() {
     photographerCount: 2,
     editedPhotos: '100 Foto Edited',
     description: '',
-    featuresText: '2 Photographers\n100 Color Graded Photos\nFlashdrive USB Exclusive\n1 Wooden Frame 40x60',
+    featuresText: '1 Main Photographer\nDokumentasi s/d 6 Jam\n80 Tone Edited High-Res Photos\nAll Raw Files Included',
     isPopular: false,
   });
 
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [newServiceForm, setNewServiceForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+  });
+
   // Booking Actions
-  const handleUpdateBookingStatus = (id: string, newStatus: BookingStatus) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
-    );
+  const handleUpdateBookingStatus = async (id: string, newStatus: BookingStatus) => {
+    const res = await updateBookingStatus(id, newStatus);
+    if (res.success) {
+      await refreshAllData();
+    } else {
+      alert(`Gagal memperbarui status: ${res.error}`);
+    }
   };
 
-  const handleUpdatePaymentStatus = (id: string, newPaymentStatus: 'unpaid' | 'dp_paid' | 'paid_full') => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, paymentStatus: newPaymentStatus } : b))
-    );
+  const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: 'unpaid' | 'dp_paid' | 'paid_full') => {
+    const res = await updatePaymentStatus(id, newPaymentStatus);
+    if (res.success) {
+      await refreshAllData();
+    } else {
+      alert(`Gagal memperbarui status pembayaran: ${res.error}`);
+    }
   };
 
-  const handleCreateBooking = (e: React.FormEvent) => {
+  const handleDeleteBooking = async (id: string, code: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus booking "${code}"?`)) {
+      const res = await deleteBooking(id);
+      if (res.success) {
+        await refreshAllData();
+      } else {
+        alert(`Gagal menghapus booking: ${res.error}`);
+      }
+    }
+  };
+
+  const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanDate = newBookingForm.bookingDate.replace(/-/g, '').substring(2);
     const randomNum = String(Math.floor(Math.random() * 900) + 100);
     const selectedSrv = services.find((s) => s.id === newBookingForm.serviceId);
     const selectedPkg = packages.find((p) => p.id === newBookingForm.packageId);
+    const bookingCode = `MS-${cleanDate}-${randomNum}`;
 
-    const created: Booking = {
-      id: `b-${Date.now()}`,
-      bookingCode: `MS-${cleanDate}-${randomNum}`,
+    const res = await createManualBooking({
+      bookingCode,
       customerName: newBookingForm.customerName || 'Pelanggan Baru',
       whatsapp: newBookingForm.whatsapp || '081931107481',
       email: newBookingForm.email || 'customer@margasera.id',
@@ -179,96 +306,219 @@ export default function AdminDashboardPage() {
       bookingDate: newBookingForm.bookingDate,
       location: newBookingForm.location || 'Madura',
       status: 'confirmed',
+      paymentStatus: 'unpaid',
       totalPrice: Number(newBookingForm.totalPrice) || 10000000,
       notes: newBookingForm.notes,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    setBookings([created, ...bookings]);
-    setShowAddBookingModal(false);
+    if (res.success) {
+      await refreshAllData();
+      setShowAddBookingModal(false);
+      setNewBookingForm({
+        customerName: '',
+        whatsapp: '',
+        email: '',
+        instagram: '',
+        serviceId: services[0]?.id || 's-wedding',
+        packageId: packages[0]?.id || 'pkg-w-signature',
+        bookingDate: new Date().toISOString().split('T')[0],
+        location: '',
+        totalPrice: 14500000,
+        notes: '',
+      });
+    } else {
+      alert(`Gagal menyimpan booking manual: ${res.error}`);
+    }
   };
 
   // Project Actions
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created: GalleryProject = {
-      id: `proj-${Date.now()}`,
-      title: newProjectForm.title || 'Project Portofolio Baru',
-      slug: newProjectForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'project-baru',
+    const title = newProjectForm.title || 'Project Portofolio Baru';
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+
+    const res = await createGalleryProject({
+      title,
+      slug,
       category: newProjectForm.category,
-      categoryLabel: newProjectForm.categoryLabel,
+      categoryLabel: newProjectForm.categoryLabel || newProjectForm.category,
       description: newProjectForm.description || 'Dokumentasi sinematik foto pilihan Margasera.',
       location: newProjectForm.location || 'Madura, Jawa Timur',
       eventDate: newProjectForm.eventDate || 'Agustus 2026',
-      coverImage: newProjectForm.coverImage,
+      coverImage: newProjectForm.coverImage || 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop',
       isFeatured: newProjectForm.isFeatured,
-      images: [
-        {
-          id: `img-${Date.now()}`,
-          projectId: `proj-${Date.now()}`,
-          imageUrl: newProjectForm.coverImage,
-          altText: newProjectForm.title,
-          sortOrder: 1,
-          aspectRatio: 'landscape',
-        },
-      ],
-    };
+    });
 
-    setProjects([created, ...projects]);
-    setShowAddProjectModal(false);
+    if (res.success) {
+      await refreshAllData();
+      setShowAddProjectModal(false);
+      setNewProjectForm({
+        title: '',
+        category: services[0]?.slug || 'wedding',
+        categoryLabel: services[0]?.name || 'Wedding',
+        description: '',
+        location: '',
+        eventDate: '',
+        coverImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop',
+        isFeatured: false,
+      });
+    } else {
+      alert(`Gagal menyimpan project: ${res.error}`);
+    }
   };
 
-  const handleDeleteProject = (id: string) => {
-    setProjects(projects.filter((p) => p.id !== id));
+  const handleDeleteProject = async (id: string, title?: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus project "${title || 'ini'}"?`)) {
+      const res = await deleteGalleryProject(id);
+      if (res.success) {
+        await refreshAllData();
+      } else {
+        alert(`Gagal menghapus project: ${res.error}`);
+      }
+    }
   };
 
-  const handleToggleProjectFeatured = (id: string) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isFeatured: !p.isFeatured } : p))
-    );
+  const handleToggleProjectFeatured = async (id: string, currentFeatured: boolean) => {
+    const res = await toggleProjectFeatured(id, !currentFeatured);
+    if (res.success) {
+      await refreshAllData();
+    } else {
+      alert(`Gagal memperbarui status featured: ${res.error}`);
+    }
   };
 
   // Package Actions
-  const handleCreatePackage = (e: React.FormEvent) => {
+  const handleCreatePackage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const srv = services.find((s) => s.id === newPackageForm.serviceId);
-    const created: Package = {
-      id: `pkg-${Date.now()}`,
-      serviceId: newPackageForm.serviceId,
-      serviceName: srv?.name || 'Layanan Margasera',
-      name: newPackageForm.name || 'Paket Kustom Baru',
-      slug: newPackageForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      description: newPackageForm.description || 'Paket layanan dokumentasi profesional.',
-      price: Number(newPackageForm.price) || 5000000,
-      duration: newPackageForm.duration || '6 Jam',
-      photographerCount: Number(newPackageForm.photographerCount) || 2,
-      editedPhotos: newPackageForm.editedPhotos || '80 Foto Edited',
+    const serviceIdToUse = newPackageForm.serviceId || selectedServiceIdForPricing || (services[0]?.id ?? '');
+    const slug = newPackageForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const res = await upsertPackage({
+      serviceId: serviceIdToUse,
+      name: newPackageForm.name,
+      slug,
+      description: newPackageForm.description,
+      price: Number(newPackageForm.price) || 0,
+      duration: newPackageForm.duration,
+      photographerCount: Number(newPackageForm.photographerCount) || 1,
+      editedPhotos: newPackageForm.editedPhotos,
       features: newPackageForm.featuresText.split('\n').filter((f) => f.trim().length > 0),
       isPopular: newPackageForm.isPopular,
       isActive: true,
-    };
+    });
 
-    setPackages([...packages, created]);
-    setShowAddPackageModal(false);
+    if (res.success) {
+      await refreshAllData();
+      setShowAddPackageModal(false);
+      setNewPackageForm({
+        serviceId: selectedServiceIdForPricing || (services[0]?.id ?? ''),
+        name: '',
+        price: 5000000,
+        duration: '6 Jam',
+        photographerCount: 2,
+        editedPhotos: '100 Foto Edited',
+        description: '',
+        featuresText: '1 Main Photographer\nDokumentasi s/d 6 Jam\n80 Tone Edited High-Res Photos\nAll Raw Files Included',
+        isPopular: false,
+      });
+    }
   };
 
-  const handleDeletePackage = (id: string) => {
-    setPackages(packages.filter((pkg) => pkg.id !== id));
-  };
-
-  const handleTogglePackagePopular = (id: string) => {
-    setPackages((prev) =>
-      prev.map((pkg) => (pkg.id === id ? { ...pkg, isPopular: !pkg.isPopular } : pkg))
-    );
-  };
-
-  // Save Settings Action
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStudioSettings((prev) => ({ ...prev, savedNotice: true }));
-    setTimeout(() => {
-      setStudioSettings((prev) => ({ ...prev, savedNotice: false }));
-    }, 3000);
+    const slug = newServiceForm.slug || newServiceForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const res = await upsertService({
+      ...(editingService?.id ? { id: editingService.id } : {}),
+      name: newServiceForm.name,
+      slug,
+      description: newServiceForm.description,
+      isActive: true,
+    });
+
+    if (res.success) {
+      await refreshAllData();
+      setShowAddServiceModal(false);
+      setEditingService(null);
+      setNewServiceForm({
+        name: '',
+        slug: '',
+        description: '',
+      });
+    }
+  };
+
+  const handleDeleteService = async (id: string, name: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus layanan "${name}"? Semua paket dalam layanan ini juga akan terhapus.`)) {
+      const res = await deleteService(id);
+      if (res.success) {
+        await refreshAllData();
+        if (selectedServiceIdForPricing === id) {
+          const remaining = services.filter((s) => s.id !== id);
+          if (remaining.length > 0) {
+            setSelectedServiceIdForPricing(remaining[0].id);
+          }
+        }
+      } else {
+        alert(`Gagal menghapus layanan: ${res.error}`);
+      }
+    }
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    const res = await deletePackage(id);
+    if (res.success) {
+      await refreshAllData();
+    }
+  };
+
+  const handleTogglePackagePopular = async (pkg: Package) => {
+    const res = await upsertPackage({
+      id: pkg.id,
+      serviceId: pkg.serviceId,
+      name: pkg.name,
+      slug: pkg.slug,
+      description: pkg.description,
+      price: pkg.price,
+      duration: pkg.duration,
+      photographerCount: pkg.photographerCount,
+      editedPhotos: pkg.editedPhotos,
+      features: pkg.features,
+      isPopular: !pkg.isPopular,
+      isActive: pkg.isActive,
+    });
+    if (res.success) {
+      await refreshAllData();
+    }
+  };
+
+  const handleSaveAvailability = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await updateAvailabilityStatus(
+      availabilityForm.date,
+      availabilityForm.status,
+      availabilityForm.notes
+    );
+    if (res.success) {
+      await refreshAllData();
+      setShowAddAvailabilityModal(false);
+      setAvailabilityForm({
+        date: new Date().toISOString().split('T')[0],
+        status: 'blocked' as any,
+        notes: '',
+      });
+    } else {
+      alert(`Gagal menyetel status tanggal: ${res.error}`);
+    }
+  };
+
+  const handleResetAvailability = async (date: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin me-reset/menghapus kunci status pada tanggal ${formatDate(date)}?`)) {
+      const res = await resetAvailabilityDate(date);
+      if (res.success) {
+        await refreshAllData();
+      } else {
+        alert(`Gagal me-reset tanggal: ${res.error}`);
+      }
+    }
   };
 
   // Computed Filters
@@ -339,7 +589,7 @@ export default function AdminDashboardPage() {
               AH
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-zinc-100 tracking-wide">{studioSettings.owner}</span>
+              <span className="text-xs font-semibold text-zinc-100 tracking-wide">{studioSettings.ownerName}</span>
               <div className="flex items-center gap-1 text-[10px] text-[#0066CC] font-mono tracking-widest uppercase">
                 <ShieldCheck className="w-3 h-3" />
                 <span>Lead Admin</span>
@@ -357,7 +607,8 @@ export default function AdminDashboardPage() {
               { id: 'overview', label: 'Ikhtisar & Stats', icon: LayoutDashboard },
               { id: 'bookings', label: 'Pesanan & Booking', icon: Calendar, badge: bookings.length },
               { id: 'portfolio', label: 'Manajemen Portofolio', icon: Camera, badge: projects.length },
-              { id: 'pricing', label: 'Layanan & Harga Paket', icon: Tag },
+              { id: 'services', label: 'Kategori Layanan', icon: Layers, badge: services.length },
+              { id: 'pricing', label: 'Paket & Harga Tarif', icon: Tag, badge: packages.length },
               { id: 'calendar', label: 'Kalender Ketersediaan', icon: Clock },
               { id: 'settings', label: 'Pengaturan Studio', icon: Settings },
             ].map((item) => {
@@ -402,13 +653,18 @@ export default function AdminDashboardPage() {
             <ArrowUpRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-[#0066CC] transition-colors" />
           </Link>
 
-          <Link
-            href="/admin/login"
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-rose-950/20 border border-rose-900/30 hover:bg-rose-900/30 text-rose-400 rounded-lg transition-colors"
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-rose-950/30 border border-rose-900/40 hover:bg-rose-900/50 text-rose-300 rounded-lg transition-colors text-xs font-medium text-left w-full disabled:opacity-50 cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="tracking-wide">Keluar Dashboard</span>
-          </Link>
+            {isLoggingOut ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+            ) : (
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span className="tracking-wide">{isLoggingOut ? 'Mengeluarkan Sesi...' : 'Keluar Dashboard'}</span>
+          </button>
         </div>
       </aside>
 
@@ -453,6 +709,19 @@ export default function AdminDashboardPage() {
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Tambah Booking</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              title="Keluar dari Dashboard Admin"
+              className="p-2 bg-zinc-900/80 border border-zinc-800 hover:border-rose-900/50 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 rounded-lg transition-all flex items-center gap-1.5 text-xs font-medium"
+            >
+              {isLoggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
+              <span className="hidden md:inline">Keluar</span>
             </button>
           </div>
         </header>
@@ -537,7 +806,17 @@ export default function AdminDashboardPage() {
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <button
-                    onClick={() => { setActiveTab('portfolio'); setShowAddProjectModal(true); }}
+                    onClick={() => {
+                      if (services.length > 0) {
+                        setNewProjectForm((prev) => ({
+                          ...prev,
+                          category: services[0].slug as any,
+                          categoryLabel: services[0].name,
+                        }));
+                      }
+                      setActiveTab('portfolio');
+                      setShowAddProjectModal(true);
+                    }}
                     className="p-4 bg-zinc-950 border border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-md"
                   >
                     <FolderPlus className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
@@ -675,7 +954,24 @@ export default function AdminDashboardPage() {
                     />
                   </div>
                   <button
-                    onClick={() => setShowAddBookingModal(true)}
+                    onClick={() => {
+                      const initialSrvId = services[0]?.id || '';
+                      const initialPkgs = packages.filter((p) => !initialSrvId || p.serviceId === initialSrvId);
+                      const initialPkg = initialPkgs[0] || packages[0];
+                      setNewBookingForm({
+                        customerName: '',
+                        whatsapp: '',
+                        email: '',
+                        instagram: '',
+                        serviceId: initialSrvId,
+                        packageId: initialPkg?.id || '',
+                        bookingDate: new Date().toISOString().split('T')[0],
+                        location: '',
+                        totalPrice: initialPkg?.price ?? 14500000,
+                        notes: '',
+                      });
+                      setShowAddBookingModal(true);
+                    }}
                     className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-md"
                   >
                     <Plus className="w-4 h-4" />
@@ -777,6 +1073,13 @@ export default function AdminDashboardPage() {
                                   Complete
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleDeleteBooking(b.id, b.bookingCode)}
+                                className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-rose-900/50 text-rose-400 rounded transition-colors"
+                                title="Hapus Booking"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -797,10 +1100,7 @@ export default function AdminDashboardPage() {
                   <span className="text-xs text-zinc-400 uppercase tracking-wider whitespace-nowrap font-mono">Filter Kategori:</span>
                   {[
                     { id: 'all', label: 'Semua Karya' },
-                    { id: 'wedding', label: 'Wedding' },
-                    { id: 'pre-wedding', label: 'Pre-Wedding' },
-                    { id: 'couple', label: 'Couple' },
-                    { id: 'portrait', label: 'Portrait' },
+                    ...services.map((s) => ({ id: s.slug, label: s.name })),
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -816,7 +1116,16 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <button
-                  onClick={() => setShowAddProjectModal(true)}
+                  onClick={() => {
+                    if (services.length > 0) {
+                      setNewProjectForm((prev) => ({
+                        ...prev,
+                        category: services[0].slug as any,
+                        categoryLabel: services[0].name,
+                      }));
+                    }
+                    setShowAddProjectModal(true);
+                  }}
                   className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-md"
                 >
                   <FolderPlus className="w-4 h-4" />
@@ -867,20 +1176,31 @@ export default function AdminDashboardPage() {
                     {/* Action Bar */}
                     <div className="p-4 bg-zinc-950/80 border-t border-zinc-800/80 flex items-center justify-between text-xs">
                       <button
-                        onClick={() => handleToggleProjectFeatured(proj.id)}
+                        onClick={() => handleToggleProjectFeatured(proj.id, proj.isFeatured)}
                         className={`text-[11px] font-medium transition-colors ${proj.isFeatured ? 'text-[#0066CC]' : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                       >
                         {proj.isFeatured ? '★ Featured Active' : '☆ Make Featured'}
                       </button>
 
-                      <button
-                        onClick={() => handleDeleteProject(proj.id)}
-                        className="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors"
-                        title="Hapus Project"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenManageImages(proj)}
+                          className="px-2 py-1 bg-[#0066CC]/20 hover:bg-[#0066CC]/30 border border-[#0066CC]/40 text-[#0066CC] rounded text-[10px] font-semibold flex items-center gap-1 transition-colors"
+                          title="Kelola Foto Lembaran Album"
+                        >
+                          <Images className="w-3 h-3" />
+                          <span>Foto Album</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteProject(proj.id, proj.title)}
+                          className="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors"
+                          title="Hapus Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -888,7 +1208,103 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* ================= TAB 4: SERVICES & PACKAGES PRICING ================= */}
+          {/* ================= TAB 4: KATEGORI LAYANAN ================= */}
+          {activeTab === 'services' && (
+            <div className="flex flex-col gap-6">
+              {/* Header Bar */}
+              <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div>
+                  <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold">
+                    Service Category Management
+                  </span>
+                  <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light uppercase tracking-wide">
+                    Kelola Kategori Layanan Studio
+                  </h3>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setEditingService(null);
+                    setNewServiceForm({ name: '', slug: '', description: '' });
+                    setShowAddServiceModal(true);
+                  }}
+                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Kategori Layanan Baru</span>
+                </button>
+              </div>
+
+              {/* Service Cards Grid */}
+              {services.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {services.map((srv) => {
+                    const pkgCount = packages.filter((p) => p.serviceId === srv.id || p.serviceName === srv.name).length;
+                    return (
+                      <div
+                        key={srv.id}
+                        className="bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 rounded-xl p-6 flex flex-col justify-between transition-all shadow-xl gap-4"
+                      >
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-[#0066CC]/15 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+                                <Layers className="w-4 h-4" />
+                              </div>
+                              <h4 className="font-serif-editorial text-2xl text-zinc-100 font-light">{srv.name}</h4>
+                            </div>
+                            <span className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono text-[10px] uppercase rounded">
+                              slug: {srv.slug}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                            {srv.description || 'Tidak ada deskripsi layanan.'}
+                          </p>
+
+                          <div className="py-2.5 px-3 bg-zinc-950 border border-zinc-800/60 rounded-lg flex items-center justify-between text-xs text-zinc-400 font-mono">
+                            <span>Jumlah Paket Terdaftar:</span>
+                            <strong className="text-[#0066CC]">{pkgCount} Paket</strong>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-800/80">
+                          <button
+                            onClick={() => {
+                              setEditingService(srv);
+                              setNewServiceForm({
+                                name: srv.name,
+                                slug: srv.slug,
+                                description: srv.description || '',
+                              });
+                              setShowAddServiceModal(true);
+                            }}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-[#0066CC]" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteService(srv.id, srv.name)}
+                            className="px-3 py-1.5 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-900/50 text-rose-400 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-12 bg-zinc-900/40 border border-zinc-800/80 rounded-xl text-center text-xs text-zinc-400 font-light">
+                  Belum ada kategori layanan terdaftar di database.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================= TAB 5: SERVICES & PACKAGES PRICING ================= */}
           {activeTab === 'pricing' && (
             <div className="flex flex-col gap-6">
               {/* Category Selector Tabs */}
@@ -896,15 +1312,21 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold">
-                      Price Configuration System
+                      Package Pricing Management
                     </span>
                     <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light uppercase tracking-wide">
-                      Layanan & Tarif Harga Paket
+                      Tarif & Harga Paket Foto
                     </h3>
                   </div>
 
                   <button
-                    onClick={() => setShowAddPackageModal(true)}
+                    onClick={() => {
+                      setNewPackageForm({
+                        ...newPackageForm,
+                        serviceId: selectedServiceIdForPricing || (services[0]?.id ?? '')
+                      });
+                      setShowAddPackageModal(true);
+                    }}
                     className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 shadow-md"
                   >
                     <PackagePlus className="w-4 h-4" />
@@ -913,6 +1335,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-zinc-800/80">
+                  <span className="text-xs text-zinc-400 uppercase tracking-wider font-mono mr-2">Pilih Layanan:</span>
                   {services.map((srv) => (
                     <button
                       key={srv.id}
@@ -926,21 +1349,6 @@ export default function AdminDashboardPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Service Banner */}
-              <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-xl flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-[#0066CC] font-mono font-semibold tracking-wider uppercase">
-                    Kategori Terpilih: {activeServicePricing.name}
-                  </span>
-                  <p className="text-xs text-zinc-400 font-light max-w-2xl">
-                    {activeServicePricing.description}
-                  </p>
-                </div>
-                <span className="text-xs font-serif-editorial text-zinc-200 bg-zinc-950 px-4 py-2 rounded-lg border border-zinc-800 whitespace-nowrap">
-                  Mulai Dari: <strong className="text-[#0066CC] text-base">{formatCurrency(activeServicePricing.startingPrice || 0)}</strong>
-                </span>
               </div>
 
               {/* Package Cards List */}
@@ -1006,7 +1414,7 @@ export default function AdminDashboardPage() {
 
                     <div className="pt-6 mt-6 border-t border-zinc-800/80 flex items-center justify-between">
                       <button
-                        onClick={() => handleTogglePackagePopular(pkg.id)}
+                        onClick={() => handleTogglePackagePopular(pkg)}
                         className={`text-xs font-medium ${pkg.isPopular ? 'text-[#0066CC]' : 'text-zinc-500 hover:text-zinc-300'}`}
                       >
                         {pkg.isPopular ? '★ Tag Popular Active' : '☆ Set As Popular'}
@@ -1031,12 +1439,27 @@ export default function AdminDashboardPage() {
                     Tandai tanggal tertentu sebagai Booked atau Blocked secara langsung untuk mencegah pemesanan ganda.
                   </p>
                 </div>
+
+                <button
+                  onClick={() => {
+                    setAvailabilityForm({
+                      date: new Date().toISOString().split('T')[0],
+                      status: 'blocked' as any,
+                      notes: '',
+                    });
+                    setShowAddAvailabilityModal(true);
+                  }}
+                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Set Status Tanggal Baru</span>
+                </button>
               </div>
 
               {/* Availability List Table */}
               <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-6 sm:p-8 shadow-xl">
                 <h4 className="text-xs font-mono font-semibold text-[#0066CC] uppercase tracking-widest mb-4">
-                  Daftar Tanggal Khusus Terdaftar (August & September 2026)
+                  Daftar Tanggal Khusus Terdaftar
                 </h4>
                 <div className="overflow-x-auto rounded-lg border border-zinc-800/80">
                   <table className="w-full text-left text-xs font-light">
@@ -1045,6 +1468,7 @@ export default function AdminDashboardPage() {
                         <th className="p-4">Tanggal</th>
                         <th className="p-4">Status Ketersediaan</th>
                         <th className="p-4">Catatan / Acara</th>
+                        <th className="p-4">Aksi Admin</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/60">
@@ -1056,12 +1480,39 @@ export default function AdminDashboardPage() {
                               ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
                               : av.status === 'blocked'
                                 ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                                : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
+                                : av.status === 'almost_full'
+                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                                  : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
                               }`}>
                               {av.status.replace('_', ' ')}
                             </span>
                           </td>
                           <td className="p-4 text-zinc-300">{av.notes || '-'}</td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setAvailabilityForm({
+                                    date: av.date,
+                                    status: av.status,
+                                    notes: av.notes || '',
+                                  });
+                                  setShowAddAvailabilityModal(true);
+                                }}
+                                className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded"
+                                title="Edit Status Tanggal"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-[#0066CC]" />
+                              </button>
+                              <button
+                                onClick={() => handleResetAvailability(av.date)}
+                                className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-rose-900/50 text-rose-400 rounded"
+                                title="Reset / Hapus Tanggal"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1081,79 +1532,160 @@ export default function AdminDashboardPage() {
                     Informasi Kontak Studio
                   </h3>
                   <p className="text-xs text-zinc-400 font-light mt-1">
-                    Informasi ini ditampilkan pada bagian footer dan tombol kontak cepat seluruh website.
+                    Data ini yang tampil di website — footer, halaman booking, info pembayaran, dan kontak cepat.
                   </p>
                 </div>
 
-                {studioSettings.savedNotice && (
+                {settingsSaved && (
                   <div className="p-4 bg-emerald-950/40 border border-emerald-800/50 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Pengaturan studio berhasil diperbarui!</span>
+                    <span>Pengaturan studio berhasil diperbarui dan tersimpan ke database!</span>
                   </div>
                 )}
 
-                <form onSubmit={handleSaveSettings} className="flex flex-col gap-5">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider font-mono">Nama Brand Studio</label>
-                    <input
-                      type="text"
-                      value={studioSettings.name}
-                      onChange={(e) => setStudioSettings({ ...studioSettings, name: e.target.value })}
-                      className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-lg text-xs focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider font-mono">Nama Owner / Lead Photographer</label>
-                    <input
-                      type="text"
-                      value={studioSettings.owner}
-                      onChange={(e) => setStudioSettings({ ...studioSettings, owner: e.target.value })}
-                      className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-lg text-xs focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-[#0066CC]" /> WhatsApp Contact
-                      </label>
+                <form onSubmit={handleSaveSettings} className="flex flex-col gap-6">
+                  {/* Identitas Studio */}
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">Identitas Studio</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Nama Brand Studio *</label>
+                        <input
+                          type="text"
+                          required
+                          value={studioSettings.studioName}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, studioName: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Nama Owner / Lead Photographer</label>
+                        <input
+                          type="text"
+                          value={studioSettings.ownerName}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, ownerName: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Alamat Lengkap Studio</label>
                       <input
                         type="text"
-                        value={studioSettings.whatsapp}
-                        onChange={(e) => setStudioSettings({ ...studioSettings, whatsapp: e.target.value })}
-                        className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-lg text-xs focus:outline-none transition-colors"
+                        value={studioSettings.address}
+                        onChange={(e) => setStudioSettings({ ...studioSettings, address: e.target.value })}
+                        className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                        placeholder="Jl. Raya Madura No. 88, Madura, Jawa Timur"
                       />
                     </div>
-
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-2">
-                        <Globe className="w-3.5 h-3.5 text-[#0066CC]" /> TikTok Profile URL
-                      </label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Link Google Maps</label>
                       <input
-                        type="text"
-                        value={studioSettings.tiktok}
-                        onChange={(e) => setStudioSettings({ ...studioSettings, tiktok: e.target.value })}
-                        className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-lg text-xs focus:outline-none transition-colors"
+                        type="url"
+                        value={studioSettings.googleMapsUrl}
+                        onChange={(e) => setStudioSettings({ ...studioSettings, googleMapsUrl: e.target.value })}
+                        className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                        placeholder="https://maps.google.com/..."
                       />
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider font-mono">Lokasi Domisili Studio</label>
-                    <input
-                      type="text"
-                      value={studioSettings.location}
-                      onChange={(e) => setStudioSettings({ ...studioSettings, location: e.target.value })}
-                      className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-lg text-xs focus:outline-none transition-colors"
-                    />
+                  {/* Kontak & Social Media */}
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">Kontak & Social Media</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400" /> WhatsApp *</label>
+                        <input
+                          type="text"
+                          required
+                          value={studioSettings.whatsapp}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, whatsapp: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="081234567890"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1"><Mail className="w-3 h-3 text-[#0066CC]" /> Email</label>
+                        <input
+                          type="email"
+                          value={studioSettings.email}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, email: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="hello@margasera.id"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Instagram URL</label>
+                        <input
+                          type="url"
+                          value={studioSettings.instagram}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, instagram: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="https://instagram.com/margasera.id"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">TikTok URL</label>
+                        <input
+                          type="url"
+                          value={studioSettings.tiktok}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, tiktok: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="https://www.tiktok.com/@margasera"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rekening Pembayaran */}
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">Rekening Pembayaran (Tampil di Halaman Booking & Status)</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Nama Bank *</label>
+                        <input
+                          type="text"
+                          required
+                          value={studioSettings.bankName}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, bankName: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="BCA / BRI / Mandiri"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Nomor Rekening *</label>
+                        <input
+                          type="text"
+                          required
+                          value={studioSettings.bankAccountNumber}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, bankAccountNumber: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="1234567890"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Atas Nama *</label>
+                        <input
+                          type="text"
+                          required
+                          value={studioSettings.bankAccountHolder}
+                          onChange={(e) => setStudioSettings({ ...studioSettings, bankAccountHolder: e.target.value })}
+                          className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none transition-colors"
+                          placeholder="MARGASERA CREATIVE"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-3 bg-amber-950/30 border border-amber-800/40 rounded-lg text-[10px] text-amber-300 font-mono">
+                      ⚠ Data rekening ini akan otomatis tampil pada halaman konfirmasi booking dan status pembayaran pelanggan.
+                    </div>
                   </div>
 
                   <button
                     type="submit"
                     className="mt-2 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-widest rounded-lg transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)]"
                   >
-                    Simpan Perubahan Studio
+                    Simpan Semua Perubahan ke Database
                   </button>
                 </form>
               </div>
@@ -1236,10 +1768,20 @@ export default function AdminDashboardPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Layanan</label>
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Layanan *</label>
                   <select
                     value={newBookingForm.serviceId}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, serviceId: e.target.value })}
+                    onChange={(e) => {
+                      const srvId = e.target.value;
+                      const availablePkgs = packages.filter((p) => p.serviceId === srvId);
+                      const selPkg = availablePkgs[0] || packages.find((p) => p.serviceId === srvId);
+                      setNewBookingForm({
+                        ...newBookingForm,
+                        serviceId: srvId,
+                        packageId: selPkg?.id || '',
+                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
+                      });
+                    }}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
                   >
                     {services.map((s) => (
@@ -1247,15 +1789,43 @@ export default function AdminDashboardPage() {
                     ))}
                   </select>
                 </div>
+
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Total Harga (IDR)</label>
-                  <input
-                    type="number"
-                    value={newBookingForm.totalPrice}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, totalPrice: Number(e.target.value) })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
-                  />
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Paket *</label>
+                  <select
+                    value={newBookingForm.packageId}
+                    onChange={(e) => {
+                      const pkgId = e.target.value;
+                      const selPkg = packages.find((p) => p.id === pkgId);
+                      setNewBookingForm({
+                        ...newBookingForm,
+                        packageId: pkgId,
+                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
+                      });
+                    }}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
+                  >
+                    {(() => {
+                      const filteredPkgs = packages.filter((p) => !newBookingForm.serviceId || p.serviceId === newBookingForm.serviceId);
+                      const displayPkgs = filteredPkgs.length > 0 ? filteredPkgs : packages;
+                      return displayPkgs.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} - {formatCurrency(p.price)}
+                        </option>
+                      ));
+                    })()}
+                  </select>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Total Harga (IDR)</label>
+                <input
+                  type="number"
+                  value={newBookingForm.totalPrice}
+                  onChange={(e) => setNewBookingForm({ ...newBookingForm, totalPrice: Number(e.target.value) })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                />
               </div>
 
               <button
@@ -1300,15 +1870,20 @@ export default function AdminDashboardPage() {
                     value={newProjectForm.category}
                     onChange={(e) => {
                       const val = e.target.value;
-                      const labelMap: any = { wedding: 'Wedding', 'pre-wedding': 'Pre-Wedding', couple: 'Couple', portrait: 'Portrait' };
-                      setNewProjectForm({ ...newProjectForm, category: val as any, categoryLabel: labelMap[val] || 'Wedding' });
+                      const matchedSrv = services.find((s) => s.slug === val);
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        category: val as any,
+                        categoryLabel: matchedSrv ? matchedSrv.name : val,
+                      });
                     }}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
                   >
-                    <option value="wedding">Wedding</option>
-                    <option value="pre-wedding">Pre-Wedding</option>
-                    <option value="couple">Couple</option>
-                    <option value="portrait">Portrait</option>
+                    {services.map((srv) => (
+                      <option key={srv.id} value={srv.slug}>
+                        {srv.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -1507,10 +2082,10 @@ export default function AdminDashboardPage() {
               <div className="flex justify-between py-1 border-b border-zinc-800/60">
                 <span className="text-zinc-500 font-mono">Status Pembayaran:</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${selectedBookingForDetail.paymentStatus === 'paid_full'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : selectedBookingForDetail.paymentStatus === 'dp_paid'
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : selectedBookingForDetail.paymentStatus === 'dp_paid'
+                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                   }`}>
                   {selectedBookingForDetail.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : selectedBookingForDetail.paymentStatus === 'dp_paid' ? 'DP TERBAYAR (30%)' : 'BELUM DP'}
                 </span>
@@ -1567,6 +2142,245 @@ export default function AdminDashboardPage() {
                 <Calendar className="w-4 h-4" />
                 <span>+ Sync Google Cal</span>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah/Edit Kategori Layanan */}
+      {showAddServiceModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg p-6 sm:p-8 flex flex-col gap-6 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <h3 className="font-serif-editorial text-2xl text-zinc-100 font-light">
+                {editingService ? 'Edit Kategori Layanan' : 'Tambah Kategori Layanan Baru'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddServiceModal(false);
+                  setEditingService(null);
+                }}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateService} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-zinc-400 font-mono uppercase">Nama Kategori Layanan:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Pre-Wedding Story"
+                  value={newServiceForm.name}
+                  onChange={(e) => setNewServiceForm({ ...newServiceForm, name: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-zinc-400 font-mono uppercase">URL Slug (Opsional):</label>
+                <input
+                  type="text"
+                  placeholder="pre-wedding (auto-generate dari nama)"
+                  value={newServiceForm.slug}
+                  onChange={(e) => setNewServiceForm({ ...newServiceForm, slug: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-zinc-400 font-mono uppercase">Deskripsi Singkat:</label>
+                <textarea
+                  rows={3}
+                  placeholder="Deskripsi singkat mengenai kategori layanan ini..."
+                  value={newServiceForm.description}
+                  onChange={(e) => setNewServiceForm({ ...newServiceForm, description: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-lg text-xs focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddServiceModal(false);
+                    setEditingService(null);
+                  }}
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)]"
+                >
+                  {editingService ? 'Simpan Perubahan' : 'Simpan Kategori Layanan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* ================= MODAL: ADD / EDIT AVAILABILITY STATUS ================= */}
+      {showAddAvailabilityModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <h3 className="font-serif-editorial text-2xl text-zinc-100 font-light">Set Status Tanggal Studio</h3>
+              <button onClick={() => setShowAddAvailabilityModal(false)} className="text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAvailability} className="flex flex-col gap-4 text-xs">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Pilih Tanggal *</label>
+                <input
+                  type="date"
+                  required
+                  value={availabilityForm.date}
+                  onChange={(e) => setAvailabilityForm({ ...availabilityForm, date: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Status Ketersediaan *</label>
+                <select
+                  value={availabilityForm.status}
+                  onChange={(e) => setAvailabilityForm({ ...availabilityForm, status: e.target.value as any })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
+                >
+                  <option value="blocked">Blocked (Libur / Dikunci Admin)</option>
+                  <option value="booked">Booked (Penuh / Terisi Event)</option>
+                  <option value="almost_full">Almost Full (Hampir Penuh)</option>
+                  <option value="available">Available (Tersedia / Kosong)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Catatan / Keterangan (Opsional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Contoh: Internal Maintenance / Libur Studio / Project Out of Town"
+                  value={availabilityForm.notes}
+                  onChange={(e) => setAvailabilityForm({ ...availabilityForm, notes: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddAvailabilityModal(false)}
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md"
+                >
+                  Simpan Status Tanggal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: MANAGE GALLERY IMAGES ================= */}
+      {selectedProjectForImages && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-2xl w-full p-6 md:p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#0066CC]">Kelola Album Foto (gallery_images)</span>
+                <h3 className="font-serif-editorial text-2xl text-zinc-100 font-light mt-0.5">{selectedProjectForImages.title}</h3>
+              </div>
+              <button onClick={() => setSelectedProjectForImages(null)} className="text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Tambah Foto Lembaran Baru */}
+            <form onSubmit={handleAddGalleryImage} className="p-4 bg-zinc-950 border border-zinc-800/80 rounded-lg flex flex-col gap-3 text-xs">
+              <span className="font-semibold text-zinc-200 uppercase font-mono text-[11px] text-[#0066CC]">
+                + Tambah Foto Lembaran Baru ke Album Ini
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 flex flex-col gap-1">
+                  <label className="text-[10px] text-zinc-400 uppercase font-mono">URL Foto (Unsplash / Supabase Storage) *</label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://images.unsplash.com/..."
+                    value={newImageForm.imageUrl}
+                    onChange={(e) => setNewImageForm({ ...newImageForm, imageUrl: e.target.value })}
+                    className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] p-2.5 rounded-md text-zinc-100 focus:outline-none text-xs"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-zinc-400 uppercase font-mono">Format / Orientasi</label>
+                  <select
+                    value={newImageForm.aspectRatio}
+                    onChange={(e) => setNewImageForm({ ...newImageForm, aspectRatio: e.target.value as any })}
+                    className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] p-2.5 rounded-md text-zinc-100 focus:outline-none text-xs"
+                  >
+                    <option value="landscape">Landscape (Tidur)</option>
+                    <option value="portrait">Portrait (Tegak)</option>
+                    <option value="square">Square (Persegi)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors"
+                >
+                  Upload / Tambah Foto
+                </button>
+              </div>
+            </form>
+
+            {/* Daftar Foto Lembaran dalam Album ini */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-mono font-semibold text-zinc-300 uppercase tracking-wider flex items-center justify-between">
+                <span>Koleksi Foto Album Terdaftar ({projectImages.length})</span>
+                {isLoadingProjectImages && <span className="text-amber-400 text-[10px]">Memuat foto...</span>}
+              </h4>
+
+              {projectImages.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-1">
+                  {projectImages.map((img) => (
+                    <div key={img.id} className="relative group rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 h-32">
+                      <Image
+                        src={img.imageUrl}
+                        alt={img.altText || 'Foto Album'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteGalleryImage(img.id)}
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 shadow"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 bg-zinc-950 border border-zinc-800/80 rounded-lg text-center text-xs text-zinc-400 font-light">
+                  Belum ada lembaran foto di album ini. Gunakan form di atas untuk menambah foto.
+                </div>
+              )}
             </div>
           </div>
         </div>

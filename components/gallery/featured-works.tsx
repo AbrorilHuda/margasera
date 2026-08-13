@@ -1,31 +1,43 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Camera, ArrowRight, Eye, MapPin, Calendar as CalendarIcon } from 'lucide-react';
-import { MOCK_PROJECTS } from '@/lib/mock-data';
-import { GalleryProject, ServiceCategory } from '@/lib/types';
+import { Camera, ArrowRight, Eye, MapPin, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { getGalleryProjects } from '@/lib/actions/gallery';
+import { getServices } from '@/lib/actions/services';
+import { GalleryProject, Service } from '@/lib/types';
 import { Lightbox } from './lightbox';
 
 export function FeaturedWorks({ limit }: { limit?: number }) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [projects, setProjects] = useState<GalleryProject[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<GalleryProject | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const [projData, srvData] = await Promise.all([getGalleryProjects(), getServices()]);
+      setProjects(projData);
+      setServices(srvData);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
   const categories = [
     { id: 'all', label: 'Semua Karya' },
-    { id: 'wedding', label: 'Wedding' },
-    { id: 'pre-wedding', label: 'Pre-Wedding' },
-    { id: 'couple', label: 'Couple' },
-    { id: 'portrait', label: 'Portrait' },
+    ...services.map((s) => ({ id: s.slug, label: s.name })),
   ];
 
   const filteredProjects = selectedCategory === 'all'
-    ? MOCK_PROJECTS
-    : MOCK_PROJECTS.filter((p) => p.category === selectedCategory);
+    ? projects
+    : projects.filter((p) => p.category === selectedCategory);
 
   const displayedProjects = limit ? filteredProjects.slice(0, limit) : filteredProjects;
 
@@ -148,7 +160,7 @@ export function FeaturedWorks({ limit }: { limit?: number }) {
             className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-zinc-900 border border-zinc-800 hover:border-[#0066CC] text-zinc-200 hover:text-[#0066CC] text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-[0.25em] uppercase transition-all duration-300 w-full sm:w-auto justify-center"
           >
             <Camera className="w-4 h-4" />
-            <span>Jelajahi Seluruh Galeri Portofolio ({MOCK_PROJECTS.length} Project)</span>
+            <span>Jelajahi Seluruh Galeri Portofolio ({projects.length} Project)</span>
           </Link>
         </div>
       )}

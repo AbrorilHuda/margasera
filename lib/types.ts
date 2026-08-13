@@ -18,14 +18,27 @@ export interface BankAccount {
   accountHolder: string;
 }
 
+export interface StudioSettings {
+  id?: string;
+  studioName: string;
+  ownerName: string;
+  whatsapp: string;
+  instagram: string;
+  tiktok: string;
+  email: string;
+  address: string;
+  googleMapsUrl: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+}
+
 export interface Service {
   id: string;
   name: string;
   slug: string;
   description: string;
-  imageUrl: string;
   isActive: boolean;
-  startingPrice?: number;
 }
 
 export interface PackageFeature {

@@ -1,30 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, CheckCircle2, Clock, Calendar, MapPin, User, Camera, Sparkles, MessageCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { MOCK_BOOKINGS } from '@/lib/mock-data';
-import { Booking } from '@/lib/types';
+import { Search, CheckCircle2, Clock, Calendar, MapPin, User, Camera, Sparkles, MessageCircle, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { getBookingByCode } from '@/lib/actions/bookings';
+import { Booking, StudioSettings } from '@/lib/types';
 import { formatDate, formatCurrency, getTimeOfDayLabel } from '@/lib/utils';
+import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 
-export function StatusChecker() {
+export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { studioSettings?: StudioSettings }) {
   const searchParams = useSearchParams();
   const [inputCode, setInputCode] = useState('');
   const [searchedBooking, setSearchedBooking] = useState<Booking | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('Perubahan Jadwal / Tanggal Acara');
 
-  useEffect(() => {
-    const codeParam = searchParams?.get('code');
-    if (codeParam) {
-      setInputCode(codeParam);
-      handleSearch(codeParam);
-    }
-  }, [searchParams]);
-
-  const handleSearch = (codeToSearch: string) => {
+  const handleSearch = useCallback(async (codeToSearch: string) => {
     setErrorMsg(null);
     const cleanCode = codeToSearch.trim().toUpperCase();
     if (!cleanCode) {
@@ -33,32 +27,31 @@ export function StatusChecker() {
       return;
     }
 
-    const found = MOCK_BOOKINGS.find((b) => b.bookingCode.toUpperCase() === cleanCode);
-    if (found) {
-      setSearchedBooking(found);
-    } else {
-      // Create realistic preview mock for demonstration
-      setSearchedBooking({
-        id: 'demo-1',
-        bookingCode: cleanCode,
-        customerName: 'Pelanggan Marga Sera',
-        whatsapp: '081234567890',
-        email: 'customer@example.com',
-        serviceId: 's-wedding',
-        serviceName: 'Wedding Photography',
-        packageId: 'pkg-w-signature',
-        packageName: 'Signature Wedding',
-        bookingDate: '2026-08-29',
-        startTime: '09:00',
-        endTime: '19:00',
-        location: 'Medan, Sumatera Utara',
-        notes: 'Pemesanan telah masuk dalam antrean peninjauan tim.',
-        status: 'pending',
-        totalPrice: 14500000,
-        createdAt: new Date().toISOString(),
-      });
+    setIsLoading(true);
+    setSearchedBooking(null);
+
+    try {
+      const { booking, error } = await getBookingByCode(cleanCode);
+      if (error || !booking) {
+        setErrorMsg(error ?? 'Kode booking tidak ditemukan.');
+        setSearchedBooking(null);
+      } else {
+        setSearchedBooking(booking);
+      }
+    } catch {
+      setErrorMsg('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const codeParam = searchParams?.get('code');
+    if (codeParam) {
+      setInputCode(codeParam);
+      handleSearch(codeParam);
+    }
+  }, [searchParams, handleSearch]);
 
   const pipelineSteps = [
     { key: 'received', label: 'Booking Diterima' },
@@ -110,14 +103,23 @@ export function StatusChecker() {
               placeholder="Contoh: MS-260829-001"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
-              className="w-full bg-zinc-900/90 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 pl-11 pr-4 py-3.5 rounded-xl font-mono text-sm uppercase focus:outline-none transition-all shadow-inner"
+              disabled={isLoading}
+              className="w-full bg-zinc-900/90 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 pl-11 pr-4 py-3.5 rounded-xl font-mono text-sm uppercase focus:outline-none transition-all shadow-inner disabled:opacity-60"
             />
           </div>
           <button
             type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold tracking-widest uppercase transition-all rounded-xl whitespace-nowrap shadow-[0_0_20px_rgba(0,102,204,0.35)] hover:shadow-[0_0_25px_rgba(0,102,204,0.5)] active:scale-95"
+            disabled={isLoading}
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold tracking-widest uppercase transition-all rounded-xl whitespace-nowrap shadow-[0_0_20px_rgba(0,102,204,0.35)] hover:shadow-[0_0_25px_rgba(0,102,204,0.5)] active:scale-95 flex items-center justify-center gap-2"
           >
-            Cari Status
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Mencari...</span>
+              </>
+            ) : (
+              'Cari Status'
+            )}
           </button>
         </form>
 
@@ -269,17 +271,10 @@ export function StatusChecker() {
                 <span className="font-semibold text-[#0066CC] uppercase tracking-wider font-mono">Rekening Resmi Pembayaran Studio</span>
                 <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">DP Min. 30%</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3.5 bg-zinc-950 border border-zinc-800/80 rounded-lg">
-                  <span className="text-[10px] font-mono text-zinc-500 block">BANK BCA</span>
-                  <span className="font-mono text-base font-bold text-zinc-100">188-091-2345</span>
-                  <span className="text-[11px] text-zinc-400 block mt-0.5">a.n Marga Sera Photography</span>
-                </div>
-                <div className="p-3.5 bg-zinc-950 border border-zinc-800/80 rounded-lg">
-                  <span className="text-[10px] font-mono text-zinc-500 block">BANK MANDIRI</span>
-                  <span className="font-mono text-base font-bold text-zinc-100">140-00-1928374-1</span>
-                  <span className="text-[11px] text-zinc-400 block mt-0.5">a.n Abroril Huda</span>
-                </div>
+              <div className="p-3.5 bg-zinc-950 border border-zinc-800/80 rounded-lg">
+                <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>
+                <span className="font-mono text-base font-bold text-zinc-100">{studioSettings.bankAccountNumber}</span>
+                <span className="text-[11px] text-zinc-400 block mt-0.5">a.n {studioSettings.bankAccountHolder}</span>
               </div>
             </div>
 

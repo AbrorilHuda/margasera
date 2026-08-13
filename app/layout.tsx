@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 };
 
 import { LayoutWrapper } from '@/components/navigation/layout-wrapper';
+import { Footer } from '@/components/navigation/footer';
 
 export default function RootLayout({
   children,
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${cormorant.variable} ${jakarta.variable} dark scroll-smooth`}>
       <body className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#0066CC] selection:text-white">
-        <LayoutWrapper>
+        <LayoutWrapper footer={<Footer />}>
           {children}
         </LayoutWrapper>
       </body>

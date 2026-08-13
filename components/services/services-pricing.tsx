@@ -1,18 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Clock, Users, Image as ImageIcon, ArrowRight } from 'lucide-react';
-import { MOCK_PACKAGES, MOCK_SERVICES } from '@/lib/mock-data';
+import { Check, Sparkles, Clock, Users, Image as ImageIcon, ArrowRight, Loader2 } from 'lucide-react';
+import { getServices, getPackages } from '@/lib/actions/services';
+import type { Service, Package } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 
 export function ServicesPricing() {
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('s-wedding');
+  const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
-  const filteredPackages = MOCK_PACKAGES.filter(
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [srvList, pkgList] = await Promise.all([getServices(), getPackages()]);
+      setServices(srvList);
+      setPackages(pkgList);
+      if (srvList.length > 0) setSelectedServiceId(srvList[0].id);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filteredPackages = packages.filter(
     (pkg) => pkg.serviceId === selectedServiceId
   );
+
+  if (loading) {
+    return (
+      <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto text-center flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-8 h-8 text-[#0066CC] animate-spin" />
+        <span className="text-xs text-zinc-400 font-mono uppercase tracking-widest">Memuat Paket Layanan...</span>
+      </section>
+    );
+  }
+
+  if (!loading && services.length === 0) {
+    return (
+      <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto text-center">
+        <div className="p-12 bg-zinc-950 border border-zinc-800 rounded-2xl max-w-xl mx-auto flex flex-col items-center gap-4 shadow-xl">
+          <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light">Belum Ada Layanan Tersedia</h3>
+          <p className="text-xs text-zinc-400 font-light leading-relaxed">
+            Data layanan & paket belum ada.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
@@ -31,15 +69,14 @@ export function ServicesPricing() {
 
       {/* Service Category Tabs */}
       <div className="flex items-center justify-center gap-3 flex-wrap mb-16">
-        {MOCK_SERVICES.map((srv) => (
+        {services.map((srv) => (
           <button
             key={srv.id}
             onClick={() => setSelectedServiceId(srv.id)}
-            className={`px-6 py-3 text-xs tracking-widest uppercase transition-all duration-300 ${
-              selectedServiceId === srv.id
-                ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.3)]'
-                : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
-            }`}
+            className={`px-6 py-3 text-xs tracking-widest uppercase transition-all duration-300 ${selectedServiceId === srv.id
+              ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.3)]'
+              : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+              }`}
           >
             {srv.name}
           </button>
@@ -55,11 +92,10 @@ export function ServicesPricing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: idx * 0.15 }}
-            className={`relative flex flex-col justify-between p-8 bg-zinc-950/80 border transition-all duration-500 ${
-              pkg.isPopular
-                ? 'border-[#0066CC]/80 shadow-[0_0_30px_rgba(0,102,204,0.2)] bg-gradient-to-b from-[#0066CC]/15 via-zinc-950 to-zinc-950'
-                : 'border-zinc-800/80 hover:border-zinc-700'
-            }`}
+            className={`relative flex flex-col justify-between p-8 bg-zinc-950/80 border transition-all duration-500 ${pkg.isPopular
+              ? 'border-[#0066CC]/80 shadow-[0_0_30px_rgba(0,102,204,0.2)] bg-gradient-to-b from-[#0066CC]/15 via-zinc-950 to-zinc-950'
+              : 'border-zinc-800/80 hover:border-zinc-700'
+              }`}
           >
             {/* Popular Badge */}
             {pkg.isPopular && (
@@ -123,11 +159,10 @@ export function ServicesPricing() {
             <div className="pt-6">
               <Link
                 href={`/booking?packageId=${pkg.id}&serviceId=${pkg.serviceId}`}
-                className={`w-full py-4 text-center text-xs font-semibold tracking-[0.25em] uppercase flex items-center justify-center gap-2 transition-all duration-300 ${
-                  pkg.isPopular
-                    ? 'bg-[#0066CC] text-white hover:bg-[#0052A3] shadow-[0_0_20px_rgba(0,102,204,0.4)]'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-200 hover:border-[#0066CC] hover:text-[#0066CC]'
-                }`}
+                className={`w-full py-4 text-center text-xs font-semibold tracking-[0.25em] uppercase flex items-center justify-center gap-2 transition-all duration-300 ${pkg.isPopular
+                  ? 'bg-[#0066CC] text-white hover:bg-[#0052A3] shadow-[0_0_20px_rgba(0,102,204,0.4)]'
+                  : 'bg-zinc-900 border border-zinc-800 text-zinc-200 hover:border-[#0066CC] hover:text-[#0066CC]'
+                  }`}
               >
                 <span>Pilih Paket Ini</span>
                 <ArrowRight className="w-3.5 h-3.5" />

@@ -3,9 +3,14 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Navbar } from '@/components/navigation/navbar';
-import { Footer } from '@/components/navigation/footer';
 
-export function LayoutWrapper({ children }: { children: React.ReactNode }) {
+export function LayoutWrapper({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
 
@@ -23,7 +28,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <main className="flex-1 w-full pt-20">
         {children}
       </main>
-      <Footer />
+      {footer}
     </>
   );
 }

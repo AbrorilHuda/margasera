@@ -4,19 +4,29 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ChevronLeft, Calendar, Camera, Clock, User, Phone, Mail, MapPin, FileText, Copy, CheckCircle2, Sparkles } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Calendar, Camera, Clock, User, Phone, Mail, MapPin, FileText, Copy, CheckCircle2, Sparkles, Loader2, XCircle } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
-import { MOCK_SERVICES, MOCK_PACKAGES } from '@/lib/mock-data';
+import { getServices, getPackages } from '@/lib/actions/services';
+import { getAvailability } from '@/lib/actions/availability';
+import { createBooking } from '@/lib/actions/bookings';
+import type { Service, Package, Availability, AvailabilityStatus, StudioSettings } from '@/lib/types';
 import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod } from '@/lib/utils';
+import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 
-export function BookingWizard() {
+export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { studioSettings?: StudioSettings }) {
   const searchParams = useSearchParams();
+
+  // Data from Supabase
+  const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [availabilityData, setAvailabilityData] = useState<Availability[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Initial step states
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('s-wedding');
-  const [selectedPackageId, setSelectedPackageId] = useState<string>('pkg-w-signature');
-  const [selectedDate, setSelectedDate] = useState<string>('2026-08-29');
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   // Time & Slot states
   const [startTime, setStartTime] = useState<string>('08:00');
@@ -35,9 +45,31 @@ export function BookingWizard() {
   const [bookingCode, setBookingCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const selectedService = MOCK_SERVICES.find((s) => s.id === selectedServiceId) || MOCK_SERVICES[0];
-  const selectedPackage = MOCK_PACKAGES.find((p) => p.id === selectedPackageId) || MOCK_PACKAGES[0];
-  const packagesForService = MOCK_PACKAGES.filter((p) => p.serviceId === selectedServiceId);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Fetch services, packages, and availability on mount
+  useEffect(() => {
+    async function loadData() {
+      setIsDataLoading(true);
+      const [srvList, pkgList, availList] = await Promise.all([
+        getServices(),
+        getPackages(),
+        getAvailability(),
+      ]);
+      setServices(srvList);
+      setPackages(pkgList);
+      setAvailabilityData(availList);
+      if (srvList.length > 0) setSelectedServiceId(srvList[0].id);
+      if (pkgList.length > 0) setSelectedPackageId(pkgList[0].id);
+      setIsDataLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
+  const selectedPackage = packages.find((p) => p.id === selectedPackageId) || packages[0];
+  const packagesForService = packages.filter((p) => p.serviceId === (selectedServiceId || (services[0]?.id ?? '')));
 
   // Helper to extract duration in hours
   const getHoursFromDuration = (durationStr: string): number => {
@@ -67,7 +99,7 @@ export function BookingWizard() {
     if (paramService) setSelectedServiceId(paramService);
     if (paramPackage) {
       setSelectedPackageId(paramPackage);
-      const pkg = MOCK_PACKAGES.find(p => p.id === paramPackage);
+      const pkg = packages.find(p => p.id === paramPackage);
       if (pkg) {
         const durationHours = getHoursFromDuration(pkg.duration);
         const [h, m] = (paramTime || '08:00').split(':').map(Number);
@@ -77,9 +109,29 @@ export function BookingWizard() {
     }
     if (paramDate) setSelectedDate(paramDate);
     if (paramTime) setStartTime(paramTime);
-  }, [searchParams]);
+  }, [searchParams, packages]);
+
+  const getSelectedDateInfo = (dateStr: string): { status: AvailabilityStatus; notes?: string } => {
+    if (!dateStr) return { status: 'available' as AvailabilityStatus, notes: undefined };
+    const found = availabilityData.find(
+      (a) => a.date && a.date.split('T')[0] === dateStr.split('T')[0]
+    );
+    if (found) return { status: found.status, notes: found.notes };
+    return { status: 'available' as AvailabilityStatus, notes: undefined };
+  };
 
   const handleNextStep = () => {
+    if (currentStep === 2) {
+      const dateInfo = getSelectedDateInfo(selectedDate);
+      if (dateInfo.status === 'blocked') {
+        alert(`Tanggal ${formatDate(selectedDate)} sedang dikunci / libur studio. Silakan pilih tanggal lain.`);
+        return;
+      }
+      if (dateInfo.status === 'booked') {
+        alert(`Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked). Silakan pilih tanggal lain.`);
+        return;
+      }
+    }
     if (currentStep < 4) setCurrentStep((prev) => prev + 1);
   };
 
@@ -87,13 +139,45 @@ export function BookingWizard() {
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   };
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanDate = selectedDate.replace(/-/g, '').substring(2);
-    const randomNum = String(Math.floor(Math.random() * 900) + 100);
-    const code = `MS-${cleanDate}-${randomNum}`;
-    setBookingCode(code);
-    setCurrentStep(5);
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const result = await createBooking({
+        customerName,
+        whatsapp,
+        email,
+        instagram: instagram || undefined,
+        serviceId: selectedServiceId,
+        serviceName: selectedService?.name,
+        packageId: selectedPackageId,
+        packageName: selectedPackage?.name,
+        bookingDate: selectedDate,
+        startTime,
+        endTime,
+        slotType,
+        location,
+        eventType: undefined,
+        notes: notes || undefined,
+        totalPrice: selectedPackage?.price,
+        downPayment: selectedPackage ? Math.ceil(selectedPackage.price * 0.3) : undefined,
+        remainingAmount: selectedPackage ? Math.floor(selectedPackage.price * 0.7) : undefined,
+        paymentStatus: 'unpaid',
+      });
+
+      if (result.success && result.bookingCode) {
+        setBookingCode(result.bookingCode);
+        setCurrentStep(5);
+      } else {
+        setSubmitError(result.error ?? 'Booking gagal dikirim. Coba lagi.');
+      }
+    } catch {
+      setSubmitError('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const copyCodeToClipboard = () => {
@@ -109,6 +193,36 @@ export function BookingWizard() {
     { number: 3, label: 'Data Diri' },
     { number: 4, label: 'Ringkasan' },
   ];
+
+  if (isDataLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto py-28 px-6 text-center flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-8 h-8 text-[#0066CC] animate-spin" />
+        <span className="text-xs text-zinc-400 font-mono uppercase tracking-widest">Memuat Kategori Layanan & Paket...</span>
+      </div>
+    );
+  }
+
+  if (!isDataLoading && services.length === 0) {
+    return (
+      <div className="w-full max-w-4xl mx-auto py-16 px-6 text-center bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-5 shadow-2xl">
+        <div className="w-12 h-12 rounded-full bg-[#0066CC]/15 border border-[#0066CC]/40 flex items-center justify-center text-[#0066CC] mx-auto">
+          <Camera className="w-6 h-6" />
+        </div>
+        <div>
+          <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light">Database Layanan Belum Diisi</h3>
+          <p className="text-xs text-zinc-400 font-light max-w-md mx-auto mt-2 leading-relaxed">
+            Tabel layanan & paket masih kosong.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 pt-2">
+          <Link href="/" className="px-6 py-3.5 bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-semibold tracking-widest uppercase rounded-xl hover:border-zinc-700 transition-colors">
+            Beranda
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-4xl mx-auto py-12 px-6">
@@ -129,10 +243,10 @@ export function BookingWizard() {
                 <div key={st.number} className="relative z-10 flex flex-col items-center gap-2">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${isCompleted
-                        ? 'bg-[#0066CC] text-white'
-                        : isCurrent
-                          ? 'bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.4)]'
-                          : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                      ? 'bg-[#0066CC] text-white'
+                      : isCurrent
+                        ? 'bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.4)]'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
                       }`}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : st.number}
@@ -173,13 +287,13 @@ export function BookingWizard() {
                   <Camera className="w-4 h-4 text-[#0066CC]" /> 1. Kategori Layanan:
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  {MOCK_SERVICES.map((srv) => (
+                  {services.map((srv) => (
                     <button
                       key={srv.id}
                       type="button"
                       onClick={() => {
                         setSelectedServiceId(srv.id);
-                        const firstPkg = MOCK_PACKAGES.find((p) => p.serviceId === srv.id);
+                        const firstPkg = packages.find((p) => p.serviceId === srv.id);
                         if (firstPkg) {
                           setSelectedPackageId(firstPkg.id);
                           const durationHours = getHoursFromDuration(firstPkg.duration);
@@ -188,11 +302,10 @@ export function BookingWizard() {
                           setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
                         }
                       }}
-                      className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${
-                        selectedServiceId === srv.id
-                          ? 'border-[#0066CC] bg-[#0066CC]/20 text-white shadow-[0_0_15px_rgba(0,102,204,0.3)]'
-                          : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                      }`}
+                      className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${selectedServiceId === srv.id
+                        ? 'border-[#0066CC] bg-[#0066CC]/20 text-white shadow-[0_0_15px_rgba(0,102,204,0.3)]'
+                        : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        }`}
                     >
                       <span className="text-xs font-medium">{srv.name}</span>
                     </button>
@@ -203,7 +316,7 @@ export function BookingWizard() {
               <div className="flex flex-col gap-3 pt-2">
                 <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#0066CC]" /> 2. Pilih Paket Dokumentasi ({selectedService.name}):
+                    <Sparkles className="w-4 h-4 text-[#0066CC]" /> 2. Pilih Paket Dokumentasi {selectedService?.name ? `(${selectedService.name})` : ''}:
                   </span>
                   <span className="text-[11px] text-amber-400 font-mono">Durasi Paket Pilihan Anda akan Menentukan Jam Selesai</span>
                 </label>
@@ -221,11 +334,10 @@ export function BookingWizard() {
                           const endH = (h + durationHours) % 24;
                           setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
                         }}
-                        className={`p-6 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                          selectedPackageId === pkg.id
-                            ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'
-                            : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
-                        }`}
+                        className={`p-6 rounded-xl border text-left flex flex-col justify-between transition-all ${selectedPackageId === pkg.id
+                          ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'
+                          : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
+                          }`}
                       >
                         <div>
                           <div className="flex items-center justify-between mb-2">
@@ -298,10 +410,41 @@ export function BookingWizard() {
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-4 rounded-xl font-mono text-sm focus:outline-none transition-colors"
                   />
-                  <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl flex items-center gap-2 text-xs text-emerald-300 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Tanggal {formatDate(selectedDate)} <strong>Tersedia (Available)</strong>!</span>
-                  </div>
+                  {(() => {
+                    const dateInfo = getSelectedDateInfo(selectedDate);
+                    if (dateInfo.status === 'blocked') {
+                      return (
+                        <div className="p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-rose-200 uppercase tracking-wider text-[11px] font-mono">🔒 Tanggal Dikunci / Libur Studio</span>
+                            <p className="text-rose-300 font-light">
+                              {dateInfo.notes ? `Keterangan: "${dateInfo.notes}"` : 'Pemesanan jadwal sesi foto ditutup pada tanggal ini.'} Silakan pilih tanggal lain.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (dateInfo.status === 'booked') {
+                      return (
+                        <div className="p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-rose-200 uppercase tracking-wider text-[11px] font-mono">⛔ Tanggal Terisi Penuh (Booked)</span>
+                            <p className="text-rose-300 font-light">
+                              Jadwal pada tanggal {formatDate(selectedDate)} sudah terisi penuh. Silakan pilih tanggal lain.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl flex items-center gap-2 text-xs text-emerald-300 font-light">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Tanggal {formatDate(selectedDate)} <strong>Tersedia (Available)</strong>!</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -363,8 +506,8 @@ export function BookingWizard() {
                           type="button"
                           onClick={() => handleSelectStartTime(tStr)}
                           className={`px-2.5 py-1.5 text-xs font-mono rounded-lg border transition-colors flex items-center gap-1 ${startTime === tStr
-                              ? 'bg-[#0066CC] border-[#0066CC] text-white font-bold shadow-md'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            ? 'bg-[#0066CC] border-[#0066CC] text-white font-bold shadow-md'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                             }`}
                         >
                           <span>{tStr}</span>
@@ -541,17 +684,31 @@ export function BookingWizard() {
                 </div>
                 <div className="flex items-center justify-between pt-3 text-sm">
                   <span className="text-[#0066CC] font-semibold uppercase tracking-wider">Total Est. Investasi:</span>
-                  <span className="font-serif-editorial text-2xl text-[#0066CC] font-bold">{formatCurrency(selectedPackage.price)}</span>
+                  <span className="font-serif-editorial text-2xl text-[#0066CC] font-bold">{formatCurrency(selectedPackage?.price ?? 0)}</span>
                 </div>
               </div>
+
+              {submitError && (
+                <p className="text-xs text-rose-400 font-medium text-center">{submitError}</p>
+              )}
 
               <button
                 type="button"
                 onClick={handleSubmitBooking}
-                className="w-full py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-[0.2em] uppercase transition-all rounded-xl shadow-[0_0_20px_rgba(0,102,204,0.4)] flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full py-4 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-xs tracking-[0.2em] uppercase transition-all rounded-xl shadow-[0_0_20px_rgba(0,102,204,0.4)] flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Kirim Pemesanan & Dapatkan Kode Booking</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Mengirim Pemesanan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>Kirim Pemesanan & Dapatkan Kode Booking</span>
+                  </>
+                )}
               </button>
             </motion.div>
           )}
@@ -617,18 +774,13 @@ export function BookingWizard() {
                   Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 30% dari total investasi ke rekening resmi Margasera:
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
-                    <span className="text-[10px] font-mono text-zinc-500 block">BANK BCA</span>
-                    <span className="font-mono text-sm font-bold text-zinc-100">188-091-2345</span>
-                    <span className="text-[10px] text-zinc-400 block">a.n Marga Sera Photography</span>
+                <div className="grid grid-cols-1 gap-3 pt-1">
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
+                      <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>
+                      <span className="font-mono text-sm font-bold text-zinc-100">{studioSettings.bankAccountNumber}</span>
+                      <span className="text-[10px] text-zinc-400 block">a.n {studioSettings.bankAccountHolder}</span>
+                    </div>
                   </div>
-                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
-                    <span className="text-[10px] font-mono text-zinc-500 block">BANK MANDIRI</span>
-                    <span className="font-mono text-sm font-bold text-zinc-100">140-00-1928374-1</span>
-                    <span className="text-[10px] text-zinc-400 block">a.n Abroril Huda</span>
-                  </div>
-                </div>
               </div>
 
               <div className="flex items-center gap-4 pt-2">
