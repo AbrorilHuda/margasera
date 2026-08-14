@@ -76,7 +76,7 @@ export default function Home() {
       {/* 5. Kalender Ketersediaan Tanggal */}
       <section className="py-20 bg-zinc-950 border-t border-zinc-900">
         <div className="text-center max-w-3xl mx-auto px-6 mb-8">
-          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-amber-400">
+          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
             Real-Time Availability
           </span>
           <h2 className="font-serif-editorial text-4xl sm:text-5xl text-zinc-100 font-light tracking-wide uppercase mt-2">

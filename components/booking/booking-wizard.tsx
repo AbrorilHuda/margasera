@@ -120,15 +120,55 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     return { status: 'available' as AvailabilityStatus, notes: undefined };
   };
 
+  const getSelectedDateConflict = (): { hasConflict: boolean; reason?: string } => {
+    if (!selectedDate) return { hasConflict: false };
+
+    const dateEntry = availabilityData.find(
+      (a) => a.date && a.date.split('T')[0] === selectedDate.split('T')[0]
+    );
+
+    if (!dateEntry) return { hasConflict: false };
+
+    if (dateEntry.status === 'blocked') {
+      return { hasConflict: true, reason: `Tanggal ${formatDate(selectedDate)} sedang dikunci / libur studio.` };
+    }
+    if (dateEntry.status === 'booked') {
+      return { hasConflict: true, reason: `Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked).` };
+    }
+
+    const toMins = (tStr?: string) => {
+      if (!tStr || !tStr.includes(':')) return null;
+      const [h, m] = tStr.split(':').map(Number);
+      return isNaN(h) || isNaN(m) ? null : h * 60 + m;
+    };
+
+    const sA = toMins(startTime);
+    const eA = toMins(endTime);
+
+    if (sA !== null && eA !== null) {
+      if (dateEntry.bookedTimeSlots && dateEntry.bookedTimeSlots.length > 0) {
+        for (const bts of dateEntry.bookedTimeSlots) {
+          const sB = toMins(bts.startTime);
+          const eB = toMins(bts.endTime);
+          if (sB !== null && eB !== null && sA < eB && eA > sB) {
+            const category = bts.serviceCategory || 'Sesi Studio';
+            return {
+              hasConflict: true,
+              reason: `Jam sesi (${startTime} - ${endTime} WIB) bentrok dengan jadwal yang sudah terisi (${category} jam ${bts.startTime} - ${bts.endTime} WIB). Silakan pilih jam lain.`,
+            };
+          }
+        }
+      }
+    }
+
+    return { hasConflict: false };
+  };
+
   const handleNextStep = () => {
     if (currentStep === 2) {
-      const dateInfo = getSelectedDateInfo(selectedDate);
-      if (dateInfo.status === 'blocked') {
-        alert(`Tanggal ${formatDate(selectedDate)} sedang dikunci / libur studio. Silakan pilih tanggal lain.`);
-        return;
-      }
-      if (dateInfo.status === 'booked') {
-        alert(`Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked). Silakan pilih tanggal lain.`);
+      const conflict = getSelectedDateConflict();
+      if (conflict.hasConflict) {
+        alert(conflict.reason || 'Tanggal atau jam yang Anda pilih tidak tersedia.');
         return;
       }
     }
@@ -530,6 +570,24 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                       💡 Jam Selesai ({endTime} WIB) otomatis disesuaikan dengan durasi paket {selectedPackage.name} ({selectedPackage.duration}).
                     </span>
                   </div>
+
+                  {(() => {
+                    const conflict = getSelectedDateConflict();
+                    if (conflict.hasConflict) {
+                      return (
+                        <div className="p-3.5 bg-rose-950/50 border border-rose-800/80 rounded-xl flex items-start gap-2.5 text-xs text-rose-200 mt-1">
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold uppercase tracking-wider text-[11px] font-mono text-rose-300">
+                              ⛔ JADWAL BENTROK / TIDAK TERSEDIA
+                            </span>
+                            <p className="text-rose-200 font-light">{conflict.reason}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </motion.div>

@@ -52,14 +52,39 @@ function isValidUUID(uuid?: string | null): boolean {
   return regex.test(uuid);
 }
 
+function parseTimeToMinutes(timeStr?: string | null): number | null {
+  if (!timeStr || !timeStr.includes(':')) return null;
+  const parts = timeStr.trim().split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function isTimeOverlap(
+  startA?: string | null,
+  endA?: string | null,
+  startB?: string | null,
+  endB?: string | null
+): boolean {
+  const sA = parseTimeToMinutes(startA);
+  const eA = parseTimeToMinutes(endA);
+  const sB = parseTimeToMinutes(startB);
+  const eB = parseTimeToMinutes(endB);
+
+  if (sA === null || eA === null || sB === null || eB === null) return true;
+  return sA < eB && eA > sB;
+}
+
 /** Public: submit booking baru dari customer */
 export async function createBooking(
   formData: Omit<Booking, 'id' | 'bookingCode' | 'status' | 'createdAt'>
 ): Promise<{ success: boolean; bookingCode?: string; error?: string }> {
   const supabase = await createClient();
 
-  // Validasi ketersediaan tanggal di database Supabase
+  // Validasi ketersediaan tanggal & bentrok jam di database Supabase
   if (formData.bookingDate) {
+    // 1. Cek status ketersediaan tanggal dari tabel availability (blocked / booked override)
     const { data: dateAvailability } = await (supabase as any)
       .from('availability')
       .select('status, notes')
@@ -78,6 +103,57 @@ export async function createBooking(
           success: false,
           error: `Tanggal ${formData.bookingDate} sudah terisi penuh (booked). Pemesanan tidak dapat diproses.`,
         };
+      }
+    }
+
+    // 2. Cek semua pesanan aktif yang sudah terdaftar pada tanggal yang sama di Supabase
+    const { data: existingBookings, error: fetchErr } = await (supabase as any)
+      .from('bookings')
+      .select('id, booking_code, customer_name, service_name, package_name, booking_date, start_time, end_time, slot_type, status')
+      .eq('booking_date', formData.bookingDate)
+      .neq('status', 'cancelled');
+
+    if (fetchErr) {
+      console.error('Error checking existing bookings:', fetchErr.message);
+    }
+
+    if (existingBookings && existingBookings.length > 0) {
+      const isNewWedding =
+        (formData.slotType && formData.slotType.startsWith('wedding')) ||
+        (formData.serviceName && formData.serviceName.toLowerCase().includes('wedding') && !formData.serviceName.toLowerCase().includes('pre-wedding'));
+
+      const existingWeddingCount = existingBookings.filter((b: any) =>
+        (b.slot_type && b.slot_type.startsWith('wedding')) ||
+        (b.service_name && b.service_name.toLowerCase().includes('wedding') && !b.service_name.toLowerCase().includes('pre-wedding'))
+      ).length;
+
+      const existingNonWeddingCount = existingBookings.length - existingWeddingCount;
+
+      // Validasi batas kuota per hari
+      if (isNewWedding && existingWeddingCount >= 2) {
+        return {
+          success: false,
+          error: `Kuota pemesanan Wedding pada tanggal ${formData.bookingDate} sudah terisi penuh (maksimal 2 booking/hari). Silakan pilih tanggal lain.`,
+        };
+      }
+
+      if (!isNewWedding && existingNonWeddingCount >= 6) {
+        return {
+          success: false,
+          error: `Kuota pemesanan Sesi Studio pada tanggal ${formData.bookingDate} sudah terisi penuh (maksimal 6 booking/hari). Silakan pilih tanggal lain.`,
+        };
+      }
+
+      // 3. VALIDASI BENTROK JAM (TIME OVERLAP VALIDATION)
+      for (const b of existingBookings) {
+        if (isTimeOverlap(formData.startTime, formData.endTime, b.start_time, b.end_time)) {
+          const serviceLabel = b.service_name || b.package_name || 'Sesi Studio Photo';
+          const timeText = b.start_time && b.end_time ? `${b.start_time} s/d ${b.end_time} WIB` : 'sepanjang hari';
+          return {
+            success: false,
+            error: `Jam sesi (${formData.startTime || '09:00'} - ${formData.endTime || '12:00'} WIB) pada tanggal ${formData.bookingDate} sudah terisi oleh pemesanan lain (${serviceLabel} - ${timeText}). Pemesanan di jam yang sama tidak diperbolehkan!`,
+          };
+        }
       }
     }
   }

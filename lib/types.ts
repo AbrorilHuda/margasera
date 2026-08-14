@@ -99,6 +99,7 @@ export interface BookedTimeSlot {
   startTime: string;
   endTime: string;
   serviceCategory: string;
+  customerName?: string;
   bookingCode?: string;
 }
 

@@ -347,7 +347,7 @@ export const MOCK_AVAILABILITY: Availability[] = [
       { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: false },
     ],
     bookedTimeSlots: [
-      { startTime: '08:00', endTime: '14:00', serviceCategory: 'wedding', bookingCode: 'MS-260820-009' }
+      { customerName: 'Farih Setiawan', startTime: '08:00', endTime: '14:00', serviceCategory: 'Wedding Package Signature', bookingCode: 'MS-260820-009' }
     ]
   },
   {
@@ -356,7 +356,8 @@ export const MOCK_AVAILABILITY: Availability[] = [
     status: 'booked',
     notes: 'Sesi Pre-Wedding Outdoor Full Day',
     bookedTimeSlots: [
-      { startTime: '10:00', endTime: '18:00', serviceCategory: 'pre-wedding', bookingCode: 'MS-260822-011' }
+      { customerName: 'Abroril Huda', startTime: '10:00', endTime: '18:00', serviceCategory: 'Pre-Wedding Cinematic', bookingCode: 'MS-260822-011' },
+      { customerName: 'Deni Kurniawan', startTime: '19:00', endTime: '21:00', serviceCategory: 'Portrait Studio', bookingCode: 'MS-260822-015' }
     ]
   },
   {
@@ -365,7 +366,7 @@ export const MOCK_AVAILABILITY: Availability[] = [
     status: 'booked',
     notes: 'Full Day Corporate Event Coverage',
     bookedTimeSlots: [
-      { startTime: '08:00', endTime: '17:00', serviceCategory: 'event', bookingCode: 'MS-260823-014' }
+      { customerName: 'Budi Santoso', startTime: '08:00', endTime: '17:00', serviceCategory: 'Commercial Event', bookingCode: 'MS-260823-014' }
     ]
   },
   {
@@ -378,7 +379,8 @@ export const MOCK_AVAILABILITY: Availability[] = [
       { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: true, bookedBy: 'Aldo & Maya' },
     ],
     bookedTimeSlots: [
-      { startTime: '15:00', endTime: '21:00', serviceCategory: 'wedding', bookingCode: 'MS-260828-005' }
+      { customerName: 'Aldo Pratama', startTime: '15:00', endTime: '21:00', serviceCategory: 'Wedding Deluxe', bookingCode: 'MS-260828-005' },
+      { customerName: 'Siti Rahma', startTime: '09:00', endTime: '11:00', serviceCategory: 'Graduation Package', bookingCode: 'MS-260828-012' }
     ]
   },
   {
@@ -403,7 +405,7 @@ export const MOCK_AVAILABILITY: Availability[] = [
     status: 'almost_full',
     notes: 'Couple Session Afternoon Booked (13:00 - 17:00)',
     bookedTimeSlots: [
-      { startTime: '13:00', endTime: '17:00', serviceCategory: 'couple', bookingCode: 'MS-260912-003' }
+      { customerName: 'Rian Hidayat', startTime: '13:00', endTime: '17:00', serviceCategory: 'Couple Portrait', bookingCode: 'MS-260912-003' }
     ]
   },
 ];

@@ -56,7 +56,12 @@ import {
   ArrowUpDown,
   Globe,
   Mail,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  LayoutGrid,
+  ListFilter
 } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
 
@@ -156,6 +161,11 @@ export default function AdminDashboardPage() {
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [showAddAvailabilityModal, setShowAddAvailabilityModal] = useState(false);
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<Booking | null>(null);
+
+  // Admin Calendar View States
+  const [adminCalYear, setAdminCalYear] = useState<number>(new Date().getFullYear());
+  const [adminCalMonth, setAdminCalMonth] = useState<number>(new Date().getMonth());
+  const [adminCalViewMode, setAdminCalViewMode] = useState<'grid' | 'table'>('grid');
 
   const [availabilityForm, setAvailabilityForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -1427,100 +1437,329 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ================= TAB 5: CALENDAR AVAILABILITY ================= */}
-          {activeTab === 'calendar' && (
-            <div className="flex flex-col gap-6">
-              <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-                <div>
-                  <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold">Calendar System</span>
-                  <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light uppercase tracking-wide">
-                    Kelola Status Tanggal Studio
-                  </h3>
-                  <p className="text-xs text-zinc-400 font-light mt-1">
-                    Tandai tanggal tertentu sebagai Booked atau Blocked secara langsung untuk mencegah pemesanan ganda.
-                  </p>
+          {activeTab === 'calendar' && (() => {
+            const calMonthNames = [
+              'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const calDaysOfWeek = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            const adminDaysInMonth = new Date(adminCalYear, adminCalMonth + 1, 0).getDate();
+            const adminStartDayOffset = new Date(adminCalYear, adminCalMonth, 1).getDay();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const handleAdminPrevMonth = () => {
+              if (adminCalMonth === 0) {
+                setAdminCalMonth(11);
+                setAdminCalYear((y) => y - 1);
+              } else {
+                setAdminCalMonth((m) => m - 1);
+              }
+            };
+
+            const handleAdminNextMonth = () => {
+              if (adminCalMonth === 11) {
+                setAdminCalMonth(0);
+                setAdminCalYear((y) => y + 1);
+              } else {
+                setAdminCalMonth((m) => m + 1);
+              }
+            };
+
+            const handleAdminJumpToday = () => {
+              const now = new Date();
+              setAdminCalYear(now.getFullYear());
+              setAdminCalMonth(now.getMonth());
+            };
+
+            const getAdminStatusForDate = (dateStr: string) => {
+              const found = availability.find((a) => a.date && a.date.split('T')[0] === dateStr);
+              if (found) return found;
+              return { id: '', date: dateStr, status: 'available' as const, notes: '' };
+            };
+
+            return (
+              <div className="flex flex-col gap-6">
+                {/* Top Control Bar */}
+                <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+                  <div>
+                    <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold">Calendar System</span>
+                    <h3 className="font-serif-editorial text-3xl text-zinc-100 font-light uppercase tracking-wide">
+                      Kelola Ketersediaan Tanggal
+                    </h3>
+                    <p className="text-xs text-zinc-400 font-light mt-1">
+                      Klik tanggal mana saja pada kalender untuk langsung mengubah status (Available, Almost Full, Booked, Blocked).
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center p-1 bg-zinc-950 rounded-lg border border-zinc-800 text-xs">
+                      <button
+                        onClick={() => setAdminCalViewMode('grid')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono transition-colors ${adminCalViewMode === 'grid'
+                            ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                          }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span>Visual Grid</span>
+                      </button>
+                      <button
+                        onClick={() => setAdminCalViewMode('table')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono transition-colors ${adminCalViewMode === 'table'
+                            ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                          }`}
+                      >
+                        <ListFilter className="w-3.5 h-3.5" />
+                        <span>Daftar Tabel ({availability.length})</span>
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setAvailabilityForm({
+                          date: new Date().toISOString().split('T')[0],
+                          status: 'blocked' as any,
+                          notes: '',
+                        });
+                        setShowAddAvailabilityModal(true);
+                      }}
+                      className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Set Tanggal Baru</span>
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setAvailabilityForm({
-                      date: new Date().toISOString().split('T')[0],
-                      status: 'blocked' as any,
-                      notes: '',
-                    });
-                    setShowAddAvailabilityModal(true);
-                  }}
-                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Set Status Tanggal Baru</span>
-                </button>
-              </div>
+                {/* VISUAL GRID CALENDAR VIEW */}
+                {adminCalViewMode === 'grid' && (
+                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-5 sm:p-8 shadow-xl flex flex-col gap-6">
+                    {/* Month Navigator Header */}
+                    <div className="flex items-center justify-between pb-6 border-b border-zinc-800/80">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#0066CC]/15 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+                          <Calendar className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold block">
+                            Kalender Bulanan Studio
+                          </span>
+                          <h4 className="font-serif-editorial text-2xl sm:text-3xl text-zinc-100 font-light">
+                            {calMonthNames[adminCalMonth]} {adminCalYear}
+                          </h4>
+                        </div>
+                      </div>
 
-              {/* Availability List Table */}
-              <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-6 sm:p-8 shadow-xl">
-                <h4 className="text-xs font-mono font-semibold text-[#0066CC] uppercase tracking-widest mb-4">
-                  Daftar Tanggal Khusus Terdaftar
-                </h4>
-                <div className="overflow-x-auto rounded-lg border border-zinc-800/80">
-                  <table className="w-full text-left text-xs font-light">
-                    <thead className="bg-zinc-950 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.2em] uppercase text-[10px]">
-                      <tr>
-                        <th className="p-4">Tanggal</th>
-                        <th className="p-4">Status Ketersediaan</th>
-                        <th className="p-4">Catatan / Acara</th>
-                        <th className="p-4">Aksi Admin</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/60">
-                      {availability.map((av) => (
-                        <tr key={av.id} className="hover:bg-zinc-800/40 transition-colors">
-                          <td className="p-4 font-mono text-zinc-200">{formatDate(av.date)}</td>
-                          <td className="p-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${av.status === 'booked'
-                              ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
-                              : av.status === 'blocked'
-                                ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                                : av.status === 'almost_full'
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                                  : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
-                              }`}>
-                              {av.status.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="p-4 text-zinc-300">{av.notes || '-'}</td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setAvailabilityForm({
-                                    date: av.date,
-                                    status: av.status,
-                                    notes: av.notes || '',
-                                  });
-                                  setShowAddAvailabilityModal(true);
-                                }}
-                                className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded"
-                                title="Edit Status Tanggal"
-                              >
-                                <Pencil className="w-3.5 h-3.5 text-[#0066CC]" />
-                              </button>
-                              <button
-                                onClick={() => handleResetAvailability(av.date)}
-                                className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-rose-900/50 text-rose-400 rounded"
-                                title="Reset / Hapus Tanggal"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleAdminJumpToday}
+                          className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors flex items-center gap-1.5"
+                          title="Kembali ke Hari Ini"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-[#0066CC]" />
+                          <span>Hari Ini</span>
+                        </button>
+                        <button
+                          onClick={handleAdminPrevMonth}
+                          className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={handleAdminNextMonth}
+                          className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-[#0066CC] hover:border-[#0066CC]/50 transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Legend Mini Bar */}
+                    <div className="flex items-center gap-3 flex-wrap text-xs">
+                      <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 flex items-center gap-2 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
+                        <span>Available (Tersedia)</span>
+                      </div>
+                      <div className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 flex items-center gap-2 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                        <span>Almost Full</span>
+                      </div>
+                      <div className="px-3 py-1 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 flex items-center gap-2 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                        <span>Booked (Terisi)</span>
+                      </div>
+                      <div className="px-3 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 flex items-center gap-2 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
+                        <span>Blocked (Libur)</span>
+                      </div>
+                      <span className="text-[11px] text-zinc-500 font-mono ml-auto">
+                        💡 Klik kotak tanggal untuk mengubah status / menambah catatan
+                      </span>
+                    </div>
+
+                    {/* Day Names Grid */}
+                    <div className="grid grid-cols-7 text-center pt-2 pb-2 text-xs font-semibold tracking-widest uppercase text-[#0066CC] font-mono border-b border-zinc-800/60">
+                      {calDaysOfWeek.map((d, i) => (
+                        <div key={d} className={i === 0 || i === 6 ? 'text-amber-400/80' : ''}>
+                          {d}
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+
+                    {/* Day Cells Grid */}
+                    <div className="grid grid-cols-7 gap-2 sm:gap-3">
+                      {Array.from({ length: adminStartDayOffset }).map((_, i) => (
+                        <div key={`admin-empty-${i}`} className="h-16 sm:h-20 opacity-0 pointer-events-none" />
+                      ))}
+
+                      {Array.from({ length: adminDaysInMonth }).map((_, i) => {
+                        const dayNum = i + 1;
+                        const dStr = `${adminCalYear}-${String(adminCalMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                        const dayStatus = getAdminStatusForDate(dStr);
+                        const isToday = dStr === todayStr;
+
+                        let cellClass = 'bg-emerald-950/20 hover:bg-emerald-900/35 border-emerald-800/30 text-emerald-200';
+                        let dotBg = 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]';
+                        let statusLabel = 'Available';
+                        let statusLabelColor = 'text-emerald-400/90';
+
+                        if (dayStatus.status === 'almost_full') {
+                          cellClass = 'bg-amber-950/20 hover:bg-amber-900/35 border-amber-800/30 text-amber-200';
+                          dotBg = 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]';
+                          statusLabel = 'Almost Full';
+                          statusLabelColor = 'text-amber-400/90';
+                        } else if (dayStatus.status === 'booked') {
+                          cellClass = 'bg-rose-950/20 hover:bg-rose-900/35 border-rose-900/30 text-rose-300';
+                          dotBg = 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]';
+                          statusLabel = 'Booked';
+                          statusLabelColor = 'text-rose-400/90';
+                        } else if (dayStatus.status === 'blocked') {
+                          cellClass = 'bg-zinc-900/40 border-zinc-800/60 text-zinc-500';
+                          dotBg = 'bg-zinc-600';
+                          statusLabel = 'Blocked';
+                          statusLabelColor = 'text-zinc-500';
+                        }
+
+                        return (
+                          <button
+                            key={dStr}
+                            onClick={() => {
+                              setAvailabilityForm({
+                                date: dStr,
+                                status: dayStatus.status || 'blocked',
+                                notes: dayStatus.notes || '',
+                              });
+                              setShowAddAvailabilityModal(true);
+                            }}
+                            className={`p-2.5 sm:p-3 border rounded-2xl flex flex-col justify-between items-start text-left transition-all duration-300 group hover:-translate-y-0.5 h-16 sm:h-20 ${cellClass}`}
+                            title={`Klik untuk edit status tanggal ${formatDate(dStr)}`}
+                          >
+                            <div className="w-full flex items-center justify-between">
+                              <span className="font-mono text-sm sm:text-base font-medium text-zinc-200">
+                                {dayNum}
+                              </span>
+                              {isToday && (
+                                <span className="w-2 h-2 rounded-full bg-[#0066CC] ring-2 ring-[#0066CC]/40 animate-ping" title="Hari Ini" />
+                              )}
+                            </div>
+
+                            <div className="w-full flex items-center justify-between mt-auto">
+                              <div className="flex items-center gap-1.5 truncate max-w-full">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotBg}`} />
+                                <span className={`text-[10px] font-mono tracking-tight truncate ${statusLabelColor}`}>
+                                  {dayStatus.notes ? `💬 ${dayStatus.notes}` : statusLabel}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Availability List Table */}
+                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-6 sm:p-8 shadow-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-mono font-semibold text-[#0066CC] uppercase tracking-widest">
+                      Daftar Tanggal Khusus Terdaftar ({availability.length})
+                    </h4>
+                    <span className="text-[11px] text-zinc-400 font-light">
+                      Tanggal di luar tabel ini otomatis berstatus <strong>Available</strong>.
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-zinc-800/80">
+                    <table className="w-full text-left text-xs font-light">
+                      <thead className="bg-zinc-950 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.2em] uppercase text-[10px]">
+                        <tr>
+                          <th className="p-4">Tanggal</th>
+                          <th className="p-4">Status Ketersediaan</th>
+                          <th className="p-4">Catatan / Acara</th>
+                          <th className="p-4">Aksi Admin</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/60">
+                        {availability.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="p-6 text-center text-zinc-400 font-light">
+                              Belum ada status khusus. Semua tanggal terbuka secara default (Available).
+                            </td>
+                          </tr>
+                        ) : (
+                          availability.map((av) => (
+                            <tr key={av.id || av.date} className="hover:bg-zinc-800/40 transition-colors">
+                              <td className="p-4 font-mono text-zinc-200">{formatDate(av.date)}</td>
+                              <td className="p-4">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${av.status === 'booked'
+                                    ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30'
+                                    : av.status === 'blocked'
+                                      ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                                      : av.status === 'almost_full'
+                                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+                                        : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                                  }`}>
+                                  {av.status.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="p-4 text-zinc-300">{av.notes || '-'}</td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setAvailabilityForm({
+                                        date: av.date,
+                                        status: av.status,
+                                        notes: av.notes || '',
+                                      });
+                                      setShowAddAvailabilityModal(true);
+                                    }}
+                                    className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded transition-colors"
+                                    title="Edit Status Tanggal"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 text-[#0066CC]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleResetAvailability(av.date)}
+                                    className="p-1.5 bg-zinc-950 border border-zinc-800 hover:border-rose-900/50 text-rose-400 rounded transition-colors"
+                                    title="Reset / Hapus Tanggal"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ================= TAB 6: STUDIO SETTINGS ================= */}
           {activeTab === 'settings' && (

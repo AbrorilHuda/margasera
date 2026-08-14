@@ -19,14 +19,12 @@ function mapAvailability(a: AvailabilityRow): Availability {
   };
 }
 
-/** Ambil semua data availability untuk bulan tertentu (YYYY-MM) dari Supabase */
+/** Ambil semua data availability & bookings langsung dari Supabase secara real-time */
 export async function getAvailability(yearMonth?: string): Promise<Availability[]> {
   const supabase = await createClient();
 
-  let query = (supabase as any)
-    .from('availability')
-    .select('*')
-    .order('date');
+  let startDateStr = '';
+  let endDateStr = '';
 
   if (yearMonth) {
     const parts = yearMonth.split('-');
@@ -34,18 +32,115 @@ export async function getAvailability(yearMonth?: string): Promise<Availability[
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10);
       const lastDay = new Date(year, month, 0).getDate();
-      const startDate = `${yearMonth}-01`;
-      const endDate = `${yearMonth}-${String(lastDay).padStart(2, '0')}`;
-      query = query.gte('date', startDate).lte('date', endDate);
+      startDateStr = `${yearMonth}-01`;
+      endDateStr = `${yearMonth}-${String(lastDay).padStart(2, '0')}`;
     }
   }
 
-  const { data, error } = await query;
-  if (error || !data) {
-    if (error) console.error('Error fetching availability from Supabase:', error.message);
-    return [];
+  // 1. Query tabel availability untuk admin override / manual status dari Supabase
+  let availQuery = (supabase as any).from('availability').select('*').order('date');
+  if (startDateStr && endDateStr) {
+    availQuery = availQuery.gte('date', startDateStr).lte('date', endDateStr);
   }
-  return (data as AvailabilityRow[]).map(mapAvailability);
+
+  // 2. Query tabel bookings langsung dari Supabase (kecuali pesanan yang dibatalkan)
+  let bookingsQuery = (supabase as any)
+    .from('bookings')
+    .select('id, booking_code, customer_name, service_name, package_name, booking_date, start_time, end_time, slot_type, status')
+    .neq('status', 'cancelled');
+
+  if (startDateStr && endDateStr) {
+    bookingsQuery = bookingsQuery.gte('booking_date', startDateStr).lte('booking_date', endDateStr);
+  }
+
+  const [availRes, bookingsRes] = await Promise.all([availQuery, bookingsQuery]);
+
+  const rawAvail: AvailabilityRow[] = availRes.data || [];
+  const rawBookings: any[] = bookingsRes.data || [];
+
+  const mapMap = new Map<string, Availability>();
+
+  for (const a of rawAvail) {
+    const cleanDate = a.date.split('T')[0];
+    mapMap.set(cleanDate, mapAvailability(a));
+  }
+
+  // Kelompokkan pemesanan berdasarkan tanggal
+  const bookingsByDate = new Map<string, any[]>();
+  for (const b of rawBookings) {
+    if (!b.booking_date) continue;
+    const cleanDate = b.booking_date.split('T')[0];
+    if (!bookingsByDate.has(cleanDate)) {
+      bookingsByDate.set(cleanDate, []);
+    }
+    bookingsByDate.get(cleanDate)!.push(b);
+  }
+
+  // Agregasikan pemesanan ke struktur Availability
+  for (const [dateStr, bList] of bookingsByDate.entries()) {
+    const existing = mapMap.get(dateStr);
+
+    const weddingSlots: WeddingSlot[] = existing?.weddingSlots
+      ? [...existing.weddingSlots]
+      : [
+          { id: 'w1', name: 'Sesi 1 (Pagi / Siang)', startTime: '08:00', endTime: '14:00', timeRange: '08:00 - 14:00 WIB', isBooked: false },
+          { id: 'w2', name: 'Sesi 2 (Sore / Malam)', startTime: '15:00', endTime: '21:00', timeRange: '15:00 - 21:00 WIB', isBooked: false },
+        ];
+
+    const bookedTimeSlots: BookedTimeSlot[] = existing?.bookedTimeSlots ? [...existing.bookedTimeSlots] : [];
+
+    let weddingBookedCount = 0;
+    let nonWeddingBookedCount = 0;
+
+    for (const b of bList) {
+      const isWedding =
+        (b.slot_type && b.slot_type.startsWith('wedding')) ||
+        (b.service_name &&
+          b.service_name.toLowerCase().includes('wedding') &&
+          !b.service_name.toLowerCase().includes('pre-wedding'));
+
+      if (isWedding) {
+        weddingBookedCount++;
+        if (b.slot_type === 'wedding_morning' || !weddingSlots[0].isBooked) {
+          weddingSlots[0].isBooked = true;
+          weddingSlots[0].bookedBy = b.customer_name;
+        } else {
+          weddingSlots[1].isBooked = true;
+          weddingSlots[1].bookedBy = b.customer_name;
+        }
+      } else {
+        nonWeddingBookedCount++;
+        bookedTimeSlots.push({
+          startTime: b.start_time || '09:00',
+          endTime: b.end_time || '12:00',
+          serviceCategory: b.service_name || b.package_name || 'Sesi Studio Photo',
+          customerName: b.customer_name,
+          bookingCode: b.booking_code,
+        });
+      }
+    }
+
+    // Hitung status otomatis berdasarkan kuota: Non-wedding Max 6, Wedding Max 2
+    let computedStatus: AvailabilityStatus = 'available';
+    if (existing?.status === 'blocked') {
+      computedStatus = 'blocked';
+    } else if (existing?.status === 'booked' || nonWeddingBookedCount >= 6 || weddingBookedCount >= 2) {
+      computedStatus = 'booked';
+    } else if (existing?.status === 'almost_full' || nonWeddingBookedCount >= 4 || weddingBookedCount >= 1) {
+      computedStatus = 'almost_full';
+    }
+
+    mapMap.set(dateStr, {
+      id: existing?.id || `avail-${dateStr}`,
+      date: dateStr,
+      status: computedStatus,
+      notes: existing?.notes,
+      weddingSlots,
+      bookedTimeSlots,
+    });
+  }
+
+  return Array.from(mapMap.values());
 }
 
 /** Ambil availability untuk range bulan dari Supabase */
