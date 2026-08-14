@@ -125,3 +125,90 @@
 .status-blocked {
   background-color: #4b5563;
 }
+
+/* Printable Invoice CSS Rules */
+#printable-invoice {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+#printable-invoice h1,
+#printable-invoice h2,
+#printable-invoice h3,
+#printable-invoice h4,
+#printable-invoice strong,
+#printable-invoice th,
+#printable-invoice td,
+#printable-invoice span,
+#printable-invoice div,
+#printable-invoice p {
+  color: #09090b;
+}
+#printable-invoice .text-zinc-500,
+#printable-invoice .text-zinc-600 {
+  color: #4b5563 !important;
+}
+#printable-invoice .text-zinc-400 {
+  color: #6b7280 !important;
+}
+#printable-invoice [class*="text-[#0066CC]"] {
+  color: #0066CC !important;
+}
+#printable-invoice .text-emerald-700 {
+  color: #047857 !important;
+}
+#printable-invoice .text-rose-600 {
+  color: #e11d48 !important;
+}
+#printable-invoice .text-amber-700 {
+  color: #b45309 !important;
+}
+#printable-invoice .bg-zinc-50 {
+  background-color: #f9fafb !important;
+}
+#printable-invoice .bg-zinc-100 {
+  background-color: #f3f4f6 !important;
+}
+#printable-invoice .border-zinc-200 {
+  border-color: #e5e7eb !important;
+}
+#printable-invoice .border-zinc-300 {
+  border-color: #d1d5db !important;
+}
+#printable-invoice .border-zinc-400 {
+  border-color: #9ca3af !important;
+}
+#printable-invoice .bg-blue-50\/60 {
+  background-color: #eff6ff !important;
+}
+#printable-invoice .border-blue-200\/80,
+#printable-invoice .border-blue-200\/60 {
+  border-color: #bfdbfe !important;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-invoice, #printable-invoice * {
+    visibility: visible !important;
+  }
+  #printable-invoice {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 32px !important;
+    background: #ffffff !important;
+    color: #09090b !important;
+    box-shadow: none !important;
+    border: none !important;
+    z-index: 99999 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+
