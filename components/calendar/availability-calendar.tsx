@@ -150,20 +150,20 @@ export function AvailabilityCalendar() {
   const selectedDateInfo = selectedDateStr ? getStatusForDate(selectedDateStr) : null;
 
   return (
-    <div className="w-full max-w-5xl mx-auto py-6 sm:py-10 px-4 sm:px-6">
+    <div className="w-full max-w-5xl mx-auto py-4 sm:py-10 px-2.5 sm:px-6">
       {/* Calendar Header Container */}
-      <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-2xl">
+      <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 md:p-10 shadow-2xl backdrop-blur-2xl">
         {/* Month Header Navigation */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 sm:pb-8 border-b border-zinc-800/60 gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#0066CC]/10 border border-[#0066CC]/25 flex items-center justify-center text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.15)]">
-              <CalendarIcon className="w-6 h-6" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 sm:pb-8 border-b border-zinc-800/60 gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#0066CC]/10 border border-[#0066CC]/25 flex items-center justify-center text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.15)] shrink-0">
+              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <span className="text-[11px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold block">
+              <span className="text-[10px] sm:text-[11px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold block">
                 Studio Availability
               </span>
-              <h3 className="font-serif-editorial text-3xl sm:text-4xl text-zinc-100 font-light tracking-wide mt-0.5">
+              <h3 className="font-serif-editorial text-2xl sm:text-4xl text-zinc-100 font-light tracking-wide mt-0.5">
                 {monthNames[currentMonth]} {currentYear}
               </h3>
             </div>
@@ -173,7 +173,7 @@ export function AvailabilityCalendar() {
             {!isViewingCurrentMonth && (
               <button
                 onClick={handleJumpToToday}
-                className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-[#0066CC]" />
                 <span>Hari Ini</span>
@@ -181,43 +181,43 @@ export function AvailabilityCalendar() {
             )}
             <button
               onClick={handlePrevMonth}
-              className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-sm active:scale-95"
+              className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-sm active:scale-95"
               aria-label="Bulan Sebelumnya"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button
               onClick={handleNextMonth}
-              className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-sm active:scale-95"
+              className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-sm active:scale-95"
               aria-label="Bulan Selanjutnya"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {/* Legend Pills Bar */}
-        <div className="py-5 flex items-center justify-center gap-3 sm:gap-6 flex-wrap border-b border-zinc-800/60 text-xs font-mono">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+        <div className="py-4 flex items-center justify-center gap-2 sm:gap-4 flex-wrap border-b border-zinc-800/60 text-[11px] sm:text-xs font-mono">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <span>Tersedia ({monthStats.available})</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
             <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
             <span>Slot Terbatas ({monthStats.almost_full})</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300">
             <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
             <span>Penuh ({monthStats.booked})</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
             <span className="w-2 h-2 rounded-full bg-zinc-600" />
             <span>Libur ({monthStats.blocked})</span>
           </div>
         </div>
 
         {/* Days of Week Header */}
-        <div className="grid grid-cols-7 text-center pt-6 pb-3 text-xs font-mono font-semibold tracking-wider uppercase text-zinc-400">
+        <div className="grid grid-cols-7 text-center pt-4 sm:pt-6 pb-2 sm:pb-3 text-[11px] sm:text-xs font-mono font-semibold tracking-wider uppercase text-zinc-400">
           {daysOfWeek.map((day, idx) => (
             <div key={day} className={idx === 0 || idx === 6 ? 'text-amber-400/80' : ''}>
               {day}
@@ -226,7 +226,7 @@ export function AvailabilityCalendar() {
         </div>
 
         {/* Calendar Grid */}
-        <div className={`grid grid-cols-7 gap-2 sm:gap-3 pt-2 relative transition-opacity duration-300 ${isLoadingMonth ? 'opacity-40 pointer-events-none' : ''}`}>
+        <div className={`grid grid-cols-7 gap-1 sm:gap-2.5 md:gap-3 pt-2 relative transition-opacity duration-300 ${isLoadingMonth ? 'opacity-40 pointer-events-none' : ''}`}>
           {isLoadingMonth && (
             <div className="absolute inset-0 flex items-center justify-center z-20 bg-zinc-950/40 backdrop-blur-md rounded-2xl">
               <Loader2 className="w-8 h-8 text-[#0066CC] animate-spin" />
@@ -235,7 +235,7 @@ export function AvailabilityCalendar() {
 
           {/* Empty padding cells */}
           {Array.from({ length: startDayOffset }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-16 sm:h-20 md:h-24 opacity-0 pointer-events-none" />
+            <div key={`empty-${i}`} className="h-14 sm:h-20 md:h-24 opacity-0 pointer-events-none" />
           ))}
 
           {/* Days */}
@@ -274,7 +274,7 @@ export function AvailabilityCalendar() {
             }
 
             if (isSelected) {
-              cardBg = 'bg-[#0066CC]/20 border-2 border-[#0066CC] ring-4 ring-[#0066CC]/20 shadow-[0_8px_25px_rgba(0,102,204,0.35)] scale-[1.03] z-10';
+              cardBg = 'bg-[#0066CC]/20 border-2 border-[#0066CC] ring-2 sm:ring-4 ring-[#0066CC]/20 shadow-[0_8px_25px_rgba(0,102,204,0.35)] scale-[1.02] sm:scale-[1.03] z-10';
               dotBg = 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]';
               statusLabelColor = 'text-white font-semibold';
             }
@@ -283,25 +283,25 @@ export function AvailabilityCalendar() {
               <button
                 key={dateStr}
                 onClick={() => setSelectedDateStr(dateStr)}
-                className={`relative h-16 sm:h-20 md:h-24 p-2.5 sm:p-3 border rounded-2xl flex flex-col justify-between items-start transition-all duration-300 group text-left ${cardBg} ${isPast && !isSelected ? 'opacity-50 hover:opacity-80' : ''
+                className={`relative h-14 sm:h-20 md:h-24 p-1.5 sm:p-3 border rounded-xl sm:rounded-2xl flex flex-col justify-between items-start transition-all duration-300 group text-left ${cardBg} ${isPast && !isSelected ? 'opacity-50 hover:opacity-80' : ''
                   }`}
               >
                 {/* Date Header */}
                 <div className="w-full flex items-center justify-between">
-                  <span className={`font-mono text-sm sm:text-base font-medium ${isSelected ? 'text-white font-bold' : 'text-zinc-200'}`}>
+                  <span className={`font-mono text-xs sm:text-base font-medium ${isSelected ? 'text-white font-bold' : 'text-zinc-200'}`}>
                     {dayNum}
                   </span>
 
                   {isToday && (
-                    <span className="w-2 h-2 rounded-full bg-[#0066CC] ring-2 ring-[#0066CC]/40 animate-ping" title="Hari Ini" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#0066CC] ring-2 ring-[#0066CC]/40 animate-ping" title="Hari Ini" />
                   )}
                 </div>
 
-                {/* Minimal Footer Dot & Label */}
-                <div className="w-full flex items-center justify-between mt-auto">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${dotBg}`} />
-                    <span className={`text-[10px] sm:text-[11px] font-mono tracking-tight ${statusLabelColor}`}>
+                {/* Status Dot & Label (Dot only on small screens to prevent overflow, text on sm+) */}
+                <div className="w-full flex items-center justify-start sm:justify-between mt-auto">
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <span className={`w-2 h-2 sm:w-2 sm:h-2 rounded-full shrink-0 ${dotBg}`} />
+                    <span className={`hidden sm:inline text-[10px] sm:text-[11px] font-mono tracking-tight ${statusLabelColor}`}>
                       {statusLabel}
                     </span>
                   </div>
@@ -321,30 +321,30 @@ export function AvailabilityCalendar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3 }}
-            className="mt-6 p-6 sm:p-8 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl flex flex-col gap-6 shadow-2xl backdrop-blur-2xl"
+            className="mt-6 p-4 sm:p-8 bg-zinc-950/90 border border-zinc-800/80 rounded-2xl sm:rounded-3xl flex flex-col gap-6 shadow-2xl backdrop-blur-2xl"
           >
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-zinc-800/60 gap-4">
-              <div className="flex items-start gap-4">
-                <div className="mt-1">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="mt-1 shrink-0">
                   {selectedDateInfo.status === 'available' && (
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                      <CheckCircle2 className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   )}
                   {selectedDateInfo.status === 'almost_full' && (
-                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                      <AlertCircle className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   )}
                   {selectedDateInfo.status === 'booked' && (
-                    <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                      <XCircle className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                      <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   )}
                   {selectedDateInfo.status === 'blocked' && (
-                    <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
-                      <Slash className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
+                      <Slash className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   )}
                 </div>
@@ -353,7 +353,7 @@ export function AvailabilityCalendar() {
                   <span className="text-[10px] text-[#0066CC] font-mono font-semibold tracking-widest uppercase">
                     Detail Tanggal Terpilih
                   </span>
-                  <h4 className="font-serif-editorial text-2xl sm:text-3xl text-zinc-100 font-light mt-0.5">
+                  <h4 className="font-serif-editorial text-xl sm:text-3xl text-zinc-100 font-light mt-0.5">
                     {formatDate(selectedDateStr)}
                   </h4>
                   {selectedDateInfo.notes && (
@@ -368,7 +368,7 @@ export function AvailabilityCalendar() {
                 {selectedDateInfo.status !== 'blocked' && selectedDateInfo.status !== 'booked' ? (
                   <Link
                     href={`/booking?date=${selectedDateStr}`}
-                    className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-2xl transition-all shadow-[0_0_20px_rgba(0,102,204,0.3)] flex items-center gap-2"
+                    className="w-full sm:w-auto px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl sm:rounded-2xl transition-all shadow-[0_0_20px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2"
                   >
                     <span>Pesan Tanggal Ini</span>
                     <ArrowRight className="w-4 h-4" />
@@ -376,7 +376,7 @@ export function AvailabilityCalendar() {
                 ) : (
                   <button
                     disabled
-                    className="px-6 py-3 bg-zinc-900 text-zinc-500 text-xs font-semibold uppercase tracking-wider cursor-not-allowed border border-zinc-800 rounded-2xl"
+                    className="w-full sm:w-auto px-6 py-3 bg-zinc-900 text-zinc-500 text-xs font-semibold uppercase tracking-wider cursor-not-allowed border border-zinc-800 rounded-xl sm:rounded-2xl"
                   >
                     Tanggal Tidak Tersedia
                   </button>

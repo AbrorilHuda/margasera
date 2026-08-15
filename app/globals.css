@@ -225,6 +225,26 @@ html.light .hero-banner .text-zinc-200 {
   color: #E2E8F0 !important;
 }
 
+/* Image Card Overlay Exemption: Text over dark photo vignettes stays crisp white in Light Mode */
+html.light .img-card-overlay h3,
+html.light .img-card-overlay p,
+html.light .img-card-overlay span,
+html.light .img-card-overlay div {
+  color: inherit;
+}
+html.light .img-card-overlay .text-zinc-100 {
+  color: #FFFFFF !important;
+}
+html.light .img-card-overlay .text-zinc-200 {
+  color: #E2E8F0 !important;
+}
+html.light .img-card-overlay .text-zinc-300 {
+  color: #CBD5E1 !important;
+}
+html.light .img-card-overlay .text-zinc-400 {
+  color: #94A3B8 !important;
+}
+
 /* Header & Navigation in Light Mode */
 html.light header {
   background: rgba(255, 255, 255, 0.94) !important;
