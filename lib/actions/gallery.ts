@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
+import { deleteCloudinaryImage } from '@/lib/actions/upload';
 import type { Database } from '@/lib/supabase/database.types';
 import type { GalleryProject, GalleryImage } from '@/lib/types';
 
@@ -196,9 +197,21 @@ export async function deleteGalleryImage(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
-  const { error } = await (supabase as any).from('gallery_images').delete().eq('id', imageId);
+  // Fetch image URL before deleting from DB
+  const { data: img } = await (supabase as any)
+    .from('gallery_images')
+    .select('image_url')
+    .eq('id', imageId)
+    .single();
 
+  const { error } = await (supabase as any).from('gallery_images').delete().eq('id', imageId);
   if (error) return { success: false, error: error.message };
+
+  // Auto-delete from Cloudinary CDN if it's a Cloudinary URL
+  if (img?.image_url) {
+    await deleteCloudinaryImage(img.image_url);
+  }
+
   return { success: true };
 }
 
@@ -209,10 +222,36 @@ export async function deleteGalleryProject(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
+  // Fetch project cover and album images before deleting
+  const { data: project } = await (supabase as any)
+    .from('gallery_projects')
+    .select('cover_image')
+    .eq('id', id)
+    .single();
+
+  const { data: images } = await (supabase as any)
+    .from('gallery_images')
+    .select('image_url')
+    .eq('project_id', id);
+
   await (supabase as any).from('gallery_images').delete().eq('project_id', id);
   const { error } = await (supabase as any).from('gallery_projects').delete().eq('id', id);
 
   if (error) return { success: false, error: error.message };
+
+  // Auto-delete cover and album photos from Cloudinary CDN
+  const urlsToDelete = new Set<string>();
+  if (project?.cover_image) urlsToDelete.add(project.cover_image);
+  if (images && images.length > 0) {
+    images.forEach((img: { image_url: string }) => {
+      if (img.image_url) urlsToDelete.add(img.image_url);
+    });
+  }
+
+  for (const url of Array.from(urlsToDelete)) {
+    await deleteCloudinaryImage(url);
+  }
+
   return { success: true };
 }
 

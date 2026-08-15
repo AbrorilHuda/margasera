@@ -73,24 +73,30 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         />
       </div>
 
-      {/* Editorial Photo Stream Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {project.images?.map((img, idx) => (
-          <div
-            key={img.id || idx}
-            className={`relative border border-zinc-800 bg-zinc-900 ${img.aspectRatio === 'landscape' ? 'md:col-span-2 h-[500px]' : 'h-[600px]'
-              }`}
-          >
-            <Image
-              src={img.imageUrl}
-              alt={img.altText}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+      {/* Editorial Photo Stream Grid (Filter out duplicate cover image) */}
+      {(() => {
+        const albumImages = (project.images || []).filter((img) => img.imageUrl !== project.coverImage);
+        if (albumImages.length === 0) return null;
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {albumImages.map((img, idx) => (
+              <div
+                key={img.id || idx}
+                className={`relative border border-zinc-800 bg-zinc-900 ${img.aspectRatio === 'landscape' ? 'md:col-span-2 h-[500px]' : 'h-[600px]'
+                  }`}
+              >
+                <Image
+                  src={img.imageUrl}
+                  alt={img.altText}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* CTA Box */}
       <div className="mt-20 p-12 bg-zinc-900 border border-zinc-800 text-center flex flex-col items-center gap-4">

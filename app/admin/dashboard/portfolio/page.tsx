@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { FolderPlus, Sparkles, MapPin, Trash2, Images, X, Loader2 } from 'lucide-react';
+import { FolderPlus, Sparkles, MapPin, Trash2, Images, X, Loader2, Upload } from 'lucide-react';
 import {
   getGalleryProjects,
   createGalleryProject,
@@ -13,6 +13,7 @@ import {
   deleteGalleryImage,
 } from '@/lib/actions/gallery';
 import { getServices } from '@/lib/actions/services';
+import { getCloudinarySignature } from '@/lib/actions/upload';
 import { useToast } from '@/components/ui/toast-context';
 import type { GalleryProject, GalleryImage, Service, ServiceCategory } from '@/lib/types';
 
@@ -31,6 +32,52 @@ export default function PortfolioPage() {
 
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [isSubmittingImage, setIsSubmittingImage] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingAlbumImg, setIsUploadingAlbumImg] = useState(false);
+
+  // Helper: Secure Signed Direct upload file to Cloudinary
+  const handleCloudinaryFileUpload = async (
+    file: File,
+    onSuccess: (url: string) => void,
+    setLoadingState: (loading: boolean) => void
+  ) => {
+    setLoadingState(true);
+    try {
+      // 1. Dapatkan tanda tangan digital SHA-1 dari Server Action (hanya bisa jika logged in admin)
+      const sigRes = await getCloudinarySignature();
+      if (!sigRes.success || !sigRes.signature || !sigRes.apiKey || !sigRes.cloudName || !sigRes.timestamp) {
+        toast.error(`Gagal autentikasi upload: ${sigRes.error || 'Konfigurasi API Secret belum valid.'}`);
+        return;
+      }
+
+      // 2. Buat payload aman yang ditandatangani untuk Cloudinary API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('api_key', sigRes.apiKey);
+      formData.append('timestamp', String(sigRes.timestamp));
+      formData.append('signature', sigRes.signature);
+      formData.append('folder', sigRes.folder || 'margasera');
+
+      // 3. Post ke Cloudinary REST API
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${sigRes.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.secure_url) {
+        onSuccess(data.secure_url);
+        toast.success('Foto berhasil di-upload secara aman ke Cloudinary!');
+      } else {
+        toast.error(`Gagal upload Cloudinary: ${data.error?.message || 'Pastikan API Key & Secret valid.'}`);
+      }
+    } catch (err) {
+      console.error('Error uploading file to Cloudinary:', err);
+      toast.error('Terjadi kesalahan koneksi saat mengunggah foto.');
+    } finally {
+      setLoadingState(false);
+    }
+  };
 
   // Forms
   const [newProjectForm, setNewProjectForm] = useState({
@@ -374,10 +421,42 @@ export default function PortfolioPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-zinc-300 uppercase font-mono font-medium">URL Cover Image</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">URL Cover Image *</label>
+                  <label className="text-[11px] text-[#0066CC] hover:underline cursor-pointer flex items-center gap-1 font-mono">
+                    {isUploadingCover ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin text-[#0066CC]" />
+                        <span>Mengunggah...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3 h-3" />
+                        <span>Upload File (Cloudinary)</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingCover}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleCloudinaryFileUpload(
+                            file,
+                            (url) => setNewProjectForm((prev) => ({ ...prev, coverImage: url })),
+                            setIsUploadingCover
+                          );
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
                 <input
                   type="text"
                   required
+                  placeholder="https://res.cloudinary.com/... atau upload file"
                   value={newProjectForm.coverImage}
                   onChange={(e) => setNewProjectForm({ ...newProjectForm, coverImage: e.target.value })}
                   className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-[11px]"
@@ -431,11 +510,42 @@ export default function PortfolioPage() {
               <span className="font-semibold text-[#0066CC] uppercase font-mono text-[11px]">+ Tambah Foto Lembaran Baru ke Album Ini</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 flex flex-col gap-1">
-                  <label className="text-[10px] text-zinc-400 uppercase font-mono">URL Foto *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-400 uppercase font-mono">URL Foto *</label>
+                    <label className="text-[10px] text-[#0066CC] hover:underline cursor-pointer flex items-center gap-1 font-mono">
+                      {isUploadingAlbumImg ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin text-[#0066CC]" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3 h-3" />
+                          <span>Upload File (Cloudinary)</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingAlbumImg}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleCloudinaryFileUpload(
+                              file,
+                              (url) => setNewImageForm((prev) => ({ ...prev, imageUrl: url })),
+                              setIsUploadingAlbumImg
+                            );
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   <input
                     type="url"
                     required
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://res.cloudinary.com/... atau upload file"
                     value={newImageForm.imageUrl}
                     onChange={(e) => setNewImageForm({ ...newImageForm, imageUrl: e.target.value })}
                     className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] p-2.5 rounded-md text-zinc-100 focus:outline-none text-xs"
