@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Layers, Pencil, Trash2, X } from 'lucide-react';
 import { getServices, upsertService, deleteService, getPackages } from '@/lib/actions/services';
+import { useToast } from '@/components/ui/toast-context';
 import type { Service, Package } from '@/lib/types';
 
 export default function ServicesPage() {
+  const { toast, confirmModal } = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -46,15 +48,28 @@ export default function ServicesPage() {
       setShowAddServiceModal(false);
       setEditingService(null);
       setNewServiceForm({ name: '', slug: '', description: '' });
+      toast.success(editingService ? 'Layanan berhasil diperbarui.' : 'Layanan baru berhasil ditambahkan.');
+    } else {
+      toast.error(`Gagal menyimpan layanan: ${res.error}`);
     }
   };
 
-  const handleDeleteService = async (id: string, name: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus layanan "${name}"? Semua paket dalam layanan ini juga akan terhapus.`)) {
-      const res = await deleteService(id);
-      if (res.success) await refreshData();
-      else alert(`Gagal menghapus layanan: ${res.error}`);
-    }
+  const handleDeleteService = (id: string, name: string) => {
+    confirmModal({
+      title: `Hapus Layanan ${name}?`,
+      message: `Apakah Anda yakin ingin menghapus layanan "${name}"? Semua paket dalam layanan ini juga akan terhapus secara permanen.`,
+      confirmText: 'Ya, Hapus Layanan',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteService(id);
+        if (res.success) {
+          await refreshData();
+          toast.success(`Layanan ${name} berhasil dihapus.`);
+        } else {
+          toast.error(`Gagal menghapus layanan: ${res.error}`);
+        }
+      },
+    });
   };
 
   if (loadingData) {

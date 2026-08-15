@@ -12,9 +12,11 @@ import { createBooking } from '@/lib/actions/bookings';
 import type { Service, Package, Availability, AvailabilityStatus, StudioSettings } from '@/lib/types';
 import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod } from '@/lib/utils';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
+import { useToast } from '@/components/ui/toast-context';
 
 export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { studioSettings?: StudioSettings }) {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   // Data from Supabase
   const [services, setServices] = useState<Service[]>([]);
@@ -180,22 +182,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   const handleNextStep = () => {
     if (currentStep === 1) {
       if (!selectedServiceId || !selectedPackageId) {
-        alert('Silakan pilih Layanan dan Paket Dokumentasi terlebih dahulu.');
+        toast.warning('Silakan pilih Layanan dan Paket Dokumentasi terlebih dahulu.');
         return;
       }
     }
     if (currentStep === 2) {
       if (!selectedDate) {
-        alert('Silakan pilih Tanggal Rencana Acara terlebih dahulu.');
+        toast.warning('Silakan pilih Tanggal Rencana Acara terlebih dahulu.');
         return;
       }
       if (!startTime || !endTime) {
-        alert('Silakan tentukan Jam Mulai dan Jam Selesai Sesi terlebih dahulu.');
+        toast.warning('Silakan tentukan Jam Mulai dan Jam Selesai Sesi terlebih dahulu.');
         return;
       }
       const dateInfo = getSelectedDateInfo(selectedDate);
       if (dateInfo.status === 'blocked' || dateInfo.status === 'booked') {
-        alert(
+        toast.error(
           dateInfo.status === 'blocked'
             ? `Tanggal ${formatDate(selectedDate)} sedang dikunci / libur studio.`
             : `Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked).`
@@ -204,33 +206,33 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       }
       const conflict = getSelectedDateConflict();
       if (conflict.hasConflict) {
-        alert(conflict.reason || 'Tanggal atau jam yang Anda pilih tidak tersedia.');
+        toast.error(conflict.reason || 'Tanggal atau jam yang Anda pilih tidak tersedia.');
         return;
       }
     }
     if (currentStep === 3) {
       if (!customerName.trim()) {
-        alert('Silakan isi Nama Lengkap terlebih dahulu.');
+        toast.warning('Silakan isi Nama Lengkap terlebih dahulu.');
         return;
       }
       if (isCoupleService(selectedService) && !partnerName.trim()) {
-        alert('Silakan isi Nama Pasangan terlebih dahulu.');
+        toast.warning('Silakan isi Nama Pasangan terlebih dahulu.');
         return;
       }
       if (!whatsapp.trim()) {
-        alert('Silakan isi Nomor WhatsApp terlebih dahulu.');
+        toast.warning('Silakan isi Nomor WhatsApp terlebih dahulu.');
         return;
       }
       if (!email.trim()) {
-        alert('Silakan isi Alamat Email terlebih dahulu.');
+        toast.warning('Silakan isi Alamat Email terlebih dahulu.');
         return;
       }
       if (!instagram.trim()) {
-        alert('Silakan isi Username Instagram Client terlebih dahulu.');
+        toast.warning('Silakan isi Username Instagram Client terlebih dahulu.');
         return;
       }
       if (!location.trim()) {
-        alert('Silakan isi Lokasi Acara / Venue terlebih dahulu.');
+        toast.warning('Silakan isi Lokasi Acara / Venue terlebih dahulu.');
         return;
       }
     }

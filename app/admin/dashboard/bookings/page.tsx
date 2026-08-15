@@ -36,6 +36,7 @@ import { getServices, getPackages } from '@/lib/actions/services';
 import { getStudioSettings } from '@/lib/actions/settings';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-context';
 import type { Booking, BookingStatus, Service, Package, StudioSettings } from '@/lib/types';
 
 function generateGoogleCalendarUrl(b: Booking): string {
@@ -58,6 +59,7 @@ function generateGoogleCalendarUrl(b: Booking): string {
 }
 
 export default function BookingsPage() {
+  const { toast, confirmModal } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
@@ -129,8 +131,12 @@ export default function BookingsPage() {
   // Actions
   const handleUpdateBookingStatus = async (id: string, newStatus: BookingStatus) => {
     const res = await updateBookingStatus(id, newStatus);
-    if (res.success) await refreshData();
-    else alert(`Gagal memperbarui status: ${res.error}`);
+    if (res.success) {
+      await refreshData();
+      toast.success(`Status booking berhasil diubah menjadi ${newStatus}.`);
+    } else {
+      toast.error(`Gagal memperbarui status: ${res.error}`);
+    }
   };
 
   const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: 'unpaid' | 'dp_paid' | 'paid_full') => {
@@ -140,17 +146,28 @@ export default function BookingsPage() {
       if (selectedBookingForDetail && selectedBookingForDetail.id === id) {
         setSelectedBookingForDetail({ ...selectedBookingForDetail, paymentStatus: newPaymentStatus });
       }
+      toast.success(`Status pembayaran berhasil diperbarui.`);
     } else {
-      alert(`Gagal memperbarui status pembayaran: ${res.error}`);
+      toast.error(`Gagal memperbarui status pembayaran: ${res.error}`);
     }
   };
 
-  const handleDeleteBooking = async (id: string, code: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus booking "${code}"?`)) {
-      const res = await deleteBooking(id);
-      if (res.success) await refreshData();
-      else alert(`Gagal menghapus booking: ${res.error}`);
-    }
+  const handleDeleteBooking = (id: string, code: string) => {
+    confirmModal({
+      title: `Hapus Pesanan ${code}?`,
+      message: `Apakah Anda yakin ingin menghapus data pemesanan "${code}" secara permanen? Data yang terhapus tidak dapat dikembalikan.`,
+      confirmText: 'Ya, Hapus Permanen',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteBooking(id);
+        if (res.success) {
+          await refreshData();
+          toast.success(`Data booking ${code} berhasil dihapus.`);
+        } else {
+          toast.error(`Gagal menghapus booking: ${res.error}`);
+        }
+      },
+    });
   };
 
   const handleCreateBooking = async (e: React.FormEvent) => {
@@ -182,6 +199,7 @@ export default function BookingsPage() {
     if (res.success) {
       await refreshData();
       setShowAddBookingModal(false);
+      toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
       setNewBookingForm({
         customerName: '',
         whatsapp: '',
@@ -195,7 +213,7 @@ export default function BookingsPage() {
         notes: '',
       });
     } else {
-      alert(`Gagal menyimpan booking manual: ${res.error}`);
+      toast.error(`Gagal menyimpan booking manual: ${res.error}`);
     }
   };
 

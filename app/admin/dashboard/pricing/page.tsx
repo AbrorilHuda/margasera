@@ -4,9 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PackagePlus, Check, Trash2, X } from 'lucide-react';
 import { getServices, getPackages, upsertPackage, deletePackage } from '@/lib/actions/services';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-context';
 import type { Service, Package } from '@/lib/types';
 
 export default function PricingPage() {
+  const { toast, confirmModal } = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -80,11 +82,22 @@ export default function PricingPage() {
     }
   };
 
-  const handleDeletePackage = async (id: string) => {
-    if (window.confirm('Hapus paket ini?')) {
-      const res = await deletePackage(id);
-      if (res.success) await refreshData();
-    }
+  const handleDeletePackage = (id: string) => {
+    confirmModal({
+      title: 'Hapus Paket Dokumentasi?',
+      message: 'Apakah Anda yakin ingin menghapus paket ini? Data paket akan dihapus secara permanen.',
+      confirmText: 'Ya, Hapus Paket',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deletePackage(id);
+        if (res.success) {
+          await refreshData();
+          toast.success('Paket berhasil dihapus.');
+        } else {
+          toast.error(`Gagal menghapus paket: ${res.error}`);
+        }
+      },
+    });
   };
 
   const handleTogglePackagePopular = async (pkg: Package) => {

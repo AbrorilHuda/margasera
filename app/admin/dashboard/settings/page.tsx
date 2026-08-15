@@ -4,9 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, Phone, Mail } from 'lucide-react';
 import { getStudioSettings, updateStudioSettings } from '@/lib/actions/settings';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
+import { useToast } from '@/components/ui/toast-context';
 import type { StudioSettings } from '@/lib/types';
 
 export default function SettingsPage() {
+  const { toast } = useToast();
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -32,9 +34,10 @@ export default function SettingsPage() {
     const res = await updateStudioSettings(studioSettings);
     if (res.success) {
       setSettingsSaved(true);
+      toast.success('Pengaturan profil studio & rekening bank berhasil disimpan.');
       setTimeout(() => setSettingsSaved(false), 3000);
     } else {
-      alert(`Gagal menyimpan pengaturan: ${res.error}`);
+      toast.error(`Gagal menyimpan pengaturan: ${res.error}`);
     }
   };
 

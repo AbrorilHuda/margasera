@@ -13,9 +13,11 @@ import {
   deleteGalleryImage,
 } from '@/lib/actions/gallery';
 import { getServices } from '@/lib/actions/services';
+import { useToast } from '@/components/ui/toast-context';
 import type { GalleryProject, GalleryImage, Service, ServiceCategory } from '@/lib/types';
 
 export default function PortfolioPage() {
+  const { toast, confirmModal } = useToast();
   const [projects, setProjects] = useState<GalleryProject[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -83,8 +85,9 @@ export default function PortfolioPage() {
       const updatedImgs = await getProjectImages(selectedProjectForImages.id);
       setProjectImages(updatedImgs);
       setNewImageForm({ imageUrl: '', altText: '', aspectRatio: 'landscape' });
+      toast.success('Foto portofolio berhasil ditambahkan.');
     } else {
-      alert(`Gagal menambah foto: ${res.error}`);
+      toast.error(`Gagal menambah foto: ${res.error}`);
     }
   };
 
@@ -94,8 +97,9 @@ export default function PortfolioPage() {
     if (res.success) {
       const updatedImgs = await getProjectImages(selectedProjectForImages.id);
       setProjectImages(updatedImgs);
+      toast.success('Foto berhasil dihapus.');
     } else {
-      alert(`Gagal menghapus foto: ${res.error}`);
+      toast.error(`Gagal menghapus foto: ${res.error}`);
     }
   };
 
@@ -117,6 +121,7 @@ export default function PortfolioPage() {
     if (res.success) {
       await refreshData();
       setShowAddProjectModal(false);
+      toast.success(`Project portofolio "${title}" berhasil ditambahkan.`);
       setNewProjectForm({
         title: '',
         category: services[0]?.slug || 'wedding',
@@ -128,22 +133,36 @@ export default function PortfolioPage() {
         isFeatured: false,
       });
     } else {
-      alert(`Gagal menyimpan project: ${res.error}`);
+      toast.error(`Gagal menyimpan project: ${res.error}`);
     }
   };
 
-  const handleDeleteProject = async (id: string, title?: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus project "${title || 'ini'}"?`)) {
-      const res = await deleteGalleryProject(id);
-      if (res.success) await refreshData();
-      else alert(`Gagal menghapus project: ${res.error}`);
-    }
+  const handleDeleteProject = (id: string, title?: string) => {
+    confirmModal({
+      title: `Hapus Project ${title || ''}?`,
+      message: `Apakah Anda yakin ingin menghapus project "${title || 'ini'}"? Foto-foto dalam project ini juga akan terhapus.`,
+      confirmText: 'Ya, Hapus Project',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteGalleryProject(id);
+        if (res.success) {
+          await refreshData();
+          toast.success('Project portofolio berhasil dihapus.');
+        } else {
+          toast.error(`Gagal menghapus project: ${res.error}`);
+        }
+      },
+    });
   };
 
   const handleToggleProjectFeatured = async (id: string, currentFeatured: boolean) => {
     const res = await toggleProjectFeatured(id, !currentFeatured);
-    if (res.success) await refreshData();
-    else alert(`Gagal memperbarui status featured: ${res.error}`);
+    if (res.success) {
+      await refreshData();
+      toast.success(currentFeatured ? 'Status featured dilepas.' : 'Project diset sebagai Featured!');
+    } else {
+      toast.error(`Gagal memperbarui status featured: ${res.error}`);
+    }
   };
 
   const filteredProjects = projects.filter((p) =>

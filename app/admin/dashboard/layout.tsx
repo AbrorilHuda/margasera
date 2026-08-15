@@ -26,6 +26,7 @@ import { getStudioSettings } from '@/lib/actions/settings';
 import type { StudioSettings } from '@/lib/types';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useToast } from '@/components/ui/toast-context';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Ikhtisar & Stats', icon: LayoutDashboard },
@@ -49,6 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { confirmModal } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
@@ -62,11 +64,17 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     setSidebarOpen(false);
   }, [pathname]);
 
-  const handleLogout = async () => {
-    if (window.confirm('Apakah Anda yakin ingin keluar dari Dashboard Admin?')) {
-      setIsLoggingOut(true);
-      await signOutAdmin();
-    }
+  const handleLogout = () => {
+    confirmModal({
+      title: 'Keluar dari Dashboard Admin?',
+      message: 'Apakah Anda yakin ingin mengakhiri sesi admin saat ini?',
+      confirmText: 'Ya, Keluar Sesi',
+      variant: 'danger',
+      onConfirm: async () => {
+        setIsLoggingOut(true);
+        await signOutAdmin();
+      },
+    });
   };
 
   const pageTitle = PAGE_TITLES[pathname] ?? 'Admin Dashboard';

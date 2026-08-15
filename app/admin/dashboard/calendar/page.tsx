@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { getAvailability, updateAvailabilityStatus, resetAvailabilityDate } from '@/lib/actions/availability';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-context';
 import type { Availability } from '@/lib/types';
 
 const MONTH_NAMES = [
@@ -24,6 +25,7 @@ const MONTH_NAMES = [
 const DAYS_OF_WEEK = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
 export default function CalendarPage() {
+  const { toast, confirmModal } = useToast();
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -60,22 +62,32 @@ export default function CalendarPage() {
     if (res.success) {
       await refreshData();
       setShowModal(false);
+      toast.success(`Status ketersediaan tanggal ${formatDate(availabilityForm.date)} berhasil diperbarui.`);
       setAvailabilityForm({
         date: new Date().toISOString().split('T')[0],
         status: 'blocked',
         notes: '',
       });
     } else {
-      alert(`Gagal menyetel status tanggal: ${res.error}`);
+      toast.error(`Gagal menyetel status tanggal: ${res.error}`);
     }
   };
 
-  const handleResetAvailability = async (date: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin me-reset status pada tanggal ${formatDate(date)}?`)) {
-      const res = await resetAvailabilityDate(date);
-      if (res.success) await refreshData();
-      else alert(`Gagal me-reset tanggal: ${res.error}`);
-    }
+  const handleResetAvailability = (date: string) => {
+    confirmModal({
+      title: `Reset Tanggal ${formatDate(date)}?`,
+      message: `Apakah Anda yakin ingin me-reset status ketersediaan pada tanggal ${formatDate(date)}? Status akan kembali ke Otomatis (Available/Booked).`,
+      confirmText: 'Ya, Reset Status',
+      onConfirm: async () => {
+        const res = await resetAvailabilityDate(date);
+        if (res.success) {
+          await refreshData();
+          toast.success(`Status tanggal ${formatDate(date)} berhasil di-reset.`);
+        } else {
+          toast.error(`Gagal me-reset tanggal: ${res.error}`);
+        }
+      },
+    });
   };
 
   const getStatusForDate = (dateStr: string) => {

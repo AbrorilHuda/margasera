@@ -8,9 +8,11 @@ import { getBookingByCode, cancelBookingByClient } from '@/lib/actions/bookings'
 import { Booking, StudioSettings } from '@/lib/types';
 import { formatDate, formatCurrency, getTimeOfDayLabel } from '@/lib/utils';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
+import { useToast } from '@/components/ui/toast-context';
 
 export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { studioSettings?: StudioSettings }) {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const [inputCode, setInputCode] = useState('');
   const [searchedBooking, setSearchedBooking] = useState<Booking | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -386,9 +388,9 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                           : `[DIBATALKAN CLIENT]: ${cancelReason}`,
                       });
                       setShowCancelModal(false);
-                      alert('Pemesanan Anda berhasil dibatalkan. Slot tanggal pada kalender telah dibebaskan.');
+                      toast.success('Pemesanan Anda berhasil dibatalkan. Slot tanggal pada kalender telah dibebaskan.');
                     } else {
-                      alert(`Gagal membatalkan pemesanan: ${res.error}`);
+                      toast.error(`Gagal membatalkan pemesanan: ${res.error}`);
                     }
                   }}
                   className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-xs font-semibold tracking-wider uppercase rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"

@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 import { LayoutWrapper } from '@/components/navigation/layout-wrapper';
 import { Footer } from '@/components/navigation/footer';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ToastProvider } from '@/components/ui/toast-context';
 
 export default function RootLayout({
   children,
@@ -40,9 +41,11 @@ export default function RootLayout({
     <html lang="id" className={`${cormorant.variable} ${jakarta.variable} dark scroll-smooth`} suppressHydrationWarning>
       <body className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#0066CC] selection:text-white transition-colors duration-300">
         <ThemeProvider>
-          <LayoutWrapper footer={<Footer />}>
-            {children}
-          </LayoutWrapper>
+          <ToastProvider>
+            <LayoutWrapper footer={<Footer />}>
+              {children}
+            </LayoutWrapper>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
