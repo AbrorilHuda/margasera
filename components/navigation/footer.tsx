@@ -169,7 +169,7 @@ export async function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-light">
-          <p>© {new Date().getFullYear()} {s.studioName}. Hak Cipta Dilindungi. by <Link href="https://github.com/AbrorilHuda" target="_blank" rel="noopener noreferrer" className="hover:text-[#0066CC] transition-colors">{s.ownerName || 'Abroril Huda'}</Link></p>
+          <p>© {new Date().getFullYear()} {s.studioName}. Hak Cipta Dilindungi. by <Link href="https://github.com/AbrorilHuda" target="_blank" rel="noopener noreferrer" className="hover:text-[#0066CC] transition-colors">Abroril Huda</Link></p>
           <div className="flex items-center gap-6">
             <span className="text-zinc-600">Cinematic &amp; Editorial Visuals</span>
           </div>
