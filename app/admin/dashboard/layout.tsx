@@ -25,6 +25,7 @@ import { signOutAdmin } from '@/lib/actions/admin';
 import { getStudioSettings } from '@/lib/actions/settings';
 import type { StudioSettings } from '@/lib/types';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Ikhtisar & Stats', icon: LayoutDashboard },
@@ -74,9 +75,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-[#0066CC] selection:text-white">
       {/* ===== SIDEBAR ===== */}
       <aside
-        className={`fixed md:sticky top-0 left-0 bottom-0 z-40 w-72 bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-900 flex flex-col justify-between p-6 transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        className={`fixed md:sticky top-0 left-0 bottom-0 z-40 w-72 bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-900 flex flex-col justify-between p-6 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
       >
         <div className="flex flex-col gap-8">
           {/* Logo */}
@@ -122,11 +122,10 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 ${
-                    isActive
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 ${isActive
                       ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.35)] border border-[#0066CC]/50'
                       : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
-                  }`}
+                    }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-zinc-500'}`} />
                   <span className="tracking-wide">{item.label}</span>
@@ -195,6 +194,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link
               href="/admin/dashboard/bookings"
               className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] flex items-center gap-2"

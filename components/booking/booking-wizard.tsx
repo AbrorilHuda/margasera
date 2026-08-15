@@ -35,6 +35,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
   // Customer details form
   const [customerName, setCustomerName] = useState('');
+  const [partnerName, setPartnerName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [instagram, setInstagram] = useState('');
@@ -71,6 +72,19 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   const selectedPackage = packages.find((p) => p.id === selectedPackageId) || packages[0];
   const packagesForService = packages.filter((p) => p.serviceId === (selectedServiceId || (services[0]?.id ?? '')));
 
+  const isCoupleService = (service?: Service) => {
+    if (!service) return false;
+    const s = (service.slug || service.name || '').toLowerCase();
+    return (
+      s.includes('wedding') ||
+      s.includes('pre-wedding') ||
+      s.includes('prewedding') ||
+      s.includes('engagement') ||
+      s.includes('tunangan') ||
+      s.includes('lamaran')
+    );
+  };
+
   // Helper to extract duration in hours
   const getHoursFromDuration = (durationStr: string): number => {
     if (!durationStr) return 4;
@@ -82,13 +96,21 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   // Helper to update custom start time and auto calculate end time
   const handleSelectStartTime = (newStart: string) => {
     setStartTime(newStart);
-    const durationHours = getHoursFromDuration(selectedPackage.duration);
-    const [h, m] = newStart.split(':').map(Number);
-    const endH = (h + durationHours) % 24;
-    const endFormatted = `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
-    setEndTime(endFormatted);
     setSlotType('custom');
   };
+
+  // Auto-calculate Jam Selesai whenever selectedPackage or startTime changes
+  useEffect(() => {
+    if (selectedPackage && startTime) {
+      const durationHours = getHoursFromDuration(selectedPackage.duration);
+      const [h, m] = startTime.split(':').map(Number);
+      if (!isNaN(h)) {
+        const endH = (h + durationHours) % 24;
+        const endFormatted = `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+        setEndTime(endFormatted);
+      }
+    }
+  }, [selectedPackage, startTime]);
 
   useEffect(() => {
     const paramDate = searchParams?.get('date');
@@ -97,19 +119,10 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     const paramTime = searchParams?.get('time');
 
     if (paramService) setSelectedServiceId(paramService);
-    if (paramPackage) {
-      setSelectedPackageId(paramPackage);
-      const pkg = packages.find(p => p.id === paramPackage);
-      if (pkg) {
-        const durationHours = getHoursFromDuration(pkg.duration);
-        const [h, m] = (paramTime || '08:00').split(':').map(Number);
-        const endH = (h + durationHours) % 24;
-        setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
-      }
-    }
+    if (paramPackage) setSelectedPackageId(paramPackage);
     if (paramDate) setSelectedDate(paramDate);
     if (paramTime) setStartTime(paramTime);
-  }, [searchParams, packages]);
+  }, [searchParams]);
 
   const getSelectedDateInfo = (dateStr: string): { status: AvailabilityStatus; notes?: string } => {
     if (!dateStr) return { status: 'available' as AvailabilityStatus, notes: undefined };
@@ -165,10 +178,59 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   };
 
   const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (!selectedServiceId || !selectedPackageId) {
+        alert('Silakan pilih Layanan dan Paket Dokumentasi terlebih dahulu.');
+        return;
+      }
+    }
     if (currentStep === 2) {
+      if (!selectedDate) {
+        alert('Silakan pilih Tanggal Rencana Acara terlebih dahulu.');
+        return;
+      }
+      if (!startTime || !endTime) {
+        alert('Silakan tentukan Jam Mulai dan Jam Selesai Sesi terlebih dahulu.');
+        return;
+      }
+      const dateInfo = getSelectedDateInfo(selectedDate);
+      if (dateInfo.status === 'blocked' || dateInfo.status === 'booked') {
+        alert(
+          dateInfo.status === 'blocked'
+            ? `Tanggal ${formatDate(selectedDate)} sedang dikunci / libur studio.`
+            : `Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked).`
+        );
+        return;
+      }
       const conflict = getSelectedDateConflict();
       if (conflict.hasConflict) {
         alert(conflict.reason || 'Tanggal atau jam yang Anda pilih tidak tersedia.');
+        return;
+      }
+    }
+    if (currentStep === 3) {
+      if (!customerName.trim()) {
+        alert('Silakan isi Nama Lengkap terlebih dahulu.');
+        return;
+      }
+      if (isCoupleService(selectedService) && !partnerName.trim()) {
+        alert('Silakan isi Nama Pasangan terlebih dahulu.');
+        return;
+      }
+      if (!whatsapp.trim()) {
+        alert('Silakan isi Nomor WhatsApp terlebih dahulu.');
+        return;
+      }
+      if (!email.trim()) {
+        alert('Silakan isi Alamat Email terlebih dahulu.');
+        return;
+      }
+      if (!instagram.trim()) {
+        alert('Silakan isi Username Instagram Client terlebih dahulu.');
+        return;
+      }
+      if (!location.trim()) {
+        alert('Silakan isi Lokasi Acara / Venue terlebih dahulu.');
         return;
       }
     }
@@ -184,12 +246,21 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const fullCustomerName = isCoupleService(selectedService) && partnerName.trim()
+      ? `${customerName.trim()} & ${partnerName.trim()}`
+      : customerName.trim();
+
+    const combinedNotes = [
+      isCoupleService(selectedService) && partnerName.trim() ? `Nama Pasangan: ${partnerName.trim()}` : null,
+      notes.trim() ? `Catatan: ${notes.trim()}` : null,
+    ].filter(Boolean).join('\n');
+
     try {
       const result = await createBooking({
-        customerName,
-        whatsapp,
-        email,
-        instagram: instagram || undefined,
+        customerName: fullCustomerName,
+        whatsapp: whatsapp.trim(),
+        email: email.trim(),
+        instagram: instagram.trim() || undefined,
         serviceId: selectedServiceId,
         serviceName: selectedService?.name,
         packageId: selectedPackageId,
@@ -198,12 +269,12 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         startTime,
         endTime,
         slotType,
-        location,
+        location: location.trim(),
         eventType: undefined,
-        notes: notes || undefined,
+        notes: combinedNotes || undefined,
         totalPrice: selectedPackage?.price,
-        downPayment: selectedPackage ? Math.ceil(selectedPackage.price * 0.3) : undefined,
-        remainingAmount: selectedPackage ? Math.floor(selectedPackage.price * 0.7) : undefined,
+        downPayment: selectedPackage ? Math.ceil(selectedPackage.price * 0.2) : undefined,
+        remainingAmount: selectedPackage ? Math.floor(selectedPackage.price * 0.8) : undefined,
         paymentStatus: 'unpaid',
       });
 
@@ -511,28 +582,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                       <input
                         type="time"
                         value={startTime}
-                        onChange={(e) => {
-                          const newStart = e.target.value;
-                          setStartTime(newStart);
-                          const durationHours = getHoursFromDuration(selectedPackage.duration);
-                          const [h, m] = newStart.split(':').map(Number);
-                          const endH = (h + durationHours) % 24;
-                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
-                        }}
+                        onChange={(e) => setStartTime(e.target.value)}
                         className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-xl font-mono text-sm focus:outline-none transition-colors"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="text-zinc-400">Jam Selesai (Auto):</span>
+                        <span className="text-zinc-400">Jam Selesai (Otomatis):</span>
                         <span className="text-amber-400 font-semibold">{getTimeOfDayLabel(endTime)}</span>
                       </div>
                       <input
                         type="time"
+                        disabled
+                        readOnly
                         value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3 rounded-xl font-mono text-sm focus:outline-none transition-colors"
+                        className="bg-zinc-950 border border-zinc-800/80 text-amber-400 p-3 rounded-xl font-mono text-sm cursor-not-allowed opacity-90"
                       />
                     </div>
                   </div>
@@ -613,7 +678,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 text-[#0066CC]" /> Nama Lengkap *
+                    <User className="w-3.5 h-3.5 text-[#0066CC]" /> Nama Lengkap Client *
                   </label>
                   <input
                     type="text"
@@ -624,6 +689,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
                   />
                 </div>
+
+                {isCoupleService(selectedService) && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-[#0066CC]" /> Nama Pasangan *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Anisa Putri"
+                      value={partnerName}
+                      onChange={(e) => setPartnerName(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
+                    />
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
@@ -655,10 +736,11 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
-                    <InstagramIcon className="w-3.5 h-3.5 text-[#0066CC]" /> Instagram Client (@username)
+                    <InstagramIcon className="w-3.5 h-3.5 text-[#0066CC]" /> Instagram Client (@username) *
                   </label>
                   <input
                     type="text"
+                    required
                     placeholder="Contoh: @ahmad.rizky"
                     value={instagram}
                     onChange={(e) => setInstagram(e.target.value)}
@@ -682,7 +764,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
                 <div className="md:col-span-2 flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-[#0066CC]" /> Catatan / Permintaan Khusus
+                    <FileText className="w-3.5 h-3.5 text-zinc-400" /> Catatan / Permintaan Khusus (Opsional)
                   </label>
                   <textarea
                     rows={3}
@@ -733,12 +815,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <span className="text-zinc-500 uppercase tracking-wider">Nama Pemesan:</span>
-                  <span className="font-semibold text-zinc-100">{customerName || 'Ahmad Rizky'}</span>
+                  <span className="text-zinc-500 uppercase tracking-wider">Nama Client:</span>
+                  <span className="font-semibold text-zinc-100">{customerName}</span>
                 </div>
+                {isCoupleService(selectedService) && partnerName && (
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-zinc-500 uppercase tracking-wider">Nama Pasangan:</span>
+                    <span className="font-semibold text-zinc-100">{partnerName}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">WhatsApp & Email:</span>
-                  <span className="font-semibold text-zinc-100">{whatsapp || '081234567890'} • {email || 'ahmad@example.com'}</span>
+                  <span className="font-semibold text-zinc-100">{whatsapp} • {email}</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-zinc-500 uppercase tracking-wider">Instagram & Venue:</span>
+                  <span className="font-semibold text-zinc-100">{instagram} • {location}</span>
                 </div>
                 <div className="flex items-center justify-between pt-3 text-sm">
                   <span className="text-[#0066CC] font-semibold uppercase tracking-wider">Total Est. Investasi:</span>
@@ -786,7 +878,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div>
                 <span className="text-xs font-semibold tracking-widest uppercase text-emerald-400">Pemesanan Berhasil Dikirim!</span>
                 <h3 className="font-serif-editorial text-3xl sm:text-4xl text-zinc-100 font-light mt-1">
-                  Terima Kasih, {customerName || 'Pelanggan Marga Sera'}
+                  Terima Kasih, {customerName || 'Pelanggan Margasera'}
                 </h3>
                 <p className="text-xs text-zinc-400 font-light max-w-lg mx-auto mt-1">
                   Simpan <strong>Kode Booking</strong> Anda untuk mengecek perkembangan status persetujuan & jadwal sesi foto.
@@ -825,20 +917,20 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div className="w-full max-w-md p-6 bg-zinc-900/90 border border-zinc-800 rounded-2xl text-left flex flex-col gap-3">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                   <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">Instruksi Pembayaran DP (Down Payment)</span>
-                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">DP 30%</span>
+                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">DP 20%</span>
                 </div>
 
                 <p className="text-xs text-zinc-400 font-light">
-                  Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 30% dari total investasi ke rekening resmi Margasera:
+                  Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 20% dari total pembayaran ke rekening resmi Margasera: (konfirmasi pembayaran ke wa admin)
                 </p>
 
                 <div className="grid grid-cols-1 gap-3 pt-1">
-                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
-                      <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>
-                      <span className="font-mono text-sm font-bold text-zinc-100">{studioSettings.bankAccountNumber}</span>
-                      <span className="text-[10px] text-zinc-400 block">a.n {studioSettings.bankAccountHolder}</span>
-                    </div>
+                  <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
+                    <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>
+                    <span className="font-mono text-sm font-bold text-zinc-100">{studioSettings.bankAccountNumber}</span>
+                    <span className="text-[10px] text-zinc-400 block">a.n {studioSettings.bankAccountHolder}</span>
                   </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-4 pt-2">

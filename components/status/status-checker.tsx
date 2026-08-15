@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, CheckCircle2, Clock, Calendar, MapPin, User, Camera, Sparkles, MessageCircle, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
-import { getBookingByCode } from '@/lib/actions/bookings';
+import { getBookingByCode, cancelBookingByClient } from '@/lib/actions/bookings';
 import { Booking, StudioSettings } from '@/lib/types';
 import { formatDate, formatCurrency, getTimeOfDayLabel } from '@/lib/utils';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
@@ -17,6 +17,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('Perubahan Jadwal / Tanggal Acara');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const handleSearch = useCallback(async (codeToSearch: string) => {
     setErrorMsg(null);
@@ -149,12 +150,12 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div className="flex items-center gap-3">
                 <span className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Status:</span>
                 <span className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase font-mono shadow-sm ${searchedBooking.status === 'confirmed'
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40'
-                    : searchedBooking.status === 'completed'
-                      ? 'bg-blue-500/15 text-blue-300 border border-blue-500/40'
-                      : searchedBooking.status === 'cancelled'
-                        ? 'bg-rose-950/60 text-rose-400 border border-rose-800/60'
-                        : 'bg-amber-500/15 text-amber-300 border border-amber-500/40'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40'
+                  : searchedBooking.status === 'completed'
+                    ? 'bg-blue-500/15 text-blue-300 border border-blue-500/40'
+                    : searchedBooking.status === 'cancelled'
+                      ? 'bg-rose-950/60 text-rose-400 border border-rose-800/60'
+                      : 'bg-amber-500/15 text-amber-300 border border-amber-500/40'
                   }`}>
                   {searchedBooking.status === 'cancelled' ? '🔴 DIBATALKAN' : searchedBooking.status.toUpperCase()}
                 </span>
@@ -191,17 +192,17 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                       <div
                         key={step.key}
                         className={`p-3.5 rounded-xl border flex flex-col items-center text-center gap-2 transition-all ${isCurrent
-                            ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_15px_rgba(0,102,204,0.3)] text-white'
-                            : isPassed
-                              ? 'border-zinc-800 bg-zinc-900/90 text-zinc-200'
-                              : 'border-zinc-900/80 bg-zinc-950/40 opacity-40 text-zinc-600'
+                          ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_15px_rgba(0,102,204,0.3)] text-white'
+                          : isPassed
+                            ? 'border-zinc-800 bg-zinc-900/90 text-zinc-200'
+                            : 'border-zinc-900/80 bg-zinc-950/40 opacity-40 text-zinc-600'
                           }`}
                       >
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono ${isCurrent
-                            ? 'bg-[#0066CC] text-white shadow-md'
-                            : isPassed
-                              ? 'bg-zinc-800 text-[#0066CC]'
-                              : 'bg-zinc-900 text-zinc-600'
+                          ? 'bg-[#0066CC] text-white shadow-md'
+                          : isPassed
+                            ? 'bg-zinc-800 text-[#0066CC]'
+                            : 'bg-zinc-900 text-zinc-600'
                           }`}>
                           {isPassed && !isCurrent ? <CheckCircle2 className="w-3.5 h-3.5 text-[#0066CC]" /> : idx + 1}
                         </div>
@@ -254,10 +255,10 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   <Clock className="w-4 h-4 text-[#0066CC] shrink-0" />
                   <span>Status Pembayaran: </span>
                   <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${searchedBooking.paymentStatus === 'paid_full'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : searchedBooking.paymentStatus === 'dp_paid'
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : searchedBooking.paymentStatus === 'dp_paid'
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                     }`}>
                     {searchedBooking.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : searchedBooking.paymentStatus === 'dp_paid' ? 'DP TERBAYAR (30%)' : 'BELUM DP'}
                   </span>
@@ -269,7 +270,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
             <div className="p-6 bg-zinc-900/80 border border-zinc-800 rounded-xl flex flex-col gap-4 text-xs font-light">
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
                 <span className="font-semibold text-[#0066CC] uppercase tracking-wider font-mono">Rekening Resmi Pembayaran Studio</span>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">DP Min. 30%</span>
+                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">DP Min. 20%</span>
               </div>
               <div className="p-3.5 bg-zinc-950 border border-zinc-800/80 rounded-lg">
                 <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>
@@ -309,7 +310,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   className="flex-1 md:flex-initial px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-semibold uppercase tracking-wider transition-all rounded-xl text-center whitespace-nowrap flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Chat Tim Margasera</span>
+                  <span>Chat Admin Margasera</span>
                 </a>
               </div>
             </div>
@@ -361,19 +362,45 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
               <div className="flex items-center gap-3 pt-2">
                 <button
+                  type="button"
+                  disabled={isCancelling}
                   onClick={() => setShowCancelModal(false)}
-                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold tracking-wider uppercase rounded-lg transition-colors"
+                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 text-xs font-semibold tracking-wider uppercase rounded-lg transition-colors cursor-pointer"
                 >
                   Kembali
                 </button>
                 <button
-                  onClick={() => {
-                    setSearchedBooking({ ...searchedBooking, status: 'cancelled' });
-                    setShowCancelModal(false);
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={async () => {
+                    if (!searchedBooking) return;
+                    setIsCancelling(true);
+                    const res = await cancelBookingByClient(searchedBooking.id, cancelReason);
+                    setIsCancelling(false);
+                    if (res.success) {
+                      setSearchedBooking({
+                        ...searchedBooking,
+                        status: 'cancelled',
+                        notes: searchedBooking.notes
+                          ? `${searchedBooking.notes}\n[DIBATALKAN CLIENT]: ${cancelReason}`
+                          : `[DIBATALKAN CLIENT]: ${cancelReason}`,
+                      });
+                      setShowCancelModal(false);
+                      alert('Pemesanan Anda berhasil dibatalkan. Slot tanggal pada kalender telah dibebaskan.');
+                    } else {
+                      alert(`Gagal membatalkan pemesanan: ${res.error}`);
+                    }
                   }}
-                  className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wider uppercase rounded-lg shadow-md transition-colors"
+                  className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-xs font-semibold tracking-wider uppercase rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Ya, Batalkan Sesi
+                  {isCancelling ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Membatalkan...</span>
+                    </>
+                  ) : (
+                    <span>Ya, Batalkan Sesi</span>
+                  )}
                 </button>
               </div>
             </motion.div>

@@ -519,10 +519,10 @@ export function AvailabilityCalendar() {
                       {remainingNonWedding > 0 && (
                         <Link
                           href={`/booking?date=${selectedDateStr}&serviceId=s-prewedding`}
-                          className="mt-auto py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-semibold text-center uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2"
+                          className="mt-auto py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold text-center uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] hover:shadow-[0_0_20px_rgba(0,102,204,0.5)] flex items-center justify-center gap-2 cursor-pointer group"
                         >
-                          <span>Pesan Sesi Studio ({remainingNonWedding} Slot Tersisa)</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <span className="text-white font-semibold">Pesan Sesi Studio ({remainingNonWedding} Slot Tersisa)</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-white group-hover:translate-x-1 transition-transform" />
                         </Link>
                       )}
                     </div>

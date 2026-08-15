@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Calendar, ChevronRight } from 'lucide-react';
+import { ThemeToggle } from '../ui/theme-toggle';
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -82,7 +83,7 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Action Button */}
+        {/* Action Button & Theme Toggle */}
         <div className="hidden lg:flex items-center gap-4">
           <Link
             href="/booking"
@@ -93,16 +94,20 @@ export function Navbar() {
               Book Session
             </span>
           </Link>
+          <ThemeToggle />
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-zinc-300 hover:text-white focus:outline-none relative z-50"
-          aria-label="Toggle Navigation Menu"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6 text-[#0066CC]" /> : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Mobile Menu Controls */}
+        <div className="lg:hidden flex items-center gap-2 relative z-50">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-zinc-300 hover:text-white focus:outline-none"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6 text-[#0066CC]" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer Navigation (Solid bg-zinc-950, No transparency bleed) */}

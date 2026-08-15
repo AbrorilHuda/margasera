@@ -311,3 +311,42 @@ export async function deleteBooking(
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+/** Public: pembatalan booking oleh client */
+export async function cancelBookingByClient(
+  bookingId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { data: existing } = await (supabase as any)
+      .from('bookings')
+      .select('id, notes, status')
+      .eq('id', bookingId)
+      .single();
+
+    if (!existing) return { success: false, error: 'Pemesanan tidak ditemukan.' };
+    if (existing.status === 'cancelled') return { success: true };
+    if (existing.status === 'completed') return { success: false, error: 'Pemesanan yang sudah selesai tidak dapat dibatalkan.' };
+
+    const updatedNotes = [
+      existing.notes,
+      reason ? `[DIBATALKAN CLIENT]: ${reason}` : '[DIBATALKAN CLIENT]',
+    ].filter(Boolean).join('\n');
+
+    const { error } = await (supabase as any)
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        notes: updatedNotes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', bookingId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Gagal membatalkan pemesanan.' };
+  }
+}
