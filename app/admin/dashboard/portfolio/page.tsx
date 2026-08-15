@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { FolderPlus, Sparkles, MapPin, Trash2, Images, X } from 'lucide-react';
+import { FolderPlus, Sparkles, MapPin, Trash2, Images, X, Loader2 } from 'lucide-react';
 import {
   getGalleryProjects,
   createGalleryProject,
@@ -28,6 +28,9 @@ export default function PortfolioPage() {
   const [selectedProjectForImages, setSelectedProjectForImages] = useState<GalleryProject | null>(null);
   const [projectImages, setProjectImages] = useState<GalleryImage[]>([]);
   const [isLoadingProjectImages, setIsLoadingProjectImages] = useState(false);
+
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
+  const [isSubmittingImage, setIsSubmittingImage] = useState(false);
 
   // Forms
   const [newProjectForm, setNewProjectForm] = useState({
@@ -75,19 +78,27 @@ export default function PortfolioPage() {
   const handleAddGalleryImage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectForImages || !newImageForm.imageUrl) return;
-    const res = await addGalleryImage(
-      selectedProjectForImages.id,
-      newImageForm.imageUrl,
-      newImageForm.altText || selectedProjectForImages.title,
-      newImageForm.aspectRatio
-    );
-    if (res.success) {
-      const updatedImgs = await getProjectImages(selectedProjectForImages.id);
-      setProjectImages(updatedImgs);
-      setNewImageForm({ imageUrl: '', altText: '', aspectRatio: 'landscape' });
-      toast.success('Foto portofolio berhasil ditambahkan.');
-    } else {
-      toast.error(`Gagal menambah foto: ${res.error}`);
+    setIsSubmittingImage(true);
+    try {
+      const res = await addGalleryImage(
+        selectedProjectForImages.id,
+        newImageForm.imageUrl,
+        newImageForm.altText || selectedProjectForImages.title,
+        newImageForm.aspectRatio
+      );
+      if (res.success) {
+        const updatedImgs = await getProjectImages(selectedProjectForImages.id);
+        setProjectImages(updatedImgs);
+        setNewImageForm({ imageUrl: '', altText: '', aspectRatio: 'landscape' });
+        toast.success('Foto portofolio berhasil ditambahkan.');
+      } else {
+        toast.error(`Gagal menambah foto: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error adding gallery image:', err);
+      toast.error('Terjadi kesalahan saat mengunggah foto.');
+    } finally {
+      setIsSubmittingImage(false);
     }
   };
 
@@ -105,35 +116,43 @@ export default function PortfolioPage() {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const title = newProjectForm.title || 'Project Portofolio Baru';
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
-    const res = await createGalleryProject({
-      title,
-      slug,
-      category: newProjectForm.category as ServiceCategory,
-      categoryLabel: newProjectForm.categoryLabel || newProjectForm.category,
-      description: newProjectForm.description || 'Dokumentasi sinematik foto pilihan Margasera.',
-      location: newProjectForm.location || 'Madura, Jawa Timur',
-      eventDate: newProjectForm.eventDate || 'Agustus 2026',
-      coverImage: newProjectForm.coverImage,
-      isFeatured: newProjectForm.isFeatured,
-    });
-    if (res.success) {
-      await refreshData();
-      setShowAddProjectModal(false);
-      toast.success(`Project portofolio "${title}" berhasil ditambahkan.`);
-      setNewProjectForm({
-        title: '',
-        category: services[0]?.slug || 'wedding',
-        categoryLabel: services[0]?.name || 'Wedding',
-        description: '',
-        location: '',
-        eventDate: '',
-        coverImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop',
-        isFeatured: false,
+    setIsSubmittingProject(true);
+    try {
+      const title = newProjectForm.title || 'Project Portofolio Baru';
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+      const res = await createGalleryProject({
+        title,
+        slug,
+        category: newProjectForm.category as ServiceCategory,
+        categoryLabel: newProjectForm.categoryLabel || newProjectForm.category,
+        description: newProjectForm.description || 'Dokumentasi sinematik foto pilihan Margasera.',
+        location: newProjectForm.location || 'Madura, Jawa Timur',
+        eventDate: newProjectForm.eventDate || 'Agustus 2026',
+        coverImage: newProjectForm.coverImage,
+        isFeatured: newProjectForm.isFeatured,
       });
-    } else {
-      toast.error(`Gagal menyimpan project: ${res.error}`);
+      if (res.success) {
+        await refreshData();
+        setShowAddProjectModal(false);
+        toast.success(`Project portofolio "${title}" berhasil ditambahkan.`);
+        setNewProjectForm({
+          title: '',
+          category: services[0]?.slug || 'wedding',
+          categoryLabel: services[0]?.name || 'Wedding',
+          description: '',
+          location: '',
+          eventDate: '',
+          coverImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop',
+          isFeatured: false,
+        });
+      } else {
+        toast.error(`Gagal menyimpan project: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error creating project:', err);
+      toast.error('Terjadi kesalahan saat menyimpan project.');
+    } finally {
+      setIsSubmittingProject(false);
     }
   };
 
@@ -377,9 +396,17 @@ export default function PortfolioPage() {
 
               <button
                 type="submit"
-                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md"
+                disabled={isSubmittingProject}
+                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                Simpan Project Portofolio
+                {isSubmittingProject ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menyimpan Project...</span>
+                  </>
+                ) : (
+                  <span>Simpan Project Portofolio</span>
+                )}
               </button>
             </form>
           </div>
@@ -430,9 +457,17 @@ export default function PortfolioPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors"
+                  disabled={isSubmittingImage}
+                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Upload / Tambah Foto
+                  {isSubmittingImage ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Mengunggah...</span>
+                    </>
+                  ) : (
+                    <span>Upload / Tambah Foto</span>
+                  )}
                 </button>
               </div>
             </form>

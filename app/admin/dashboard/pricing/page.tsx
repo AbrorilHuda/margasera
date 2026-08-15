@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PackagePlus, Check, Trash2, X } from 'lucide-react';
+import { PackagePlus, Check, Trash2, Pencil, X, Loader2 } from 'lucide-react';
 import { getServices, getPackages, upsertPackage, deletePackage } from '@/lib/actions/services';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast-context';
@@ -15,6 +15,9 @@ export default function PricingPage() {
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
 
   const [showAddPackageModal, setShowAddPackageModal] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [newPackageForm, setNewPackageForm] = useState({
     serviceId: '',
     name: '',
@@ -48,37 +51,86 @@ export default function PricingPage() {
     refreshData();
   }, [refreshData]);
 
-  const handleCreatePackage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const serviceIdToUse = newPackageForm.serviceId || selectedServiceId || (services[0]?.id ?? '');
-    const slug = newPackageForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const res = await upsertPackage({
-      serviceId: serviceIdToUse,
-      name: newPackageForm.name,
-      slug,
-      description: newPackageForm.description,
-      price: Number(newPackageForm.price) || 0,
-      duration: newPackageForm.duration,
-      photographerCount: Number(newPackageForm.photographerCount) || 1,
-      editedPhotos: newPackageForm.editedPhotos,
-      features: newPackageForm.featuresText.split('\n').filter((f) => f.trim().length > 0),
-      isPopular: newPackageForm.isPopular,
-      isActive: true,
+  const handleOpenAddModal = () => {
+    setEditingPackage(null);
+    setNewPackageForm({
+      serviceId: selectedServiceId || (services[0]?.id ?? ''),
+      name: '',
+      price: 5000000,
+      duration: '6 Jam',
+      photographerCount: 2,
+      editedPhotos: '100 Foto Edited',
+      description: '',
+      featuresText: '1 Main Photographer\nDokumentasi s/d 6 Jam\n80 Tone Edited High-Res Photos\nAll Raw Files Included',
+      isPopular: false,
     });
-    if (res.success) {
-      await refreshData();
-      setShowAddPackageModal(false);
-      setNewPackageForm({
-        serviceId: selectedServiceId || (services[0]?.id ?? ''),
-        name: '',
-        price: 5000000,
-        duration: '6 Jam',
-        photographerCount: 2,
-        editedPhotos: '100 Foto Edited',
-        description: '',
-        featuresText: '1 Main Photographer\nDokumentasi s/d 6 Jam\n80 Tone Edited High-Res Photos\nAll Raw Files Included',
-        isPopular: false,
+    setShowAddPackageModal(true);
+  };
+
+  const handleOpenEditModal = (pkg: Package) => {
+    setEditingPackage(pkg);
+    setNewPackageForm({
+      serviceId: pkg.serviceId,
+      name: pkg.name,
+      price: pkg.price,
+      duration: pkg.duration || '6 Jam',
+      photographerCount: pkg.photographerCount || 1,
+      editedPhotos: pkg.editedPhotos || '',
+      description: pkg.description || '',
+      featuresText: pkg.features && pkg.features.length > 0 ? pkg.features.join('\n') : '',
+      isPopular: pkg.isPopular || false,
+    });
+    setShowAddPackageModal(true);
+  };
+
+  const handleSavePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const serviceIdToUse = newPackageForm.serviceId || selectedServiceId || (services[0]?.id ?? '');
+      const selectedSrv = services.find((s) => s.id === serviceIdToUse);
+      const cleanPkgName = newPackageForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const slug = editingPackage?.slug || (selectedSrv?.slug ? `${selectedSrv.slug}-${cleanPkgName}` : cleanPkgName);
+      const res = await upsertPackage({
+        ...(editingPackage?.id ? { id: editingPackage.id } : {}),
+        serviceId: serviceIdToUse,
+        name: newPackageForm.name,
+        slug,
+        description: newPackageForm.description,
+        price: Number(newPackageForm.price) || 0,
+        duration: newPackageForm.duration,
+        photographerCount: Number(newPackageForm.photographerCount) || 1,
+        editedPhotos: newPackageForm.editedPhotos,
+        features: newPackageForm.featuresText.split('\n').filter((f) => f.trim().length > 0),
+        isPopular: newPackageForm.isPopular,
+        isActive: true,
       });
+
+      if (res.success) {
+        await refreshData();
+        setShowAddPackageModal(false);
+        setEditingPackage(null);
+        toast.success(editingPackage ? 'Paket berhasil diperbarui.' : 'Paket baru berhasil ditambahkan.');
+        setNewPackageForm({
+          serviceId: selectedServiceId || (services[0]?.id ?? ''),
+          name: '',
+          price: 5000000,
+          duration: '6 Jam',
+          photographerCount: 2,
+          editedPhotos: '100 Foto Edited',
+          description: '',
+          featuresText: '1 Main Photographer\nDokumentasi s/d 6 Jam\n80 Tone Edited High-Res Photos\nAll Raw Files Included',
+          isPopular: false,
+        });
+      } else {
+        toast.error(`Gagal menyimpan paket: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error saving package:', err);
+      toast.error('Terjadi kesalahan saat menyimpan paket.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -115,7 +167,10 @@ export default function PricingPage() {
       isPopular: !pkg.isPopular,
       isActive: pkg.isActive,
     });
-    if (res.success) await refreshData();
+    if (res.success) {
+      await refreshData();
+      toast.success(pkg.isPopular ? 'Status popular dilepas.' : 'Paket diset sebagai Popular!');
+    }
   };
 
   const packagesForSelected = packages.filter((pkg) => pkg.serviceId === selectedServiceId);
@@ -147,11 +202,8 @@ export default function PricingPage() {
             </h3>
           </div>
           <button
-            onClick={() => {
-              setNewPackageForm({ ...newPackageForm, serviceId: selectedServiceId || (services[0]?.id ?? '') });
-              setShowAddPackageModal(true);
-            }}
-            className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 shadow-md"
+            onClick={handleOpenAddModal}
+            className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors flex items-center gap-1.5 shadow-md cursor-pointer"
           >
             <PackagePlus className="w-4 h-4" />
             <span>Tambah Paket Baru</span>
@@ -164,7 +216,7 @@ export default function PricingPage() {
             <button
               key={srv.id}
               onClick={() => setSelectedServiceId(srv.id)}
-              className={`px-4 py-2 text-xs tracking-wider uppercase rounded-md transition-all whitespace-nowrap font-medium ${
+              className={`px-4 py-2 text-xs tracking-wider uppercase rounded-md transition-all whitespace-nowrap font-medium cursor-pointer ${
                 selectedServiceId === srv.id
                   ? 'bg-[#0066CC] text-white font-semibold shadow-md'
                   : 'bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white'
@@ -196,13 +248,22 @@ export default function PricingPage() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-sans text-xl font-bold text-zinc-100">{pkg.name}</h4>
-                <button
-                  onClick={() => handleDeletePackage(pkg.id)}
-                  className="text-zinc-500 hover:text-rose-400 p-1"
-                  title="Hapus Paket"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenEditModal(pkg)}
+                    className="text-zinc-400 hover:text-[#0066CC] p-1.5 transition-colors rounded hover:bg-zinc-800"
+                    title="Edit Paket"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeletePackage(pkg.id)}
+                    className="text-zinc-500 hover:text-rose-400 p-1.5 transition-colors rounded hover:bg-zinc-800"
+                    title="Hapus Paket"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <p className="text-xs text-zinc-400 font-light leading-relaxed">{pkg.description}</p>
@@ -242,9 +303,17 @@ export default function PricingPage() {
             <div className="pt-6 mt-6 border-t border-zinc-800/80 flex items-center justify-between">
               <button
                 onClick={() => handleTogglePackagePopular(pkg)}
-                className={`text-xs font-medium ${pkg.isPopular ? 'text-[#0066CC]' : 'text-zinc-500 hover:text-zinc-300'}`}
+                className={`text-xs font-medium cursor-pointer ${pkg.isPopular ? 'text-[#0066CC]' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
                 {pkg.isPopular ? '★ Tag Popular Active' : '☆ Set As Popular'}
+              </button>
+
+              <button
+                onClick={() => handleOpenEditModal(pkg)}
+                className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Pencil className="w-3 h-3 text-[#0066CC]" />
+                <span>Edit Paket</span>
               </button>
             </div>
           </div>
@@ -256,18 +325,23 @@ export default function PricingPage() {
         )}
       </div>
 
-      {/* ===== MODAL: ADD PACKAGE ===== */}
+      {/* ===== MODAL: ADD / EDIT PACKAGE ===== */}
       {showAddPackageModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-              <h3 className="font-sans text-xl font-bold text-zinc-100">Tambah Paket Layanan Baru</h3>
-              <button onClick={() => setShowAddPackageModal(false)} className="text-zinc-400 hover:text-white">
+              <h3 className="font-sans text-xl font-bold text-zinc-100">
+                {editingPackage ? 'Edit Paket Layanan' : 'Tambah Paket Layanan Baru'}
+              </h3>
+              <button
+                onClick={() => { setShowAddPackageModal(false); setEditingPackage(null); }}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreatePackage} className="flex flex-col gap-4 text-xs">
+            <form onSubmit={handleSavePackage} className="flex flex-col gap-4 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="text-zinc-300 uppercase font-mono font-medium">Kategori Layanan</label>
                 <select
@@ -327,6 +401,17 @@ export default function PricingPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Deskripsi Paket</label>
+                <textarea
+                  rows={2}
+                  placeholder="Deskripsi singkat paket..."
+                  value={newPackageForm.description}
+                  onChange={(e) => setNewPackageForm({ ...newPackageForm, description: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
                 <label className="text-zinc-300 uppercase font-mono font-medium">Fasilitas Termasuk (1 per baris)</label>
                 <textarea
                   rows={4}
@@ -336,12 +421,45 @@ export default function PricingPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md"
-              >
-                Simpan Paket Layanan
-              </button>
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isPopular"
+                  checked={newPackageForm.isPopular}
+                  onChange={(e) => setNewPackageForm({ ...newPackageForm, isPopular: e.target.checked })}
+                  className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-[#0066CC] focus:ring-[#0066CC]"
+                />
+                <label htmlFor="isPopular" className="text-xs text-zinc-300 cursor-pointer font-medium">
+                  Tandai sebagai Paket Popular (Paling Direkomendasikan)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => { setShowAddPackageModal(false); setEditingPackage(null); }}
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan Paket...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>{editingPackage ? 'Simpan Perubahan Paket' : 'Simpan Paket Layanan'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -349,3 +467,4 @@ export default function PricingPage() {
     </div>
   );
 }
+

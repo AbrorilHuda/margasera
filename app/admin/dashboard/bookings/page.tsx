@@ -24,6 +24,7 @@ import {
   Building2,
   Receipt,
   Share2,
+  Loader2,
 } from 'lucide-react';
 import {
   getAllBookings,
@@ -65,6 +66,7 @@ export default function BookingsPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filters State
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
@@ -172,48 +174,56 @@ export default function BookingsPage() {
 
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanDate = newBookingForm.bookingDate.replace(/-/g, '').substring(2);
-    const randomNum = String(Math.floor(Math.random() * 900) + 100);
-    const selectedSrv = services.find((s) => s.id === newBookingForm.serviceId);
-    const selectedPkg = packages.find((p) => p.id === newBookingForm.packageId);
-    const bookingCode = `MS-${cleanDate}-${randomNum}`;
+    setIsSubmitting(true);
+    try {
+      const cleanDate = newBookingForm.bookingDate.replace(/-/g, '').substring(2);
+      const randomNum = String(Math.floor(Math.random() * 900) + 100);
+      const selectedSrv = services.find((s) => s.id === newBookingForm.serviceId);
+      const selectedPkg = packages.find((p) => p.id === newBookingForm.packageId);
+      const bookingCode = `MS-${cleanDate}-${randomNum}`;
 
-    const res = await createManualBooking({
-      bookingCode,
-      customerName: newBookingForm.customerName || 'Pelanggan Baru',
-      whatsapp: newBookingForm.whatsapp || '081931107481',
-      email: newBookingForm.email || 'customer@margasera.id',
-      instagram: newBookingForm.instagram,
-      serviceId: newBookingForm.serviceId,
-      serviceName: selectedSrv?.name || 'Wedding Photography',
-      packageId: newBookingForm.packageId,
-      packageName: selectedPkg?.name || 'Custom Package',
-      bookingDate: newBookingForm.bookingDate,
-      location: newBookingForm.location || 'Madura',
-      status: 'confirmed',
-      paymentStatus: 'unpaid',
-      totalPrice: Number(newBookingForm.totalPrice) || 10000000,
-      notes: newBookingForm.notes,
-    });
-
-    if (res.success) {
-      await refreshData();
-      setShowAddBookingModal(false);
-      toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
-      setNewBookingForm({
-        customerName: '',
-        whatsapp: '',
-        email: '',
-        instagram: '',
-        serviceId: services[0]?.id || '',
-        packageId: packages.find((p) => p.serviceId === services[0]?.id)?.id || '',
-        bookingDate: new Date().toISOString().split('T')[0],
-        location: '',
-        totalPrice: 14500000,
-        notes: '',
+      const res = await createManualBooking({
+        bookingCode,
+        customerName: newBookingForm.customerName || 'Pelanggan Baru',
+        whatsapp: newBookingForm.whatsapp || '081931107481',
+        email: newBookingForm.email || 'customer@margasera.id',
+        instagram: newBookingForm.instagram,
+        serviceId: newBookingForm.serviceId,
+        serviceName: selectedSrv?.name || 'Wedding Photography',
+        packageId: newBookingForm.packageId,
+        packageName: selectedPkg?.name || 'Custom Package',
+        bookingDate: newBookingForm.bookingDate,
+        location: newBookingForm.location || 'Madura',
+        status: 'confirmed',
+        paymentStatus: 'unpaid',
+        totalPrice: Number(newBookingForm.totalPrice) || 10000000,
+        notes: newBookingForm.notes,
       });
-    } else {
-      toast.error(`Gagal menyimpan booking manual: ${res.error}`);
+
+      if (res.success) {
+        await refreshData();
+        setShowAddBookingModal(false);
+        toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
+        setNewBookingForm({
+          customerName: '',
+          whatsapp: '',
+          email: '',
+          instagram: '',
+          serviceId: services[0]?.id || '',
+          packageId: packages.find((p) => p.serviceId === services[0]?.id)?.id || '',
+          bookingDate: new Date().toISOString().split('T')[0],
+          location: '',
+          totalPrice: 14500000,
+          notes: '',
+        });
+      } else {
+        toast.error(`Gagal menyimpan booking manual: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error creating booking:', err);
+      toast.error('Terjadi kesalahan saat menyimpan booking.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -867,9 +877,17 @@ export default function BookingsPage() {
 
               <button
                 type="submit"
-                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md cursor-pointer"
+                disabled={isSubmitting}
+                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                Simpan Booking Manual
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menyimpan Booking...</span>
+                  </>
+                ) : (
+                  <span>Simpan Booking Manual</span>
+                )}
               </button>
             </form>
           </div>

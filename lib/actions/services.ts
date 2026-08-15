@@ -134,28 +134,31 @@ export async function upsertPackage(
   const supabase = createAdminClient();
 
   let targetServiceId = isValidUUID(pkg.serviceId) ? pkg.serviceId : null;
+  let serviceSlug = '';
 
   if (!targetServiceId && pkg.serviceId) {
     const cleanSlug = pkg.serviceId.replace(/^s-/, '');
     const { data: srv } = await (supabase as any)
       .from('services')
-      .select('id')
+      .select('id, slug')
       .or(`slug.eq.${cleanSlug},slug.eq.${pkg.serviceId}`)
       .limit(1);
 
     if (srv && srv.length > 0 && isValidUUID(srv[0].id)) {
       targetServiceId = srv[0].id;
+      serviceSlug = srv[0].slug || '';
     }
   }
 
   if (!targetServiceId) {
     const { data: firstSrv } = await (supabase as any)
       .from('services')
-      .select('id')
+      .select('id, slug')
       .limit(1);
 
     if (firstSrv && firstSrv.length > 0 && isValidUUID(firstSrv[0].id)) {
       targetServiceId = firstSrv[0].id;
+      serviceSlug = firstSrv[0].slug || '';
     }
   }
 
@@ -163,10 +166,47 @@ export async function upsertPackage(
     return { success: false, error: 'Silakan buat Kategori Layanan terlebih dahulu sebelum menambahkan Paket.' };
   }
 
+  if (!serviceSlug && targetServiceId) {
+    const { data: srvData } = await (supabase as any)
+      .from('services')
+      .select('slug')
+      .eq('id', targetServiceId)
+      .limit(1);
+    if (srvData && srvData.length > 0) {
+      serviceSlug = srvData[0].slug || '';
+    }
+  }
+
+  // Generate unique slug by prefixing category slug and resolving collisions
+  const cleanPkgName = pkg.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'package';
+  const prefix = serviceSlug ? `${serviceSlug}-` : '';
+  const baseSlug = pkg.slug && pkg.slug.startsWith(prefix) ? pkg.slug : `${prefix}${cleanPkgName}`;
+
+  let finalSlug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    let checkQuery = (supabase as any)
+      .from('packages')
+      .select('id')
+      .eq('slug', finalSlug);
+
+    if (isValidUUID(pkg.id)) {
+      checkQuery = checkQuery.neq('id', pkg.id);
+    }
+
+    const { data: existing } = await checkQuery.limit(1);
+    if (!existing || existing.length === 0) {
+      break;
+    }
+    counter++;
+    finalSlug = `${baseSlug}-${counter}`;
+  }
+
   const payload = {
     service_id: targetServiceId,
     name: pkg.name,
-    slug: pkg.slug,
+    slug: finalSlug,
     description: pkg.description ?? null,
     price: pkg.price,
     duration: pkg.duration ?? null,

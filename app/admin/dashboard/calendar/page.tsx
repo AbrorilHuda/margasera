@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Loader2,
 } from 'lucide-react';
 import { getAvailability, updateAvailabilityStatus, resetAvailabilityDate } from '@/lib/actions/availability';
 import { formatDate } from '@/lib/utils';
@@ -34,6 +35,7 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availabilityForm, setAvailabilityForm] = useState({
     date: new Date().toISOString().split('T')[0],
     status: 'blocked' as Availability['status'],
@@ -58,18 +60,26 @@ export default function CalendarPage() {
 
   const handleSaveAvailability = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await updateAvailabilityStatus(availabilityForm.date, availabilityForm.status, availabilityForm.notes);
-    if (res.success) {
-      await refreshData();
-      setShowModal(false);
-      toast.success(`Status ketersediaan tanggal ${formatDate(availabilityForm.date)} berhasil diperbarui.`);
-      setAvailabilityForm({
-        date: new Date().toISOString().split('T')[0],
-        status: 'blocked',
-        notes: '',
-      });
-    } else {
-      toast.error(`Gagal menyetel status tanggal: ${res.error}`);
+    setIsSubmitting(true);
+    try {
+      const res = await updateAvailabilityStatus(availabilityForm.date, availabilityForm.status, availabilityForm.notes);
+      if (res.success) {
+        await refreshData();
+        setShowModal(false);
+        toast.success(`Status ketersediaan tanggal ${formatDate(availabilityForm.date)} berhasil diperbarui.`);
+        setAvailabilityForm({
+          date: new Date().toISOString().split('T')[0],
+          status: 'blocked',
+          notes: '',
+        });
+      } else {
+        toast.error(`Gagal menyetel status tanggal: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error saving availability:', err);
+      toast.error('Terjadi kesalahan saat menyetel status tanggal.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -409,15 +419,23 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Simpan Status Tanggal
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan Status...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Status Tanggal</span>
+                  )}
                 </button>
               </div>
             </form>

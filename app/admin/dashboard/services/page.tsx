@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Layers, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Layers, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { getServices, upsertService, deleteService, getPackages } from '@/lib/actions/services';
 import { useToast } from '@/components/ui/toast-context';
 import type { Service, Package } from '@/lib/types';
@@ -15,6 +15,7 @@ export default function ServicesPage() {
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newServiceForm, setNewServiceForm] = useState({ name: '', slug: '', description: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const refreshData = useCallback(async () => {
     setLoadingData(true);
@@ -35,22 +36,30 @@ export default function ServicesPage() {
 
   const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = newServiceForm.slug || newServiceForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const res = await upsertService({
-      ...(editingService?.id ? { id: editingService.id } : {}),
-      name: newServiceForm.name,
-      slug,
-      description: newServiceForm.description,
-      isActive: true,
-    });
-    if (res.success) {
-      await refreshData();
-      setShowAddServiceModal(false);
-      setEditingService(null);
-      setNewServiceForm({ name: '', slug: '', description: '' });
-      toast.success(editingService ? 'Layanan berhasil diperbarui.' : 'Layanan baru berhasil ditambahkan.');
-    } else {
-      toast.error(`Gagal menyimpan layanan: ${res.error}`);
+    setIsSubmitting(true);
+    try {
+      const slug = newServiceForm.slug || newServiceForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const res = await upsertService({
+        ...(editingService?.id ? { id: editingService.id } : {}),
+        name: newServiceForm.name,
+        slug,
+        description: newServiceForm.description,
+        isActive: true,
+      });
+      if (res.success) {
+        await refreshData();
+        setShowAddServiceModal(false);
+        setEditingService(null);
+        setNewServiceForm({ name: '', slug: '', description: '' });
+        toast.success(editingService ? 'Layanan berhasil diperbarui.' : 'Layanan baru berhasil ditambahkan.');
+      } else {
+        toast.error(`Gagal menyimpan layanan: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error saving service:', err);
+      toast.error('Terjadi kesalahan saat menyimpan layanan.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -233,15 +242,23 @@ export default function ServicesPage() {
                 <button
                   type="button"
                   onClick={() => { setShowAddServiceModal(false); setEditingService(null); }}
-                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)]"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {editingService ? 'Simpan Perubahan' : 'Simpan Kategori Layanan'}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>{editingService ? 'Simpan Perubahan' : 'Simpan Kategori Layanan'}</span>
+                  )}
                 </button>
               </div>
             </form>

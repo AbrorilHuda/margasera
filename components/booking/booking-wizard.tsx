@@ -51,7 +51,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Fetch services, packages, and availability on mount
+  // Fetch services, packages, and availability on mount, and handle URL query parameters
   useEffect(() => {
     async function loadData() {
       setIsDataLoading(true);
@@ -63,12 +63,56 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       setServices(srvList);
       setPackages(pkgList);
       setAvailabilityData(availList);
-      if (srvList.length > 0) setSelectedServiceId(srvList[0].id);
-      if (pkgList.length > 0) setSelectedPackageId(pkgList[0].id);
+
+      // Check query parameters for preselected package, service, date, and time
+      const paramPackageId = searchParams?.get('packageId') || searchParams?.get('package');
+      const paramServiceId = searchParams?.get('serviceId') || searchParams?.get('service');
+      const paramDate = searchParams?.get('date');
+      const paramTime = searchParams?.get('time');
+
+      let targetServiceId = '';
+      let targetPackageId = '';
+
+      // 1. Try matching package parameter first (by UUID or slug)
+      if (paramPackageId && pkgList.length > 0) {
+        const matchedPkg = pkgList.find(
+          (p) => p.id === paramPackageId || p.slug === paramPackageId
+        );
+        if (matchedPkg) {
+          targetPackageId = matchedPkg.id;
+          targetServiceId = matchedPkg.serviceId;
+        }
+      }
+
+      // 2. If service isn't resolved yet but serviceId param exists
+      if (!targetServiceId && paramServiceId && srvList.length > 0) {
+        const matchedSrv = srvList.find(
+          (s) => s.id === paramServiceId || s.slug === paramServiceId
+        );
+        if (matchedSrv) {
+          targetServiceId = matchedSrv.id;
+        }
+      }
+
+      // 3. Fallbacks if not provided in URL
+      if (!targetServiceId && srvList.length > 0) {
+        targetServiceId = srvList[0].id;
+      }
+      if (!targetPackageId && targetServiceId) {
+        const pkgsForSrv = pkgList.filter((p) => p.serviceId === targetServiceId);
+        targetPackageId = pkgsForSrv.length > 0 ? pkgsForSrv[0].id : (pkgList[0]?.id || '');
+      }
+
+      if (targetServiceId) setSelectedServiceId(targetServiceId);
+      if (targetPackageId) setSelectedPackageId(targetPackageId);
+      if (paramDate) setSelectedDate(paramDate);
+      if (paramTime) setStartTime(paramTime);
+
       setIsDataLoading(false);
     }
+
     loadData();
-  }, []);
+  }, [searchParams]);
 
   const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
   const selectedPackage = packages.find((p) => p.id === selectedPackageId) || packages[0];
@@ -87,12 +131,39 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     );
   };
 
-  // Helper to extract duration in hours
-  const getHoursFromDuration = (durationStr: string): number => {
-    if (!durationStr) return 4;
-    if (durationStr.toLowerCase().includes('unlimited') || durationStr.toLowerCase().includes('full day')) return 12;
-    const match = durationStr.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 4;
+  // Helper to extract duration in minutes (supports "45 Menit", "30 mnt", "1.5 Jam", "6 Jam", "Full Day")
+  const getDurationInMinutes = (durationStr: string): number => {
+    if (!durationStr) return 240; // Default 4 hours
+    const lower = durationStr.toLowerCase().trim();
+
+    if (lower.includes('unlimited') || lower.includes('full day') || lower.includes('seharian')) {
+      return 720; // 12 hours
+    }
+
+    const isMinute = lower.includes('menit') || lower.includes('mnt') || lower.includes('min');
+    const floatMatch = lower.match(/(\d+(?:[\.,]\d+)?)/);
+    if (!floatMatch) return 240;
+
+    const val = parseFloat(floatMatch[1].replace(',', '.'));
+    if (isNaN(val)) return 240;
+
+    if (isMinute) {
+      return Math.round(val);
+    } else {
+      return Math.round(val * 60);
+    }
+  };
+
+  const calculateEndTime = (startStr: string, durationStr: string): string => {
+    if (!startStr) return '14:00';
+    const [h, m] = startStr.split(':').map(Number);
+    if (isNaN(h)) return '14:00';
+    const startMins = h * 60 + (m || 0);
+    const durationMins = getDurationInMinutes(durationStr);
+    const totalEndMins = (startMins + durationMins) % (24 * 60);
+    const endH = Math.floor(totalEndMins / 60);
+    const endM = totalEndMins % 60;
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
   };
 
   // Helper to update custom start time and auto calculate end time
@@ -104,27 +175,9 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   // Auto-calculate Jam Selesai whenever selectedPackage or startTime changes
   useEffect(() => {
     if (selectedPackage && startTime) {
-      const durationHours = getHoursFromDuration(selectedPackage.duration);
-      const [h, m] = startTime.split(':').map(Number);
-      if (!isNaN(h)) {
-        const endH = (h + durationHours) % 24;
-        const endFormatted = `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
-        setEndTime(endFormatted);
-      }
+      setEndTime(calculateEndTime(startTime, selectedPackage.duration));
     }
   }, [selectedPackage, startTime]);
-
-  useEffect(() => {
-    const paramDate = searchParams?.get('date');
-    const paramService = searchParams?.get('serviceId');
-    const paramPackage = searchParams?.get('packageId');
-    const paramTime = searchParams?.get('time');
-
-    if (paramService) setSelectedServiceId(paramService);
-    if (paramPackage) setSelectedPackageId(paramPackage);
-    if (paramDate) setSelectedDate(paramDate);
-    if (paramTime) setStartTime(paramTime);
-  }, [searchParams]);
 
   const getSelectedDateInfo = (dateStr: string): { status: AvailabilityStatus; notes?: string } => {
     if (!dateStr) return { status: 'available' as AvailabilityStatus, notes: undefined };
@@ -409,10 +462,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                         const firstPkg = packages.find((p) => p.serviceId === srv.id);
                         if (firstPkg) {
                           setSelectedPackageId(firstPkg.id);
-                          const durationHours = getHoursFromDuration(firstPkg.duration);
-                          const [h, m] = startTime.split(':').map(Number);
-                          const endH = (h + durationHours) % 24;
-                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+                          setEndTime(calculateEndTime(startTime, firstPkg.duration));
                         }
                       }}
                       className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${selectedServiceId === srv.id
@@ -442,10 +492,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                         type="button"
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
-                          const durationHours = getHoursFromDuration(pkg.duration);
-                          const [h, m] = startTime.split(':').map(Number);
-                          const endH = (h + durationHours) % 24;
-                          setEndTime(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+                          setEndTime(calculateEndTime(startTime, pkg.duration));
                         }}
                         className={`p-6 rounded-xl border text-left flex flex-col justify-between transition-all ${selectedPackageId === pkg.id
                           ? 'border-[#0066CC] bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.3)]'

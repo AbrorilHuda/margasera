@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, Phone, Mail } from 'lucide-react';
+import { CheckCircle2, Phone, Mail, Loader2 } from 'lucide-react';
 import { getStudioSettings, updateStudioSettings } from '@/lib/actions/settings';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/components/ui/toast-context';
@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadSettings = useCallback(async () => {
     setLoadingData(true);
@@ -31,13 +32,21 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await updateStudioSettings(studioSettings);
-    if (res.success) {
-      setSettingsSaved(true);
-      toast.success('Pengaturan profil studio & rekening bank berhasil disimpan.');
-      setTimeout(() => setSettingsSaved(false), 3000);
-    } else {
-      toast.error(`Gagal menyimpan pengaturan: ${res.error}`);
+    setIsSubmitting(true);
+    try {
+      const res = await updateStudioSettings(studioSettings);
+      if (res.success) {
+        setSettingsSaved(true);
+        toast.success('Pengaturan profil studio & rekening bank berhasil disimpan.');
+        setTimeout(() => setSettingsSaved(false), 3000);
+      } else {
+        toast.error(`Gagal menyimpan pengaturan: ${res.error}`);
+      }
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      toast.error('Terjadi kesalahan saat menyimpan pengaturan.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -219,9 +228,17 @@ export default function SettingsPage() {
 
           <button
             type="submit"
-            className="mt-2 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-widest rounded-lg transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)]"
+            disabled={isSubmitting}
+            className="mt-2 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-widest rounded-lg transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] flex items-center justify-center gap-2 cursor-pointer"
           >
-            Simpan Semua Perubahan ke Database
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Menyimpan Pengaturan...</span>
+              </>
+            ) : (
+              <span>Simpan Semua Perubahan ke Database</span>
+            )}
           </button>
         </form>
       </div>
