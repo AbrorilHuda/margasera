@@ -385,8 +385,17 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         eventType: undefined,
         notes: combinedNotes || undefined,
         totalPrice: selectedPackage?.price,
-        downPayment: selectedPackage ? Math.ceil(selectedPackage.price * 0.2) : undefined,
-        remainingAmount: selectedPackage ? Math.floor(selectedPackage.price * 0.8) : undefined,
+        downPayment: selectedPackage
+          ? (selectedPackage.downPayment && selectedPackage.downPayment > 0
+              ? selectedPackage.downPayment
+              : Math.ceil(selectedPackage.price * 0.2))
+          : undefined,
+        remainingAmount: selectedPackage
+          ? selectedPackage.price -
+            (selectedPackage.downPayment && selectedPackage.downPayment > 0
+              ? selectedPackage.downPayment
+              : Math.ceil(selectedPackage.price * 0.2))
+          : undefined,
         paymentStatus: 'unpaid',
       });
 
@@ -946,6 +955,18 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   <span className="text-[#0066CC] font-semibold uppercase tracking-wider">Total Est. Investasi:</span>
                   <span className="font-serif-editorial text-2xl text-[#0066CC] font-bold">{formatCurrency(selectedPackage?.price ?? 0)}</span>
                 </div>
+                {selectedPackage && (
+                  <div className="flex items-center justify-between py-1.5 border-t border-zinc-900 text-xs">
+                    <span className="text-amber-400 font-semibold uppercase tracking-wider">Minimal DP Terkunci:</span>
+                    <span className="font-mono font-bold text-amber-300">
+                      {formatCurrency(
+                        selectedPackage.downPayment && selectedPackage.downPayment > 0
+                          ? selectedPackage.downPayment
+                          : Math.ceil(selectedPackage.price * 0.2)
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {submitError && (
@@ -1027,11 +1048,23 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div className="w-full max-w-md p-6 bg-zinc-900/90 border border-zinc-800 rounded-2xl text-left flex flex-col gap-3">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                   <span className="text-xs font-semibold text-[#0066CC] uppercase tracking-wider">Instruksi Pembayaran DP (Down Payment)</span>
-                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">DP 20%</span>
+                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                    DP Minimal
+                  </span>
                 </div>
 
                 <p className="text-xs text-zinc-400 font-light">
-                  Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP sebesar 20% dari total pembayaran ke rekening resmi Margasera: (konfirmasi pembayaran ke wa admin)
+                  Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP minimal sebesar{' '}
+                  <strong className="text-amber-300 font-mono">
+                    {selectedPackage
+                      ? formatCurrency(
+                          selectedPackage.downPayment && selectedPackage.downPayment > 0
+                            ? selectedPackage.downPayment
+                            : Math.ceil(selectedPackage.price * 0.2)
+                        )
+                      : 'DP'}
+                  </strong>{' '}
+                  ke rekening resmi Margasera:
                 </p>
 
                 <div className="grid grid-cols-1 gap-3 pt-1">

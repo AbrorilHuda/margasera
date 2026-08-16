@@ -262,7 +262,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                       ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
                       : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                     }`}>
-                    {searchedBooking.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : searchedBooking.paymentStatus === 'dp_paid' ? 'DP TERBAYAR (30%)' : 'BELUM DP'}
+                    {searchedBooking.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : searchedBooking.paymentStatus === 'dp_paid' ? 'DP TERBAYAR' : 'BELUM DP'}
                   </span>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
             <div className="p-6 bg-zinc-900/80 border border-zinc-800 rounded-xl flex flex-col gap-4 text-xs font-light">
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
                 <span className="font-semibold text-[#0066CC] uppercase tracking-wider font-mono">Rekening Resmi Pembayaran Studio</span>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">DP Min. 20%</span>
+                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">DP Terbayar</span>
               </div>
               <div className="p-3.5 bg-zinc-950 border border-zinc-800/80 rounded-lg">
                 <span className="text-[10px] font-mono text-zinc-500 block">{studioSettings.bankName.toUpperCase()}</span>

@@ -22,6 +22,7 @@ export default function PricingPage() {
     serviceId: '',
     name: '',
     price: 5000000,
+    downPayment: 1000000,
     duration: '6 Jam',
     photographerCount: 2,
     editedPhotos: '100 Foto Edited',
@@ -57,6 +58,7 @@ export default function PricingPage() {
       serviceId: selectedServiceId || (services[0]?.id ?? ''),
       name: '',
       price: 5000000,
+      downPayment: 1000000,
       duration: '6 Jam',
       photographerCount: 2,
       editedPhotos: '100 Foto Edited',
@@ -73,6 +75,7 @@ export default function PricingPage() {
       serviceId: pkg.serviceId,
       name: pkg.name,
       price: pkg.price,
+      downPayment: pkg.downPayment ?? Math.ceil(pkg.price * 0.2),
       duration: pkg.duration || '6 Jam',
       photographerCount: pkg.photographerCount || 1,
       editedPhotos: pkg.editedPhotos || '',
@@ -99,6 +102,7 @@ export default function PricingPage() {
         slug,
         description: newPackageForm.description,
         price: Number(newPackageForm.price) || 0,
+        downPayment: Number(newPackageForm.downPayment) || 0,
         duration: newPackageForm.duration,
         photographerCount: Number(newPackageForm.photographerCount) || 1,
         editedPhotos: newPackageForm.editedPhotos,
@@ -116,6 +120,7 @@ export default function PricingPage() {
           serviceId: selectedServiceId || (services[0]?.id ?? ''),
           name: '',
           price: 5000000,
+          downPayment: 1000000,
           duration: '6 Jam',
           photographerCount: 2,
           editedPhotos: '100 Foto Edited',
@@ -274,6 +279,10 @@ export default function PricingPage() {
 
               <div className="py-3 border-y border-zinc-800/80 flex flex-col gap-2 text-xs text-zinc-300 font-light">
                 <div className="flex items-center justify-between">
+                  <span className="text-zinc-500">Minimal DP:</span>
+                  <strong className="text-amber-400 font-mono">{formatCurrency(pkg.downPayment || Math.ceil(pkg.price * 0.2))}</strong>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-zinc-500">Durasi Sesi:</span>
                   <strong>{pkg.duration}</strong>
                 </div>
@@ -355,26 +364,38 @@ export default function PricingPage() {
                 </select>
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Nama Paket *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Premium Heritage"
+                  value={newPackageForm.name}
+                  onChange={(e) => setNewPackageForm({ ...newPackageForm, name: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Nama Paket *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Contoh: Premium Heritage"
-                    value={newPackageForm.name}
-                    onChange={(e) => setNewPackageForm({ ...newPackageForm, name: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Harga (IDR) *</label>
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Harga Total (IDR) *</label>
                   <input
                     type="number"
                     required
                     value={newPackageForm.price}
                     onChange={(e) => setNewPackageForm({ ...newPackageForm, price: Number(e.target.value) })}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Nominal Minimal DP (IDR)</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="Contoh: 1000000"
+                    value={newPackageForm.downPayment}
+                    onChange={(e) => setNewPackageForm({ ...newPackageForm, downPayment: Number(e.target.value) })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono"
                   />
                 </div>
               </div>

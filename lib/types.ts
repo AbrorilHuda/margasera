@@ -54,6 +54,7 @@ export interface Package {
   slug: string;
   description: string;
   price: number;
+  downPayment?: number;
   duration: string;
   photographerCount: number;
   editedPhotos: string;

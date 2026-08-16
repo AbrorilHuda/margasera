@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS public.packages (
   slug                TEXT NOT NULL UNIQUE,
   description         TEXT,
   price               BIGINT NOT NULL DEFAULT 0,
+  down_payment        BIGINT,
   duration            TEXT,
   photographer_count  INT,
   edited_photos       TEXT,

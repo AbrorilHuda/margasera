@@ -59,6 +59,32 @@ function generateGoogleCalendarUrl(b: Booking): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${loc}`;
 }
 
+function calculateEndTime(startTime: string, durationStr: string): string {
+  if (!startTime) return '14:00';
+  const [h, m] = startTime.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return '14:00';
+
+  let addMinutes = 360; // default 6 jam
+
+  const lower = (durationStr || '').toLowerCase();
+  const jamMatch = lower.match(/(\d+)\s*jam/);
+  const menitMatch = lower.match(/(\d+)\s*menit/);
+
+  if (jamMatch && jamMatch[1]) {
+    addMinutes = Number(jamMatch[1]) * 60;
+  } else if (menitMatch && menitMatch[1]) {
+    addMinutes = Number(menitMatch[1]);
+  } else if (lower.includes('full day') || lower.includes('seharian')) {
+    addMinutes = 600;
+  }
+
+  const totalMinutes = h * 60 + m + addMinutes;
+  const endH = Math.floor(totalMinutes / 60) % 24;
+  const endM = totalMinutes % 60;
+
+  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+}
+
 export default function BookingsPage() {
   const { toast, confirmModal } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -90,8 +116,12 @@ export default function BookingsPage() {
     serviceId: '',
     packageId: '',
     bookingDate: new Date().toISOString().split('T')[0],
+    startTime: '08:00',
+    endTime: '14:00',
     location: '',
     totalPrice: 14500000,
+    downPayment: 1000000,
+    paymentStatus: 'unpaid' as 'unpaid' | 'dp_paid' | 'paid_full',
     notes: '',
   });
 
@@ -142,11 +172,41 @@ export default function BookingsPage() {
   };
 
   const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: 'unpaid' | 'dp_paid' | 'paid_full') => {
-    const res = await updatePaymentStatus(id, newPaymentStatus);
+    const targetBooking = bookings.find((b) => b.id === id);
+    let paidAmt: number | undefined = undefined;
+
+    if (targetBooking) {
+      if (newPaymentStatus === 'dp_paid') {
+        const matchedPkg = packages.find(
+          (p) =>
+            (targetBooking.packageId && (p.id === targetBooking.packageId || p.slug === targetBooking.packageId)) ||
+            (targetBooking.packageName && p.name.toLowerCase().trim() === targetBooking.packageName.toLowerCase().trim())
+        );
+
+        paidAmt =
+          targetBooking.downPayment && targetBooking.downPayment > 0
+            ? targetBooking.downPayment
+            : matchedPkg?.downPayment && matchedPkg.downPayment > 0
+              ? matchedPkg.downPayment
+              : targetBooking.totalPrice
+                ? Math.ceil(targetBooking.totalPrice * 0.2)
+                : 0;
+      } else if (newPaymentStatus === 'paid_full') {
+        paidAmt = targetBooking.totalPrice ?? 0;
+      } else if (newPaymentStatus === 'unpaid') {
+        paidAmt = 0;
+      }
+    }
+
+    const res = await updatePaymentStatus(id, newPaymentStatus, paidAmt);
     if (res.success) {
       await refreshData();
       if (selectedBookingForDetail && selectedBookingForDetail.id === id) {
-        setSelectedBookingForDetail({ ...selectedBookingForDetail, paymentStatus: newPaymentStatus });
+        setSelectedBookingForDetail({
+          ...selectedBookingForDetail,
+          paymentStatus: newPaymentStatus,
+          paidAmount: paidAmt,
+        });
       }
       toast.success(`Status pembayaran berhasil diperbarui.`);
     } else {
@@ -181,23 +241,35 @@ export default function BookingsPage() {
       const selectedSrv = services.find((s) => s.id === newBookingForm.serviceId);
       const selectedPkg = packages.find((p) => p.id === newBookingForm.packageId);
       const bookingCode = `MS-${cleanDate}-${randomNum}`;
+      const totalPriceVal = Number(newBookingForm.totalPrice) || (selectedPkg?.price ?? 10000000);
+      const dpVal = Number(newBookingForm.downPayment) || (selectedPkg?.downPayment && selectedPkg.downPayment > 0 ? selectedPkg.downPayment : Math.ceil(totalPriceVal * 0.2));
+
+      const paidAmt = newBookingForm.paymentStatus === 'paid_full'
+        ? totalPriceVal
+        : newBookingForm.paymentStatus === 'dp_paid'
+          ? dpVal
+          : 0;
 
       const res = await createManualBooking({
         bookingCode,
         customerName: newBookingForm.customerName || 'Pelanggan Baru',
         whatsapp: newBookingForm.whatsapp || '081931107481',
-        email: newBookingForm.email || 'customer@margasera.id',
-        instagram: newBookingForm.instagram,
+        email: newBookingForm.email || undefined,
+        instagram: newBookingForm.instagram || undefined,
         serviceId: newBookingForm.serviceId,
         serviceName: selectedSrv?.name || 'Wedding Photography',
         packageId: newBookingForm.packageId,
         packageName: selectedPkg?.name || 'Custom Package',
         bookingDate: newBookingForm.bookingDate,
+        startTime: newBookingForm.startTime || '08:00',
+        endTime: newBookingForm.endTime || '14:00',
         location: newBookingForm.location || 'Madura',
         status: 'confirmed',
-        paymentStatus: 'unpaid',
-        totalPrice: Number(newBookingForm.totalPrice) || 10000000,
-        notes: newBookingForm.notes,
+        paymentStatus: newBookingForm.paymentStatus,
+        totalPrice: totalPriceVal,
+        downPayment: dpVal,
+        remainingAmount: Math.max(0, totalPriceVal - paidAmt),
+        notes: newBookingForm.notes || undefined,
       });
 
       if (res.success) {
@@ -212,8 +284,12 @@ export default function BookingsPage() {
           serviceId: services[0]?.id || '',
           packageId: packages.find((p) => p.serviceId === services[0]?.id)?.id || '',
           bookingDate: new Date().toISOString().split('T')[0],
+          startTime: '08:00',
+          endTime: '14:00',
           location: '',
           totalPrice: 14500000,
+          downPayment: 1000000,
+          paymentStatus: 'unpaid',
           notes: '',
         });
       } else {
@@ -393,6 +469,7 @@ export default function BookingsPage() {
               onClick={() => {
                 const srvId = services[0]?.id || '';
                 const firstPkg = packages.find((p) => p.serviceId === srvId);
+                const autoEnd = calculateEndTime('08:00', firstPkg?.duration || '6 Jam');
                 setNewBookingForm({
                   customerName: '',
                   whatsapp: '',
@@ -401,8 +478,12 @@ export default function BookingsPage() {
                   serviceId: srvId,
                   packageId: firstPkg?.id || '',
                   bookingDate: new Date().toISOString().split('T')[0],
+                  startTime: '08:00',
+                  endTime: autoEnd,
                   location: '',
                   totalPrice: firstPkg?.price ?? 14500000,
+                  downPayment: firstPkg?.downPayment && firstPkg.downPayment > 0 ? firstPkg.downPayment : 1000000,
+                  paymentStatus: 'unpaid',
                   notes: '',
                 });
                 setShowAddBookingModal(true);
@@ -756,6 +837,109 @@ export default function BookingsPage() {
             </div>
 
             <form onSubmit={handleCreateBooking} className="flex flex-col gap-4 text-xs">
+              {/* SECTION 1: LAYANAN & PAKET (PALING ATAS) */}
+              <div className="grid grid-cols-2 gap-4 bg-zinc-950/80 p-3.5 border border-[#0066CC]/40 rounded-xl">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">1. Kategori Layanan *</label>
+                  <select
+                    value={newBookingForm.serviceId}
+                    onChange={(e) => {
+                      const srvId = e.target.value;
+                      const availablePkgs = packages.filter((p) => p.serviceId === srvId);
+                      const selPkg = availablePkgs[0];
+                      const dpAmount = selPkg?.downPayment && selPkg.downPayment > 0 ? selPkg.downPayment : Math.ceil((selPkg?.price ?? 5000000) * 0.2);
+                      const autoEndTime = calculateEndTime(newBookingForm.startTime, selPkg?.duration || '6 Jam');
+                      setNewBookingForm({
+                        ...newBookingForm,
+                        serviceId: srvId,
+                        packageId: selPkg?.id || '',
+                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
+                        downPayment: dpAmount,
+                        endTime: autoEndTime,
+                      });
+                    }}
+                    className="bg-zinc-900 border border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 font-semibold focus:outline-none"
+                  >
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">2. Paket Dipilih *</label>
+                  <select
+                    value={newBookingForm.packageId}
+                    onChange={(e) => {
+                      const pkgId = e.target.value;
+                      const selPkg = packages.find((p) => p.id === pkgId);
+                      const dpAmount = selPkg?.downPayment && selPkg.downPayment > 0 ? selPkg.downPayment : Math.ceil((selPkg?.price ?? 5000000) * 0.2);
+                      const autoEndTime = calculateEndTime(newBookingForm.startTime, selPkg?.duration || '6 Jam');
+                      setNewBookingForm({
+                        ...newBookingForm,
+                        packageId: pkgId,
+                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
+                        downPayment: dpAmount,
+                        endTime: autoEndTime,
+                      });
+                    }}
+                    className="bg-zinc-900 border border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 font-semibold focus:outline-none"
+                  >
+                    {packages
+                      .filter((p) => !newBookingForm.serviceId || p.serviceId === newBookingForm.serviceId)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.duration || '6 Jam'}) - {formatCurrency(p.price)}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* SECTION 2: JADWAL & JAM SESI OTOMATIS */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Tanggal Acara *</label>
+                  <input
+                    type="date"
+                    required
+                    value={newBookingForm.bookingDate}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, bookingDate: e.target.value })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Jam Mulai Sesi</label>
+                  <input
+                    type="time"
+                    value={newBookingForm.startTime}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const selPkg = packages.find((p) => p.id === newBookingForm.packageId);
+                      const autoEnd = calculateEndTime(newStart, selPkg?.duration || '6 Jam');
+                      setNewBookingForm({
+                        ...newBookingForm,
+                        startTime: newStart,
+                        endTime: autoEnd,
+                      });
+                    }}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium flex items-center justify-between">
+                    <span>Jam Selesai</span>
+                    <span className="text-[9px] text-amber-400 font-mono font-normal">(Otomatis)</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={newBookingForm.endTime}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, endTime: e.target.value })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: DATA PELANGGAN & LOKASI */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-zinc-300 uppercase font-mono font-medium">Nama Pelanggan / Client *</label>
                 <input
@@ -768,7 +952,7 @@ export default function BookingsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-zinc-300 uppercase font-mono font-medium">Nomor WhatsApp *</label>
                   <input
@@ -778,6 +962,16 @@ export default function BookingsPage() {
                     value={newBookingForm.whatsapp}
                     onChange={(e) => setNewBookingForm({ ...newBookingForm, whatsapp: e.target.value })}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Email (Opsional)</label>
+                  <input
+                    type="email"
+                    placeholder="client@example.com"
+                    value={newBookingForm.email}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, email: e.target.value })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -792,86 +986,61 @@ export default function BookingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Tanggal Acara *</label>
-                  <input
-                    type="date"
-                    required
-                    value={newBookingForm.bookingDate}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, bookingDate: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Lokasi / Venue *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Contoh: Bangkalan, Madura"
-                    value={newBookingForm.location}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, location: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Layanan *</label>
-                  <select
-                    value={newBookingForm.serviceId}
-                    onChange={(e) => {
-                      const srvId = e.target.value;
-                      const availablePkgs = packages.filter((p) => p.serviceId === srvId);
-                      const selPkg = availablePkgs[0];
-                      setNewBookingForm({
-                        ...newBookingForm,
-                        serviceId: srvId,
-                        packageId: selPkg?.id || '',
-                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
-                      });
-                    }}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                  >
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Paket *</label>
-                  <select
-                    value={newBookingForm.packageId}
-                    onChange={(e) => {
-                      const pkgId = e.target.value;
-                      const selPkg = packages.find((p) => p.id === pkgId);
-                      setNewBookingForm({
-                        ...newBookingForm,
-                        packageId: pkgId,
-                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
-                      });
-                    }}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                  >
-                    {packages
-                      .filter((p) => !newBookingForm.serviceId || p.serviceId === newBookingForm.serviceId)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} - {formatCurrency(p.price)}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
               <div className="flex flex-col gap-1.5">
-                <label className="text-zinc-300 uppercase font-mono font-medium">Total Harga (IDR)</label>
+                <label className="text-zinc-300 uppercase font-mono font-medium">Lokasi / Venue Acara *</label>
                 <input
-                  type="number"
-                  value={newBookingForm.totalPrice}
-                  onChange={(e) => setNewBookingForm({ ...newBookingForm, totalPrice: Number(e.target.value) })}
-                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-sm font-semibold"
+                  type="text"
+                  required
+                  placeholder="Contoh: Gedung Graha Medika, Bangkalan"
+                  value={newBookingForm.location}
+                  onChange={(e) => setNewBookingForm({ ...newBookingForm, location: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
+                />
+              </div>
+
+              {/* SECTION 4: KEUANGAN & PEMBAYARAN */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Total Harga (IDR)</label>
+                  <input
+                    type="number"
+                    value={newBookingForm.totalPrice}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, totalPrice: Number(e.target.value) })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-sm font-semibold"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Nominal DP (IDR)</label>
+                  <input
+                    type="number"
+                    value={newBookingForm.downPayment}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, downPayment: Number(e.target.value) })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono text-sm font-semibold"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Status Pembayaran</label>
+                  <select
+                    value={newBookingForm.paymentStatus}
+                    onChange={(e) => setNewBookingForm({ ...newBookingForm, paymentStatus: e.target.value as any })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-xs"
+                  >
+                    <option value="unpaid">Belum DP (Unpaid)</option>
+                    <option value="dp_paid">DP Terbayar (DP Paid)</option>
+                    <option value="paid_full">Lunas (Paid Full)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* SECTION 5: CATATAN TAMBAHAN */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-300 uppercase font-mono font-medium">Catatan / Rincian Fasilitas Tambahan (Notes)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Contoh: Nama pasangan: Amanda, Fasilitas kustom: Unlimited raw files, 2 videographer"
+                  value={newBookingForm.notes}
+                  onChange={(e) => setNewBookingForm({ ...newBookingForm, notes: e.target.value })}
+                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-sans text-xs"
                 />
               </div>
 
@@ -966,7 +1135,7 @@ export default function BookingsPage() {
                         : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                       }`}
                   >
-                    {isPaidFull ? 'LUNAS (100%) ✓' : isDpPaid ? 'DP TERBAYAR (20%) ✓' : 'BELUM DP'}
+                    {isPaidFull ? 'LUNAS (100%) ✓' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP'}
                   </span>
                 </div>
                 {selectedBookingForDetail.notes && (
@@ -990,7 +1159,7 @@ export default function BookingsPage() {
                         : 'bg-[#0066CC] hover:bg-[#0052A3] text-white cursor-pointer shadow-md'
                         }`}
                     >
-                      {isDpPaid ? 'DP Terbayar ✓' : isPaidFull ? 'DP Selesai ✓' : 'Set DP Terbayar (20%)'}
+                      {isDpPaid ? 'DP Terbayar ✓' : isPaidFull ? 'DP Selesai ✓' : 'Set DP Terbayar'}
                     </button>
 
                     <button
@@ -1059,7 +1228,7 @@ export default function BookingsPage() {
         };
 
         const generateWaInvoiceMsg = () => {
-          const statusText = isPaidFull ? 'LUNAS (100%)' : isDpPaid ? 'DP (20%) TERBAYAR' : 'BELUM DP';
+          const statusText = isPaidFull ? 'LUNAS' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP';
           const studioName = studioSettings.studioName || 'Margasera Photography';
           const bankName = (studioSettings.bankName || 'BCA').toUpperCase();
           const bankAcc = studioSettings.bankAccountNumber || '1234567890';
@@ -1150,7 +1319,7 @@ export default function BookingsPage() {
                         }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${isPaidFull ? 'bg-emerald-600' : isDpPaid ? 'bg-blue-600' : 'bg-amber-600'}`} />
-                      {isPaidFull ? 'LUNAS / FULLY PAID' : isDpPaid ? 'DP 20% TERBAYAR' : 'BELUM DP / UNPAID'}
+                      {isPaidFull ? 'LUNAS / FULLY PAID' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP / UNPAID'}
                     </div>
                     <div className="text-[11px] text-zinc-500 font-mono mt-1">
                       Tanggal Diterbitkan: {formatDate(new Date().toISOString().split('T')[0])}
@@ -1317,8 +1486,8 @@ export default function BookingsPage() {
                 <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-end gap-6 text-[11px] text-zinc-500 font-light">
                   <div className="flex flex-col gap-1">
                     <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Syarat & Ketentuan Studio:</strong>
-                    <span>• DP minimal 20% dari total paket untuk mengunci tanggal pada kalender studio.</span>
-                    <span>• Pelunasan sisa 80% dilakukan setelah acara selesai (di tempat).</span>
+                    <span>• DP minimal untuk mengunci tanggal pada kalender studio.</span>
+                    <span>• Pelunasan sisa dilakukan setelah acara selesai (di tempat).</span>
                     <span>• Invoice ini merupakan bukti pembayaran sah yang dikeluarkan oleh Margasera.</span>
                   </div>
 
