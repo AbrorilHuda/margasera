@@ -93,11 +93,10 @@ export async function getAvailability(yearMonth?: string): Promise<Availability[
     let nonWeddingBookedCount = 0;
 
     for (const b of bList) {
-      const isWedding =
-        (b.slot_type && b.slot_type.startsWith('wedding')) ||
-        (b.service_name &&
-          b.service_name.toLowerCase().includes('wedding') &&
-          !b.service_name.toLowerCase().includes('pre-wedding'));
+      const sName = (b.service_name || b.package_name || '').toLowerCase();
+      const isWedding = sName
+        ? (sName.includes('wedding') && !sName.includes('pre-wedding') && !sName.includes('prewedding'))
+        : Boolean(b.slot_type && b.slot_type.startsWith('wedding'));
 
       if (isWedding) {
         weddingBookedCount++;

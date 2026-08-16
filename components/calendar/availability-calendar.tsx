@@ -429,7 +429,7 @@ export function AvailabilityCalendar() {
                           </span>
                         ) : (
                           <Link
-                            href={`/booking?date=${selectedDateStr}&serviceId=s-wedding`}
+                            href={`/booking?date=${selectedDateStr}&serviceId=wedding`}
                             className="px-3 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase rounded-lg transition-colors"
                           >
                             Pilih
@@ -518,7 +518,7 @@ export function AvailabilityCalendar() {
 
                       {remainingNonWedding > 0 && (
                         <Link
-                          href={`/booking?date=${selectedDateStr}&serviceId=s-prewedding`}
+                          href={`/booking?date=${selectedDateStr}&serviceId=portrait`}
                           className="mt-auto py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold text-center uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] hover:shadow-[0_0_20px_rgba(0,102,204,0.5)] flex items-center justify-center gap-2 cursor-pointer group"
                         >
                           <span className="text-white font-semibold">Pesan Sesi Studio ({remainingNonWedding} Slot Tersisa)</span>

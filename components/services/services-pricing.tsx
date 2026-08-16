@@ -129,7 +129,7 @@ export function ServicesPricing() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Users className="w-4 h-4 text-[#0066CC] shrink-0" />
-                  <span>Tim Fotografer: <strong>{pkg.photographerCount} Fotografer</strong></span>
+                  <span>Tim Dokumentasi: <strong>{pkg.photographerCount} Orang Tim</strong></span>
                 </div>
                 <div className="flex items-center gap-3">
                   <ImageIcon className="w-4 h-4 text-[#0066CC] shrink-0" />

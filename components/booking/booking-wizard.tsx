@@ -73,10 +73,16 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       let targetServiceId = '';
       let targetPackageId = '';
 
-      // 1. Try matching package parameter first (by UUID or slug)
+      // 1. Try matching package parameter first (by UUID, slug, or clean name)
       if (paramPackageId && pkgList.length > 0) {
+        const cleanPkg = paramPackageId.replace(/^pkg-/, '').toLowerCase();
         const matchedPkg = pkgList.find(
-          (p) => p.id === paramPackageId || p.slug === paramPackageId
+          (p) =>
+            p.id === paramPackageId ||
+            p.slug.toLowerCase() === paramPackageId.toLowerCase() ||
+            p.slug.toLowerCase() === cleanPkg ||
+            p.slug.toLowerCase().includes(cleanPkg) ||
+            p.name.toLowerCase().includes(cleanPkg)
         );
         if (matchedPkg) {
           targetPackageId = matchedPkg.id;
@@ -86,8 +92,13 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
       // 2. If service isn't resolved yet but serviceId param exists
       if (!targetServiceId && paramServiceId && srvList.length > 0) {
+        const cleanSrv = paramServiceId.replace(/^s-/, '').toLowerCase();
         const matchedSrv = srvList.find(
-          (s) => s.id === paramServiceId || s.slug === paramServiceId
+          (s) =>
+            s.id === paramServiceId ||
+            s.slug.toLowerCase() === paramServiceId.toLowerCase() ||
+            s.slug.toLowerCase() === cleanSrv ||
+            s.name.toLowerCase().includes(cleanSrv)
         );
         if (matchedSrv) {
           targetServiceId = matchedSrv.id;
@@ -204,11 +215,45 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       return { hasConflict: true, reason: `Tanggal ${formatDate(selectedDate)} sudah terisi penuh (booked).` };
     }
 
+    const isWeddingService = selectedService?.slug === 'wedding' ||
+      (selectedService?.name &&
+        selectedService.name.toLowerCase().includes('wedding') &&
+        !selectedService.name.toLowerCase().includes('pre-wedding') &&
+        !selectedService.name.toLowerCase().includes('prewedding'));
+
     const toMins = (tStr?: string) => {
       if (!tStr || !tStr.includes(':')) return null;
       const [h, m] = tStr.split(':').map(Number);
       return isNaN(h) || isNaN(m) ? null : h * 60 + m;
     };
+
+    if (isWeddingService) {
+      const weddingSlots = dateEntry.weddingSlots || [];
+      const bookedWeddingCount = weddingSlots.filter((s) => s.isBooked).length;
+      if (bookedWeddingCount >= 2) {
+        return {
+          hasConflict: true,
+          reason: `Kuota Wedding pada tanggal ${formatDate(selectedDate)} sudah terisi penuh (maksimal 2 booking/hari).`,
+        };
+      }
+
+      const sA = toMins(startTime);
+      if (sA !== null) {
+        if (sA < 14 * 60 && weddingSlots[0]?.isBooked) {
+          return {
+            hasConflict: true,
+            reason: `Slot Wedding Sesi 1 (Pagi / Siang) pada tanggal ${formatDate(selectedDate)} sudah terisi (${weddingSlots[0].bookedBy || 'Klien Wedding'}). Silakan pilih Sesi 2 (Sore / Malam).`,
+          };
+        }
+        if (sA >= 14 * 60 && weddingSlots[1]?.isBooked) {
+          return {
+            hasConflict: true,
+            reason: `Slot Wedding Sesi 2 (Sore / Malam) pada tanggal ${formatDate(selectedDate)} sudah terisi (${weddingSlots[1].bookedBy || 'Klien Wedding'}). Silakan pilih Sesi 1 (Pagi / Siang).`,
+          };
+        }
+      }
+      return { hasConflict: false };
+    }
 
     const sA = toMins(startTime);
     const eA = toMins(endTime);
@@ -222,7 +267,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
             const category = bts.serviceCategory || 'Sesi Studio';
             return {
               hasConflict: true,
-              reason: `Jam sesi (${startTime} - ${endTime} WIB) bentrok dengan jadwal yang sudah terisi (${category} jam ${bts.startTime} - ${bts.endTime} WIB). Silakan pilih jam lain.`,
+              reason: `Jam sesi (${startTime} - ${endTime} WIB) bentrok dengan jadwal studio yang sudah terisi (${category} jam ${bts.startTime} - ${bts.endTime} WIB). Silakan pilih jam lain.`,
             };
           }
         }
@@ -276,10 +321,6 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         toast.warning('Silakan isi Nomor WhatsApp terlebih dahulu.');
         return;
       }
-      if (!email.trim()) {
-        toast.warning('Silakan isi Alamat Email terlebih dahulu.');
-        return;
-      }
       if (!instagram.trim()) {
         toast.warning('Silakan isi Username Instagram Client terlebih dahulu.');
         return;
@@ -289,6 +330,10 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         return;
       }
     }
+    if (currentStep === 4) {
+      handleSubmitBooking();
+      return;
+    }
     if (currentStep < 4) setCurrentStep((prev) => prev + 1);
   };
 
@@ -296,10 +341,14 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   };
 
-  const handleSubmitBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitBooking = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     setSubmitError(null);
+
+    toast.info('Sedang mengirim data pemesanan Anda...', 'Mengirim Data');
 
     const fullCustomerName = isCoupleService(selectedService) && partnerName.trim()
       ? `${customerName.trim()} & ${partnerName.trim()}`
@@ -310,11 +359,19 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       notes.trim() ? `Catatan: ${notes.trim()}` : null,
     ].filter(Boolean).join('\n');
 
+    const isWeddingService = selectedService?.slug === 'wedding' ||
+      (selectedService?.name &&
+        selectedService.name.toLowerCase().includes('wedding') &&
+        !selectedService.name.toLowerCase().includes('pre-wedding') &&
+        !selectedService.name.toLowerCase().includes('prewedding'));
+
+    const effectiveSlotType = isWeddingService ? slotType : 'custom';
+
     try {
       const result = await createBooking({
         customerName: fullCustomerName,
         whatsapp: whatsapp.trim(),
-        email: email.trim(),
+        email: email.trim() || undefined,
         instagram: instagram.trim() || undefined,
         serviceId: selectedServiceId,
         serviceName: selectedService?.name,
@@ -323,7 +380,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         bookingDate: selectedDate,
         startTime,
         endTime,
-        slotType,
+        slotType: effectiveSlotType,
         location: location.trim(),
         eventType: undefined,
         notes: combinedNotes || undefined,
@@ -335,12 +392,17 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
       if (result.success && result.bookingCode) {
         setBookingCode(result.bookingCode);
+        toast.success(`Booking berhasil dikirim! Kode Booking: ${result.bookingCode}`, 'Pemesanan Berhasil');
         setCurrentStep(5);
       } else {
-        setSubmitError(result.error ?? 'Booking gagal dikirim. Coba lagi.');
+        const errMsg = result.error ?? 'Booking gagal dikirim. Coba lagi.';
+        setSubmitError(errMsg);
+        toast.error(errMsg, 'Pemesanan Gagal');
       }
-    } catch {
-      setSubmitError('Terjadi kesalahan. Silakan coba lagi.');
+    } catch (err: any) {
+      const errMsg = err?.message || 'Terjadi kesalahan. Silakan coba lagi.';
+      setSubmitError(errMsg);
+      toast.error(errMsg, 'Pemesanan Gagal');
     } finally {
       setIsSubmitting(false);
     }
@@ -771,12 +833,11 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-300 uppercase tracking-widest flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-[#0066CC]" /> Alamat Email *
+                    <Mail className="w-3.5 h-3.5 text-[#0066CC]" /> Alamat Email (Opsional)
                   </label>
                   <input
                     type="email"
-                    required
-                    placeholder="Contoh: ahmad@example.com"
+                    placeholder="Contoh: ahmad@example.com (opsional)"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
@@ -875,7 +936,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                 )}
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">WhatsApp & Email:</span>
-                  <span className="font-semibold text-zinc-100">{whatsapp} • {email}</span>
+                  <span className="font-semibold text-zinc-100">{whatsapp}{email.trim() ? ` • ${email.trim()}` : ''}</span>
                 </div>
                 <div className="flex items-center justify-between py-3">
                   <span className="text-zinc-500 uppercase tracking-wider">Instagram & Venue:</span>
@@ -1001,12 +1062,14 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         </AnimatePresence>
 
         {/* Wizard Controls Footer */}
-        {currentStep <= 5 && (
+        {currentStep < 5 && (
           <div className="mt-10 pt-6 border-t border-zinc-900 flex items-center justify-between">
             {currentStep > 1 ? (
               <button
+                type="button"
                 onClick={handlePrevStep}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-semibold tracking-widest uppercase transition-colors"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold tracking-widest uppercase transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Sebelumnya</span>
@@ -1015,15 +1078,29 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               <div />
             )}
 
-            {currentStep < 5 && (
-              <button
-                onClick={handleNextStep}
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0066CC] text-white text-xs font-semibold tracking-widest uppercase hover:bg-[#0052A3] transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)]"
-              >
-                <span>Selanjutnya</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleNextStep}
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0066CC] text-white disabled:opacity-60 disabled:cursor-not-allowed text-xs font-semibold tracking-widest uppercase hover:bg-[#0052A3] transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)] cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Memproses...</span>
+                </>
+              ) : currentStep === 4 ? (
+                <>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Kirim Pemesanan</span>
+                </>
+              ) : (
+                <>
+                  <span>Selanjutnya</span>
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>

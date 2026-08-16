@@ -1189,16 +1189,86 @@ export default function BookingsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200 text-zinc-800">
-                      <tr>
-                        <td className="p-3">
-                          <div className="flex flex-col">
-                            <strong className="text-zinc-900 font-semibold">{inv.serviceName}</strong>
-                            <span className="text-zinc-500 text-[11px]">{inv.packageName} — Dokumentasi Visual Sinematik</span>
-                          </div>
-                        </td>
-                        <td className="p-3 text-center font-mono">1 Event</td>
-                        <td className="p-3 text-right font-mono font-semibold">{formatCurrency(totalPrice)}</td>
-                      </tr>
+                      {(() => {
+                        // 1. Match package by BOTH service AND package name/ID to prevent cross-service false matches
+                        let matchedPkg = packages.find((p) => {
+                          const matchesService =
+                            (inv.serviceId && p.serviceId === inv.serviceId) ||
+                            (inv.serviceName && p.serviceName && p.serviceName.toLowerCase().trim() === inv.serviceName.toLowerCase().trim());
+                          const matchesName = Boolean(inv.packageName && p.name.toLowerCase().trim() === inv.packageName.toLowerCase().trim());
+                          const matchesId = Boolean(inv.packageId && (p.id === inv.packageId || p.slug === inv.packageId));
+                          return matchesService && (matchesName || matchesId);
+                        });
+
+                        // 2. Fallback: match by exact package name if service metadata was omitted
+                        if (!matchedPkg && inv.packageName) {
+                          matchedPkg = packages.find(
+                            (p) => p.name.toLowerCase().trim() === inv.packageName?.toLowerCase().trim()
+                          );
+                        }
+                        const pkgFeatures = matchedPkg?.features || [];
+                        const notesFeatures = inv.notes
+                          ? inv.notes.split('\n').filter((l) => l.trim().length > 0 && !l.toLowerCase().startsWith('nama pasangan:'))
+                          : [];
+                        const featuresToShow = pkgFeatures.length > 0 ? pkgFeatures : notesFeatures;
+
+                        // 3. Extract duration from notes if custom (e.g. "durasi sesi 6 jam" -> "6 jam")
+                        let extractedDuration: string | null = null;
+                        if (inv.notes) {
+                          const match = inv.notes.match(/(?:durasi\s*(?:sesi)?|s\/d)\s*:?\s*(\d+\s*(?:jam|menit|hari))/i);
+                          if (match && match[1]) {
+                            extractedDuration = match[1].trim();
+                          }
+                        }
+
+                        const displayDuration = matchedPkg?.duration
+                          ? matchedPkg.duration
+                          : extractedDuration
+                            ? extractedDuration
+                            : inv.startTime && inv.endTime
+                              ? `${inv.startTime} – ${inv.endTime} WIB`
+                              : null;
+
+                        return (
+                          <tr>
+                            <td className="p-3.5 align-top">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <strong className="text-zinc-900 font-bold text-sm">{inv.serviceName || 'Layanan Studio'}</strong>
+                                  {inv.packageName && (
+                                    <>
+                                      <span className="text-zinc-400 font-bold">•</span>
+                                      <span className="text-zinc-700 font-semibold text-xs">{inv.packageName}</span>
+                                    </>
+                                  )}
+                                </div>
+
+                                {featuresToShow.length > 0 ? (
+                                  <ul className="mt-1 flex flex-col gap-0.5 text-[10px] text-zinc-500 font-light pl-0.5">
+                                    {featuresToShow.map((ft, fIdx) => (
+                                      <li key={fIdx} className="flex items-start gap-1.5 leading-tight">
+                                        <span className="text-zinc-400 select-none">-</span>
+                                        <span>{ft.replace(/^[-•*]\s*/, '')}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <span className="text-zinc-500 text-[10.5px] italic mt-0.5">
+                                    Dokumentasi Visual & Sinematik Marga Sera Photography
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-center font-mono align-top">
+                              <strong className="text-zinc-900 font-semibold">{displayDuration || '1 Event'}</strong>
+                              {displayDuration && (
+                                <div className="text-[10px] text-zinc-500 font-sans mt-0.5">1 Sesi / Event</div>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-right font-mono font-semibold align-top">{formatCurrency(totalPrice)}</td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -1440,22 +1510,22 @@ export default function BookingsPage() {
                             <div className="flex flex-col items-center gap-0.5">
                               <span
                                 className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${b.status === 'confirmed'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : b.status === 'completed'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : b.status === 'pending'
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-rose-100 text-rose-800'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : b.status === 'completed'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : b.status === 'pending'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-rose-100 text-rose-800'
                                   }`}
                               >
                                 {b.status}
                               </span>
                               <span
                                 className={`text-[8px] font-bold uppercase ${b.paymentStatus === 'paid_full'
-                                    ? 'text-emerald-700'
-                                    : b.paymentStatus === 'dp_paid'
-                                      ? 'text-blue-700'
-                                      : 'text-amber-700'
+                                  ? 'text-emerald-700'
+                                  : b.paymentStatus === 'dp_paid'
+                                    ? 'text-blue-700'
+                                    : 'text-amber-700'
                                   }`}
                               >
                                 {b.paymentStatus === 'paid_full'

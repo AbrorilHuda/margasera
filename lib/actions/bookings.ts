@@ -118,14 +118,17 @@ export async function createBooking(
     }
 
     if (existingBookings && existingBookings.length > 0) {
-      const isNewWedding =
-        (formData.slotType && formData.slotType.startsWith('wedding')) ||
-        (formData.serviceName && formData.serviceName.toLowerCase().includes('wedding') && !formData.serviceName.toLowerCase().includes('pre-wedding'));
+      const newSName = (formData.serviceName || formData.packageName || '').toLowerCase();
+      const isNewWedding = newSName
+        ? (newSName.includes('wedding') && !newSName.includes('pre-wedding') && !newSName.includes('prewedding'))
+        : Boolean(formData.slotType && formData.slotType.startsWith('wedding'));
 
-      const existingWeddingCount = existingBookings.filter((b: any) =>
-        (b.slot_type && b.slot_type.startsWith('wedding')) ||
-        (b.service_name && b.service_name.toLowerCase().includes('wedding') && !b.service_name.toLowerCase().includes('pre-wedding'))
-      ).length;
+      const existingWeddingCount = existingBookings.filter((b: any) => {
+        const sName = (b.service_name || b.package_name || '').toLowerCase();
+        return sName
+          ? (sName.includes('wedding') && !sName.includes('pre-wedding') && !sName.includes('prewedding'))
+          : Boolean(b.slot_type && b.slot_type.startsWith('wedding'));
+      }).length;
 
       const existingNonWeddingCount = existingBookings.length - existingWeddingCount;
 
@@ -145,14 +148,37 @@ export async function createBooking(
       }
 
       // 3. VALIDASI BENTROK JAM (TIME OVERLAP VALIDATION)
-      for (const b of existingBookings) {
-        if (isTimeOverlap(formData.startTime, formData.endTime, b.start_time, b.end_time)) {
-          const serviceLabel = b.service_name || b.package_name || 'Sesi Studio Photo';
-          const timeText = b.start_time && b.end_time ? `${b.start_time} s/d ${b.end_time} WIB` : 'sepanjang hari';
-          return {
-            success: false,
-            error: `Jam sesi (${formData.startTime || '09:00'} - ${formData.endTime || '12:00'} WIB) pada tanggal ${formData.bookingDate} sudah terisi oleh pemesanan lain (${serviceLabel} - ${timeText}). Pemesanan di jam yang sama tidak diperbolehkan!`,
-          };
+      if (isNewWedding) {
+        for (const b of existingBookings) {
+          const bSName = (b.service_name || b.package_name || '').toLowerCase();
+          const bIsWedding = bSName
+            ? (bSName.includes('wedding') && !bSName.includes('pre-wedding') && !bSName.includes('prewedding'))
+            : Boolean(b.slot_type && b.slot_type.startsWith('wedding'));
+
+          if (bIsWedding && isTimeOverlap(formData.startTime, formData.endTime, b.start_time, b.end_time)) {
+            const serviceLabel = b.service_name || b.package_name || 'Wedding Package';
+            const timeText = b.start_time && b.end_time ? `${b.start_time} s/d ${b.end_time} WIB` : 'sepanjang hari';
+            return {
+              success: false,
+              error: `Jam sesi (${formData.startTime || '09:00'} - ${formData.endTime || '12:00'} WIB) pada tanggal ${formData.bookingDate} sudah terisi oleh pemesanan Wedding lain (${serviceLabel} - ${timeText}).`,
+            };
+          }
+        }
+      } else {
+        for (const b of existingBookings) {
+          const bSName = (b.service_name || b.package_name || '').toLowerCase();
+          const bIsWedding = bSName
+            ? (bSName.includes('wedding') && !bSName.includes('pre-wedding') && !bSName.includes('prewedding'))
+            : Boolean(b.slot_type && b.slot_type.startsWith('wedding'));
+
+          if (!bIsWedding && isTimeOverlap(formData.startTime, formData.endTime, b.start_time, b.end_time)) {
+            const serviceLabel = b.service_name || b.package_name || 'Sesi Studio Photo';
+            const timeText = b.start_time && b.end_time ? `${b.start_time} s/d ${b.end_time} WIB` : 'sepanjang hari';
+            return {
+              success: false,
+              error: `Jam sesi (${formData.startTime || '09:00'} - ${formData.endTime || '12:00'} WIB) pada tanggal ${formData.bookingDate} sudah terisi oleh pemesanan studio lain (${serviceLabel} - ${timeText}). Silakan pilih jam lain!`,
+            };
+          }
         }
       }
     }
@@ -164,7 +190,7 @@ export async function createBooking(
     booking_code: bookingCode,
     customer_name: formData.customerName,
     whatsapp: formData.whatsapp,
-    email: formData.email,
+    email: formData.email && formData.email.trim() ? formData.email.trim() : null,
     instagram: formData.instagram ?? null,
     service_id: isValidUUID(formData.serviceId) ? formData.serviceId : null,
     service_name: formData.serviceName ?? null,

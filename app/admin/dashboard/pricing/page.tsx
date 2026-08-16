@@ -278,8 +278,8 @@ export default function PricingPage() {
                   <strong>{pkg.duration}</strong>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Fotografer:</span>
-                  <strong>{pkg.photographerCount} Fotografer</strong>
+                  <span className="text-zinc-500">Jumlah Tim:</span>
+                  <strong>{pkg.photographerCount} Orang Tim</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500">Output Foto:</span>
@@ -379,20 +379,33 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-zinc-300 uppercase font-mono font-medium">Durasi Sesi</label>
                   <input
                     type="text"
+                    placeholder="Contoh: 6 Jam"
                     value={newPackageForm.duration}
                     onChange={(e) => setNewPackageForm({ ...newPackageForm, duration: e.target.value })}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
+                  <label className="text-zinc-300 uppercase font-mono font-medium">Jumlah Tim</label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="2"
+                    value={newPackageForm.photographerCount}
+                    onChange={(e) => setNewPackageForm({ ...newPackageForm, photographerCount: Number(e.target.value) || 1 })}
+                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <label className="text-zinc-300 uppercase font-mono font-medium">Output Foto</label>
                   <input
                     type="text"
+                    placeholder="Contoh: 100 Foto Edited"
                     value={newPackageForm.editedPhotos}
                     onChange={(e) => setNewPackageForm({ ...newPackageForm, editedPhotos: e.target.value })}
                     className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"

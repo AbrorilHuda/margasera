@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, XCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Info, X, AlertTriangle, Loader2 } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -163,7 +163,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   type="button"
                   disabled={isConfirming}
                   onClick={() => setConfirmState(null)}
-                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
                 >
                   {confirmState.cancelText || 'Batal'}
                 </button>
@@ -174,18 +174,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     setIsConfirming(true);
                     try {
                       await confirmState.onConfirm();
+                    } catch (err) {
+                      console.error('Error in confirm action:', err);
                     } finally {
                       setIsConfirming(false);
                       setConfirmState(null);
                     }
                   }}
-                  className={`flex-1 py-3 text-white text-xs font-semibold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 py-3 text-white text-xs font-semibold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                     confirmState.variant === 'danger'
                       ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-950/40'
                       : 'bg-[#0066CC] hover:bg-[#0052A3] shadow-[0_0_15px_rgba(0,102,204,0.4)]'
                   }`}
                 >
-                  <span>{confirmState.confirmText || 'Ya, Lanjutkan'}</span>
+                  {isConfirming ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <span>{confirmState.confirmText || 'Ya, Lanjutkan'}</span>
+                  )}
                 </button>
               </div>
             </motion.div>

@@ -117,7 +117,7 @@ export interface Booking {
   bookingCode: string;
   customerName: string;
   whatsapp: string;
-  email: string;
+  email?: string;
   instagram?: string;
   serviceId: string;
   serviceName?: string;

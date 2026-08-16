@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   booking_code      TEXT NOT NULL UNIQUE,
   customer_name     TEXT NOT NULL,
   whatsapp          TEXT NOT NULL,
-  email             TEXT NOT NULL,
+  email             TEXT,
   instagram         TEXT,
   service_id        UUID REFERENCES public.services(id) ON DELETE SET NULL,
   service_name      TEXT,
