@@ -43,3 +43,19 @@ export function formatTimeWithPeriod(timeStr: string): string {
   const period = getTimeOfDayLabel(timeStr);
   return `${timeStr} WIB (${period})`;
 }
+
+/** Validasi apakah string adalah UUID v4 yang valid */
+export function isValidUUID(uuid?: string | null): boolean {
+  if (!uuid) return false;
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(uuid);
+}
+
+/**
+ * Deteksi apakah nama layanan/paket termasuk kategori "Wedding"
+ * (bukan pre-wedding atau prewedding)
+ */
+export function isWeddingService(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.includes('wedding') && !lower.includes('pre-wedding') && !lower.includes('prewedding');
+}

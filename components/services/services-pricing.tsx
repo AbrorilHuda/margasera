@@ -92,16 +92,16 @@ export function ServicesPricing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: idx * 0.15 }}
-            className={`relative flex flex-col justify-between p-8 bg-zinc-950/80 border transition-all duration-500 ${pkg.isPopular
-              ? 'border-[#0066CC]/80 shadow-[0_0_30px_rgba(0,102,204,0.2)] bg-gradient-to-b from-[#0066CC]/15 via-zinc-950 to-zinc-950'
-              : 'border-zinc-800/80 hover:border-zinc-700'
+            className={`relative flex flex-col justify-between p-8 rounded-2xl border transition-all duration-500 ${pkg.isPopular
+              ? 'popular-card border-[#0066CC] shadow-[0_0_30px_rgba(0,102,204,0.25)] bg-gradient-to-b from-[#0066CC]/20 via-zinc-950 to-zinc-950'
+              : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
               }`}
           >
             {/* Popular Badge */}
             {pkg.isPopular && (
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#0066CC] text-white text-[10px] font-bold tracking-[0.25em] uppercase shadow-md flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Paling Direkomendasikan
+              <div className="popular-badge absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-[#0066CC] text-white text-[10px] font-bold tracking-[0.25em] uppercase shadow-lg shadow-[#0066CC]/30 flex items-center gap-1.5 rounded-full z-10">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+                <span>Paling Direkomendasikan</span>
               </div>
             )}
 
@@ -159,8 +159,8 @@ export function ServicesPricing() {
             <div className="pt-6">
               <Link
                 href={`/booking?packageId=${pkg.id}&serviceId=${pkg.serviceId}`}
-                className={`w-full py-4 text-center text-xs font-semibold tracking-[0.25em] uppercase flex items-center justify-center gap-2 transition-all duration-300 ${pkg.isPopular
-                  ? 'bg-[#0066CC] text-white hover:bg-[#0052A3] shadow-[0_0_20px_rgba(0,102,204,0.4)]'
+                className={`w-full py-4 text-center text-xs font-semibold tracking-[0.25em] uppercase flex items-center justify-center gap-2 rounded-xl transition-all duration-300 ${pkg.isPopular
+                  ? 'bg-[#0066CC] text-white hover:bg-[#0052A3] shadow-md shadow-[#0066CC]/20'
                   : 'bg-zinc-900 border border-zinc-800 text-zinc-200 hover:border-[#0066CC] hover:text-[#0066CC]'
                   }`}
               >

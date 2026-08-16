@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PackagePlus, Check, Trash2, Pencil, X, Loader2 } from 'lucide-react';
+import { PackagePlus, Check, Trash2, Pencil, X, Loader2, Sparkles } from 'lucide-react';
 import { getServices, getPackages, upsertPackage, deletePackage } from '@/lib/actions/services';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast-context';
@@ -45,7 +45,7 @@ export default function PricingPage() {
     } finally {
       setLoadingData(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -221,11 +221,10 @@ export default function PricingPage() {
             <button
               key={srv.id}
               onClick={() => setSelectedServiceId(srv.id)}
-              className={`px-4 py-2 text-xs tracking-wider uppercase rounded-md transition-all whitespace-nowrap font-medium cursor-pointer ${
-                selectedServiceId === srv.id
+              className={`px-4 py-2 text-xs tracking-wider uppercase rounded-md transition-all whitespace-nowrap font-medium cursor-pointer ${selectedServiceId === srv.id
                   ? 'bg-[#0066CC] text-white font-semibold shadow-md'
                   : 'bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white'
-              }`}
+                }`}
             >
               {srv.name}
             </button>
@@ -238,15 +237,16 @@ export default function PricingPage() {
         {packagesForSelected.map((pkg) => (
           <div
             key={pkg.id}
-            className={`bg-zinc-900/60 border rounded-xl p-6 flex flex-col justify-between relative transition-all shadow-xl ${
-              pkg.isPopular
-                ? 'border-[#0066CC] bg-gradient-to-b from-[#0066CC]/15 via-zinc-900/80 to-zinc-900/60 shadow-[0_0_25px_rgba(0,102,204,0.2)]'
-                : 'border-zinc-800/80'
-            }`}
+            data-popular={pkg.isPopular ? 'true' : undefined}
+            className={`border rounded-xl p-6 flex flex-col justify-between relative transition-all shadow-xl ${pkg.isPopular
+                ? 'popular-card border-[#0066CC] bg-gradient-to-b from-[#0066CC]/20 via-zinc-900/80 to-zinc-900/60 shadow-[0_0_25px_rgba(0,102,204,0.2)]'
+                : 'bg-zinc-900/60 border-zinc-800/80'
+              }`}
           >
             {pkg.isPopular && (
-              <span className="absolute -top-3 left-6 px-3 py-0.5 bg-[#0066CC] text-white text-[9px] font-bold uppercase tracking-widest rounded-full shadow-md">
-                Paling Direkomendasikan
+              <span className="popular-badge absolute -top-3 left-6 px-3.5 py-1 bg-[#0066CC] text-white text-[9px] font-bold uppercase tracking-widest rounded-full shadow-md flex items-center gap-1 z-10">
+                <Sparkles className="w-3 h-3 text-white shrink-0" />
+                <span>Paling Direkomendasikan</span>
               </span>
             )}
 

@@ -1,130 +1,49 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Image from 'next/image';
-import {
-  Filter,
-  Calendar,
-  Search,
-  Plus,
-  Eye,
-  Trash2,
-  MessageCircle,
-  ArrowUpDown,
-  X,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  MapPin,
-  RefreshCw,
-  SlidersHorizontal,
-  FileText,
-  Printer,
-  Check,
-  Building2,
-  Receipt,
-  Share2,
-  Loader2,
-} from 'lucide-react';
 import {
   getAllBookings,
   updateBookingStatus,
   updatePaymentStatus,
-  createManualBooking,
   deleteBooking,
 } from '@/lib/actions/bookings';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { getStudioSettings } from '@/lib/actions/settings';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
-import { formatCurrency, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast-context';
-import type { Booking, BookingStatus, Service, Package, StudioSettings } from '@/lib/types';
-
-function generateGoogleCalendarUrl(b: Booking): string {
-  const title = encodeURIComponent(`[Margasera] ${b.serviceName || 'Photography'} - ${b.customerName} (${b.bookingCode})`);
-  const cleanDate = b.bookingDate.replace(/-/g, '');
-  const startT = (b.startTime || '08:00').replace(':', '') + '00';
-  const endT = (b.endTime || '14:00').replace(':', '') + '00';
-  const dates = `${cleanDate}T${startT}/${cleanDate}T${endT}`;
-  const details = encodeURIComponent(
-    `Kode Booking: ${b.bookingCode}\n` +
-    `Client: ${b.customerName}\n` +
-    `WhatsApp: ${b.whatsapp}\n` +
-    `Layanan: ${b.serviceName || '-'} (${b.packageName || '-'})\n` +
-    `Jam Sesi: ${b.startTime || '08:00'} - ${b.endTime || '14:00'} WIB\n` +
-    `Lokasi: ${b.location || '-'}\n` +
-    `Catatan: ${b.notes || '-'}`
-  );
-  const loc = encodeURIComponent(b.location || 'Medan');
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${loc}`;
-}
-
-function calculateEndTime(startTime: string, durationStr: string): string {
-  if (!startTime) return '14:00';
-  const [h, m] = startTime.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return '14:00';
-
-  let addMinutes = 360; // default 6 jam
-
-  const lower = (durationStr || '').toLowerCase();
-  const jamMatch = lower.match(/(\d+)\s*jam/);
-  const menitMatch = lower.match(/(\d+)\s*menit/);
-
-  if (jamMatch && jamMatch[1]) {
-    addMinutes = Number(jamMatch[1]) * 60;
-  } else if (menitMatch && menitMatch[1]) {
-    addMinutes = Number(menitMatch[1]);
-  } else if (lower.includes('full day') || lower.includes('seharian')) {
-    addMinutes = 600;
-  }
-
-  const totalMinutes = h * 60 + m + addMinutes;
-  const endH = Math.floor(totalMinutes / 60) % 24;
-  const endM = totalMinutes % 60;
-
-  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-}
+import { BookingFilters } from './_components/BookingFilters';
+import { BookingTable } from './_components/BookingTable';
+import { AddBookingModal } from './_components/AddBookingModal';
+import { BookingDetailModal } from './_components/BookingDetailModal';
+import { InvoiceModal } from './_components/InvoiceModal';
+import { PdfRekapModal } from './_components/PdfRekapModal';
+import { calculateEndTime } from './_components/BookingHelpers';
+import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
 export default function BookingsPage() {
   const { toast, confirmModal } = useToast();
+
+  // Data
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filters State
+  // Filter & Sort States
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [bookingSort, setBookingSort] = useState<'newest' | 'oldest' | 'upcoming_event'>('newest');
   const [bookingSearch, setBookingSearch] = useState<string>('');
 
-  // Modal states
+  // Modal States
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<Booking | null>(null);
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
 
-  // Add booking form
-  const [newBookingForm, setNewBookingForm] = useState({
-    customerName: '',
-    whatsapp: '',
-    email: '',
-    instagram: '',
-    serviceId: '',
-    packageId: '',
-    bookingDate: new Date().toISOString().split('T')[0],
-    startTime: '08:00',
-    endTime: '14:00',
-    location: '',
-    totalPrice: 14500000,
-    downPayment: 1000000,
-    paymentStatus: 'unpaid' as 'unpaid' | 'dp_paid' | 'paid_full',
-    notes: '',
-  });
-
+  // Data Fetching 
   const refreshData = useCallback(async () => {
     setLoadingData(true);
     try {
@@ -138,29 +57,74 @@ export default function BookingsPage() {
       setServices(sList);
       setPackages(pkgList);
       if (sSettings) setStudioSettings(sSettings);
-
-      if (sList.length > 0 && !newBookingForm.serviceId) {
-        const firstPkg = pkgList.find((p) => p.serviceId === sList[0].id);
-        setNewBookingForm((prev) => ({
-          ...prev,
-          serviceId: sList[0].id,
-          packageId: firstPkg?.id || '',
-          totalPrice: firstPkg?.price || 14500000,
-        }));
-      }
     } catch (err) {
       console.error('Failed to load bookings data', err);
     } finally {
       setLoadingData(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // Actions
+  // Derived Data
+  const availableMonths = useMemo(() => {
+    const monthsSet = new Set<string>();
+    bookings.forEach((b) => {
+      if (b.bookingDate) monthsSet.add(b.bookingDate.substring(0, 7));
+    });
+    return Array.from(monthsSet).sort().reverse();
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    return bookings
+      .filter((b) => {
+        const matchStatus = bookingStatusFilter === 'all' || b.status === bookingStatusFilter;
+        const matchMonth = monthFilter === 'all' || (b.bookingDate && b.bookingDate.startsWith(monthFilter));
+        const matchService = serviceFilter === 'all' || b.serviceId === serviceFilter;
+        const query = bookingSearch.toLowerCase();
+        const matchSearch =
+          b.bookingCode.toLowerCase().includes(query) ||
+          b.customerName.toLowerCase().includes(query) ||
+          b.whatsapp.includes(bookingSearch) ||
+          (b.location && b.location.toLowerCase().includes(query));
+        return matchStatus && matchMonth && matchService && matchSearch;
+      })
+      .sort((a, b) => {
+        if (bookingSort === 'newest')
+          return new Date(b.createdAt || b.bookingDate).getTime() - new Date(a.createdAt || a.bookingDate).getTime();
+        if (bookingSort === 'oldest')
+          return new Date(a.createdAt || a.bookingDate).getTime() - new Date(b.createdAt || b.bookingDate).getTime();
+        if (bookingSort === 'upcoming_event')
+          return new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime();
+        return 0;
+      });
+  }, [bookings, bookingStatusFilter, monthFilter, serviceFilter, bookingSearch, bookingSort]);
+
+  const totalRevenue = useMemo(
+    () => filteredBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0),
+    [filteredBookings]
+  );
+
+  const pendingCount = useMemo(() => bookings.filter((b) => b.status === 'pending').length, [bookings]);
+  const confirmedCount = useMemo(() => bookings.filter((b) => b.status === 'confirmed').length, [bookings]);
+
+  // Helpers
+  const formatMonthLabel = (ym: string) => {
+    const [y, m] = ym.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, 1);
+    return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date);
+  };
+
+  const resetFilters = () => {
+    setBookingStatusFilter('all');
+    setMonthFilter('all');
+    setServiceFilter('all');
+    setBookingSearch('');
+  };
+
+  // Handlers
   const handleUpdateBookingStatus = async (id: string, newStatus: BookingStatus) => {
     const res = await updateBookingStatus(id, newStatus);
     if (res.success) {
@@ -171,7 +135,7 @@ export default function BookingsPage() {
     }
   };
 
-  const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: 'unpaid' | 'dp_paid' | 'paid_full') => {
+  const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: PaymentStatus) => {
     const targetBooking = bookings.find((b) => b.id === id);
     let paidAmt: number | undefined = undefined;
 
@@ -182,7 +146,6 @@ export default function BookingsPage() {
             (targetBooking.packageId && (p.id === targetBooking.packageId || p.slug === targetBooking.packageId)) ||
             (targetBooking.packageName && p.name.toLowerCase().trim() === targetBooking.packageName.toLowerCase().trim())
         );
-
         paidAmt =
           targetBooking.downPayment && targetBooking.downPayment > 0
             ? targetBooking.downPayment
@@ -193,7 +156,7 @@ export default function BookingsPage() {
                 : 0;
       } else if (newPaymentStatus === 'paid_full') {
         paidAmt = targetBooking.totalPrice ?? 0;
-      } else if (newPaymentStatus === 'unpaid') {
+      } else {
         paidAmt = 0;
       }
     }
@@ -201,14 +164,10 @@ export default function BookingsPage() {
     const res = await updatePaymentStatus(id, newPaymentStatus, paidAmt);
     if (res.success) {
       await refreshData();
-      if (selectedBookingForDetail && selectedBookingForDetail.id === id) {
-        setSelectedBookingForDetail({
-          ...selectedBookingForDetail,
-          paymentStatus: newPaymentStatus,
-          paidAmount: paidAmt,
-        });
+      if (selectedBookingForDetail?.id === id) {
+        setSelectedBookingForDetail({ ...selectedBookingForDetail, paymentStatus: newPaymentStatus, paidAmount: paidAmt });
       }
-      toast.success(`Status pembayaran berhasil diperbarui.`);
+      toast.success('Status pembayaran berhasil diperbarui.');
     } else {
       toast.error(`Gagal memperbarui status pembayaran: ${res.error}`);
     }
@@ -232,128 +191,11 @@ export default function BookingsPage() {
     });
   };
 
-  const handleCreateBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const cleanDate = newBookingForm.bookingDate.replace(/-/g, '').substring(2);
-      const randomNum = String(Math.floor(Math.random() * 900) + 100);
-      const selectedSrv = services.find((s) => s.id === newBookingForm.serviceId);
-      const selectedPkg = packages.find((p) => p.id === newBookingForm.packageId);
-      const bookingCode = `MS-${cleanDate}-${randomNum}`;
-      const totalPriceVal = Number(newBookingForm.totalPrice) || (selectedPkg?.price ?? 10000000);
-      const dpVal = Number(newBookingForm.downPayment) || (selectedPkg?.downPayment && selectedPkg.downPayment > 0 ? selectedPkg.downPayment : Math.ceil(totalPriceVal * 0.2));
-
-      const paidAmt = newBookingForm.paymentStatus === 'paid_full'
-        ? totalPriceVal
-        : newBookingForm.paymentStatus === 'dp_paid'
-          ? dpVal
-          : 0;
-
-      const res = await createManualBooking({
-        bookingCode,
-        customerName: newBookingForm.customerName || 'Pelanggan Baru',
-        whatsapp: newBookingForm.whatsapp || '081931107481',
-        email: newBookingForm.email || undefined,
-        instagram: newBookingForm.instagram || undefined,
-        serviceId: newBookingForm.serviceId,
-        serviceName: selectedSrv?.name || 'Wedding Photography',
-        packageId: newBookingForm.packageId,
-        packageName: selectedPkg?.name || 'Custom Package',
-        bookingDate: newBookingForm.bookingDate,
-        startTime: newBookingForm.startTime || '08:00',
-        endTime: newBookingForm.endTime || '14:00',
-        location: newBookingForm.location || 'Madura',
-        status: 'confirmed',
-        paymentStatus: newBookingForm.paymentStatus,
-        totalPrice: totalPriceVal,
-        downPayment: dpVal,
-        remainingAmount: Math.max(0, totalPriceVal - paidAmt),
-        notes: newBookingForm.notes || undefined,
-      });
-
-      if (res.success) {
-        await refreshData();
-        setShowAddBookingModal(false);
-        toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
-        setNewBookingForm({
-          customerName: '',
-          whatsapp: '',
-          email: '',
-          instagram: '',
-          serviceId: services[0]?.id || '',
-          packageId: packages.find((p) => p.serviceId === services[0]?.id)?.id || '',
-          bookingDate: new Date().toISOString().split('T')[0],
-          startTime: '08:00',
-          endTime: '14:00',
-          location: '',
-          totalPrice: 14500000,
-          downPayment: 1000000,
-          paymentStatus: 'unpaid',
-          notes: '',
-        });
-      } else {
-        toast.error(`Gagal menyimpan booking manual: ${res.error}`);
-      }
-    } catch (err) {
-      console.error('Error creating booking:', err);
-      toast.error('Terjadi kesalahan saat menyimpan booking.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleOpenAddBooking = () => {
+    setShowAddBookingModal(true);
   };
 
-  // Generate unique list of YYYY-MM months from bookings
-  const availableMonths = useMemo(() => {
-    const monthsSet = new Set<string>();
-    bookings.forEach((b) => {
-      if (b.bookingDate) {
-        const ym = b.bookingDate.substring(0, 7);
-        monthsSet.add(ym);
-      }
-    });
-    return Array.from(monthsSet).sort().reverse();
-  }, [bookings]);
-
-  // Filtered & sorted bookings
-  const filteredBookings = useMemo(() => {
-    return bookings
-      .filter((b) => {
-        const matchStatus = bookingStatusFilter === 'all' || b.status === bookingStatusFilter;
-        const matchMonth = monthFilter === 'all' || (b.bookingDate && b.bookingDate.startsWith(monthFilter));
-        const matchService = serviceFilter === 'all' || b.serviceId === serviceFilter;
-        const matchSearch =
-          b.bookingCode.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-          b.customerName.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-          b.whatsapp.includes(bookingSearch) ||
-          (b.location && b.location.toLowerCase().includes(bookingSearch.toLowerCase()));
-
-        return matchStatus && matchMonth && matchService && matchSearch;
-      })
-      .sort((a, b) => {
-        if (bookingSort === 'newest')
-          return new Date(b.createdAt || b.bookingDate).getTime() - new Date(a.createdAt || a.bookingDate).getTime();
-        if (bookingSort === 'oldest')
-          return new Date(a.createdAt || a.bookingDate).getTime() - new Date(b.createdAt || b.bookingDate).getTime();
-        if (bookingSort === 'upcoming_event')
-          return new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime();
-        return 0;
-      });
-  }, [bookings, bookingStatusFilter, monthFilter, serviceFilter, bookingSearch, bookingSort]);
-
-  // Stat Aggregates
-  const totalRevenue = useMemo(() => filteredBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0), [filteredBookings]);
-  const pendingCount = useMemo(() => bookings.filter((b) => b.status === 'pending').length, [bookings]);
-  const confirmedCount = useMemo(() => bookings.filter((b) => b.status === 'confirmed').length, [bookings]);
-
-
-
-  const formatMonthLabel = (ym: string) => {
-    const [y, m] = ym.split('-');
-    const date = new Date(parseInt(y), parseInt(m) - 1, 1);
-    return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date);
-  };
-
+  // Loading State
   if (loadingData) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
@@ -370,1394 +212,134 @@ export default function BookingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ===== EXECUTIVE STAT SUMMARY CARDS ===== */}
+      {/* STAT CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Bookings */}
-        <div className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-medium">Total Booking</span>
-            <span className="font-sans text-2xl font-extrabold text-zinc-100">{bookings.length} Pesanan</span>
-            <span className="text-[11px] text-zinc-400 font-light">Semua riwayat pemesanan</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
-            <Calendar className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Confirmed Bookings */}
-        <div className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-medium">Dikonfirmasi</span>
-            <span className="font-sans text-2xl font-extrabold text-emerald-400">{confirmedCount} Event</span>
-            <span className="text-[11px] text-zinc-400 font-light">Jadwal acara siap eksekusi</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Pending Approval */}
-        <div className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-medium">Perlu Konfirmasi</span>
-            <span className="font-sans text-2xl font-extrabold text-amber-400">{pendingCount} Booking</span>
-            <span className="text-[11px] text-zinc-400 font-light">Menunggu verifikasi admin</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <Clock className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Filtered Omset */}
-        <div className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#0066CC] font-medium">Est. Total Omset</span>
-            <span className="font-mono text-xl font-bold text-[#0066CC]">{formatCurrency(totalRevenue)}</span>
-            <span className="text-[11px] text-zinc-400 font-light">{filteredBookings.length} booking dalam filter</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
-            <DollarSign className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* ===== ADVANCED CONTROL PANEL (FILTER, SEARCH, EXPORT, ADD) ===== */}
-      <div className="p-6 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex flex-col gap-5 shadow-xl backdrop-blur-md">
-        {/* Row 1: Status Filters & Main Action Buttons */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
-            <span className="text-[11px] text-zinc-400 uppercase font-mono tracking-wider shrink-0 mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-[#0066CC]" /> Status:
-            </span>
-            {[
-              { id: 'all', label: 'Semua', count: bookings.length },
-              { id: 'pending', label: 'Pending', count: bookings.filter((b) => b.status === 'pending').length },
-              { id: 'confirmed', label: 'Confirmed', count: bookings.filter((b) => b.status === 'confirmed').length },
-              { id: 'completed', label: 'Completed', count: bookings.filter((b) => b.status === 'completed').length },
-              { id: 'cancelled', label: 'Cancelled', count: bookings.filter((b) => b.status === 'cancelled').length },
-            ].map((st) => (
-              <button
-                key={st.id}
-                onClick={() => setBookingStatusFilter(st.id)}
-                className={`px-3.5 py-1.5 text-xs tracking-wide rounded-lg transition-all whitespace-nowrap font-medium flex items-center gap-1.5 ${bookingStatusFilter === st.id
-                  ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_12px_rgba(0,102,204,0.4)]'
-                  : 'bg-zinc-950/80 text-zinc-400 hover:text-white border border-zinc-800'
-                  }`}
-              >
-                <span>{st.label}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${bookingStatusFilter === st.id ? 'bg-black/30 text-white' : 'bg-zinc-900 text-zinc-400'
-                  }`}>
-                  {st.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Action Buttons: Export PDF & Add Booking */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={() => setShowPdfRekapModal(true)}
-              className="px-4 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-md cursor-pointer group"
-              title="Cetak & Export Rekapitulasi Laporan PDF"
-            >
-              <FileText className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
-              <span>Export PDF ({filteredBookings.length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                const srvId = services[0]?.id || '';
-                const firstPkg = packages.find((p) => p.serviceId === srvId);
-                const autoEnd = calculateEndTime('08:00', firstPkg?.duration || '6 Jam');
-                setNewBookingForm({
-                  customerName: '',
-                  whatsapp: '',
-                  email: '',
-                  instagram: '',
-                  serviceId: srvId,
-                  packageId: firstPkg?.id || '',
-                  bookingDate: new Date().toISOString().split('T')[0],
-                  startTime: '08:00',
-                  endTime: autoEnd,
-                  location: '',
-                  totalPrice: firstPkg?.price ?? 14500000,
-                  downPayment: firstPkg?.downPayment && firstPkg.downPayment > 0 ? firstPkg.downPayment : 1000000,
-                  paymentStatus: 'unpaid',
-                  notes: '',
-                });
-                setShowAddBookingModal(true);
-              }}
-              className="px-4 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.3)] cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Booking</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Secondary Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-zinc-800/80">
-          {/* MONTH FILTER */}
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
-            <Calendar className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-400">Filter Bulan Acara:</span>
-              <select
-                value={monthFilter}
-                onChange={(e) => setMonthFilter(e.target.value)}
-                className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="all" className="bg-zinc-900">🗓️ Semua Bulan Acara</option>
-                {availableMonths.map((ym) => (
-                  <option key={ym} value={ym} className="bg-zinc-900">
-                    📅 {formatMonthLabel(ym)}
-                  </option>
-                ))}
-              </select>
+        {[
+          {
+            label: 'Total Booking',
+            value: `${bookings.length} Pesanan`,
+            sub: 'Semua riwayat pemesanan',
+            color: '#0066CC',
+            icon: '📋',
+          },
+          {
+            label: 'Dikonfirmasi',
+            value: `${confirmedCount} Event`,
+            sub: 'Jadwal acara siap eksekusi',
+            color: '#10b981',
+            icon: '✅',
+          },
+          {
+            label: 'Perlu Konfirmasi',
+            value: `${pendingCount} Booking`,
+            sub: 'Menunggu verifikasi admin',
+            color: '#f59e0b',
+            icon: '⏳',
+          },
+          {
+            label: 'Est. Total Omset',
+            value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalRevenue),
+            sub: `${filteredBookings.length} booking dalam filter`,
+            color: '#0066CC',
+            icon: '💰',
+          },
+        ].map(({ label, value, sub, color, icon }) => (
+          <div key={label} className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest font-medium" style={{ color }}>{label}</span>
+              <span className="font-sans text-xl font-extrabold" style={{ color }}>{value}</span>
+              <span className="text-[11px] text-zinc-400 font-light">{sub}</span>
             </div>
-            {monthFilter !== 'all' && (
-              <button onClick={() => setMonthFilter('all')} className="text-zinc-400 hover:text-white" title="Reset Filter Bulan">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* SERVICE FILTER */}
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
-            <SlidersHorizontal className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-400">Filter Layanan:</span>
-              <select
-                value={serviceFilter}
-                onChange={(e) => setServiceFilter(e.target.value)}
-                className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="all" className="bg-zinc-900">✨ Semua Layanan</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-zinc-900">
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {serviceFilter !== 'all' && (
-              <button onClick={() => setServiceFilter('all')} className="text-zinc-400 hover:text-white" title="Reset Filter Layanan">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* SORT SELECTOR */}
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
-            <ArrowUpDown className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-400">Urutkan Data:</span>
-              <select
-                value={bookingSort}
-                onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
-                className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="newest" className="bg-zinc-900">🔥 Booking Terbaru</option>
-                <option value="upcoming_event" className="bg-zinc-900">📅 Jadwal Acara Terdekat</option>
-                <option value="oldest" className="bg-zinc-900">⏳ Booking Terlama</option>
-              </select>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: `${color}15` }}>
+              {icon}
             </div>
           </div>
-
-          {/* SEARCH INPUT */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Cari Kode, Client, WA, Venue..."
-              value={bookingSearch}
-              onChange={(e) => setBookingSearch(e.target.value)}
-              className="w-full h-full bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 pl-9 pr-8 py-2 rounded-lg text-xs focus:outline-none transition-colors"
-            />
-            {bookingSearch && (
-              <button
-                onClick={() => setBookingSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ===== BOOKINGS DATA TABLE ===== */}
-      <div className="bg-zinc-900/70 border border-zinc-800/80 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-light">
-            <thead className="bg-zinc-950/90 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
-              <tr>
-                <th className="p-4">Kode Booking</th>
-                <th className="p-4">Client / Contact</th>
-                <th className="p-4">Layanan & Paket</th>
-                <th className="p-4">Jadwal Acara</th>
-                <th className="p-4">Lokasi Venue</th>
-                <th className="p-4">Est. Harga</th>
-                <th className="p-4">Status & DP</th>
-                <th className="p-4 text-right">Aksi Admin</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60">
-              {filteredBookings.map((b) => {
-                const initial = b.customerName ? b.customerName.charAt(0).toUpperCase() : 'C';
-                return (
-                  <tr key={b.id} className="hover:bg-zinc-800/50 transition-colors group">
-                    {/* Booking Code */}
-                    <td className="p-4 font-mono font-bold text-[#0066CC] whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
-                        <span>{b.bookingCode}</span>
-                      </div>
-                    </td>
+      {/* FILTERS */}
+      <BookingFilters
+        bookings={bookings}
+        services={services}
+        bookingStatusFilter={bookingStatusFilter}
+        monthFilter={monthFilter}
+        serviceFilter={serviceFilter}
+        bookingSort={bookingSort}
+        bookingSearch={bookingSearch}
+        filteredCount={filteredBookings.length}
+        availableMonths={availableMonths}
+        setBookingStatusFilter={setBookingStatusFilter}
+        setMonthFilter={setMonthFilter}
+        setServiceFilter={setServiceFilter}
+        setBookingSort={setBookingSort}
+        setBookingSearch={setBookingSearch}
+        onOpenPdfRekap={() => setShowPdfRekapModal(true)}
+        onOpenAddBooking={handleOpenAddBooking}
+        formatMonthLabel={formatMonthLabel}
+      />
 
-                    {/* Client Info */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 font-bold text-zinc-200 flex items-center justify-center text-xs shrink-0 font-mono">
-                          {initial}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-zinc-100 tracking-wide truncate">{b.customerName}</span>
-                          <a
-                            href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-emerald-400 font-mono hover:underline flex items-center gap-1"
-                          >
-                            <MessageCircle className="w-3 h-3" />
-                            <span>{b.whatsapp}</span>
-                          </a>
-                        </div>
-                      </div>
-                    </td>
+      {/* TABLE */}
+      <BookingTable
+        filteredBookings={filteredBookings}
+        totalBookings={bookings.length}
+        monthFilter={monthFilter}
+        bookingSearch={bookingSearch}
+        bookingStatusFilter={bookingStatusFilter}
+        serviceFilter={serviceFilter}
+        formatMonthLabel={formatMonthLabel}
+        onResetFilters={resetFilters}
+        onDetail={setSelectedBookingForDetail}
+        onInvoice={setSelectedInvoiceBooking}
+        onUpdateStatus={handleUpdateBookingStatus}
+        onDelete={handleDeleteBooking}
+      />
 
-                    {/* Service & Package */}
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="text-zinc-100 font-medium">{b.serviceName}</span>
-                        <span className="text-[10px] text-zinc-400 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/80 w-fit mt-0.5">
-                          {b.packageName}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Event Date & Time */}
-                    <td className="p-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-zinc-200 font-semibold">{formatDate(b.bookingDate)}</span>
-                        <span className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {b.startTime ? `${b.startTime} – ${b.endTime} WIB` : '08:00 – 14:00 WIB'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Location */}
-                    <td className="p-4 text-zinc-400 max-w-[140px]">
-                      <div className="flex items-center gap-1 truncate" title={b.location}>
-                        <MapPin className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
-                        <span className="truncate">{b.location}</span>
-                      </div>
-                    </td>
-
-                    {/* Price */}
-                    <td className="p-4 font-mono text-sm font-semibold text-[#0066CC] whitespace-nowrap">
-                      {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
-                    </td>
-
-                    {/* Status & Payment Status */}
-                    <td className="p-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1 items-start">
-                        {/* Booking Status Pill */}
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${b.status === 'confirmed'
-                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40'
-                            : b.status === 'completed'
-                              ? 'bg-blue-500/15 text-blue-300 border border-blue-500/40'
-                              : b.status === 'pending'
-                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                                : 'bg-rose-950/50 text-rose-400 border border-rose-900/60'
-                            }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${b.status === 'confirmed'
-                              ? 'bg-emerald-400'
-                              : b.status === 'completed'
-                                ? 'bg-blue-400'
-                                : b.status === 'pending'
-                                  ? 'bg-amber-400'
-                                  : 'bg-rose-500'
-                              }`}
-                          />
-                          {b.status}
-                        </span>
-
-                        {/* Payment Status Pill */}
-                        <span
-                          className={`px-2 py-0.2 rounded text-[9px] font-bold uppercase font-mono border ${b.paymentStatus === 'paid_full'
-                            ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60'
-                            : b.paymentStatus === 'dp_paid'
-                              ? 'bg-blue-950/40 text-blue-300 border-blue-800/60'
-                              : 'bg-amber-950/40 text-amber-300 border-amber-800/60'
-                            }`}
-                        >
-                          {b.paymentStatus === 'paid_full' ? 'LUNAS (100%)' : b.paymentStatus === 'dp_paid' ? 'DP (30%)' : 'BELUM DP'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Actions Toolbar */}
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Detail Modal */}
-                        <button
-                          onClick={() => setSelectedBookingForDetail(b)}
-                          className="p-2 bg-zinc-950 border border-zinc-800 hover:border-[#0066CC] text-zinc-300 hover:text-white rounded-lg transition-all"
-                          title="Lihat Detail Booking"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Google Calendar Link */}
-                        <a
-                          href={generateGoogleCalendarUrl(b)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
-                          title="Tambah ke Google Calendar"
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="hidden xl:inline">+ GCal</span>
-                        </a>
-
-                        {/* Generate Invoice Button */}
-                        <button
-                          onClick={() => setSelectedInvoiceBooking(b)}
-                          className="px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
-                          title="Lihat / Cetak Invoice Pembayaran"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-blue-400" />
-                          <span className="hidden xl:inline">Invoice</span>
-                        </button>
-
-                        {/* Quick Confirm / Complete Actions */}
-                        {b.status === 'pending' && (
-                          <button
-                            onClick={() => handleUpdateBookingStatus(b.id, 'confirmed')}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow"
-                          >
-                            Confirm
-                          </button>
-                        )}
-                        {b.status === 'confirmed' && (
-                          <button
-                            onClick={() => handleUpdateBookingStatus(b.id, 'completed')}
-                            className="px-2.5 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow"
-                          >
-                            Complete
-                          </button>
-                        )}
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleDeleteBooking(b.id, b.bookingCode)}
-                          className="p-2 bg-zinc-950 border border-zinc-800 hover:border-rose-900/60 text-zinc-400 hover:text-rose-400 rounded-lg transition-colors"
-                          title="Hapus Booking"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {/* Empty Filtered State */}
-              {filteredBookings.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="p-12 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500">
-                        <Search className="w-6 h-6" />
-                      </div>
-                      <span className="text-zinc-300 text-sm font-semibold">Tidak ada booking ditemukan</span>
-                      <p className="text-zinc-500 text-xs font-light max-w-sm">
-                        Coba sesuaikan kata kunci pencarian, filter status, atau filter bulan acara di atas.
-                      </p>
-                      {(bookingSearch || bookingStatusFilter !== 'all' || monthFilter !== 'all' || serviceFilter !== 'all') && (
-                        <button
-                          onClick={() => {
-                            setBookingStatusFilter('all');
-                            setMonthFilter('all');
-                            setServiceFilter('all');
-                            setBookingSearch('');
-                          }}
-                          className="mt-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg flex items-center gap-1.5 font-mono"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" /> Reset Semua Filter
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Table Footer info */}
-        <div className="p-4 bg-zinc-950/80 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 font-mono">
-          <span>Menampilkan <strong>{filteredBookings.length}</strong> dari <strong>{bookings.length}</strong> total booking</span>
-          {monthFilter !== 'all' && (
-            <span className="text-[#0066CC] font-semibold">Filter Bulan: {formatMonthLabel(monthFilter)}</span>
-          )}
-        </div>
-      </div>
-
-      {/* ===== MODAL: ADD MANUAL BOOKING ===== */}
+      {/* MODALS */}
       {showAddBookingModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#0066CC]/20 text-[#0066CC] flex items-center justify-center font-bold">
-                  +
-                </div>
-                <h3 className="font-sans text-xl font-bold text-zinc-100">Tambah Booking Manual Baru</h3>
-              </div>
-              <button onClick={() => setShowAddBookingModal(false)} className="text-zinc-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateBooking} className="flex flex-col gap-4 text-xs">
-              {/* SECTION 1: LAYANAN & PAKET (PALING ATAS) */}
-              <div className="grid grid-cols-2 gap-4 bg-zinc-950/80 p-3.5 border border-[#0066CC]/40 rounded-xl">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">1. Kategori Layanan *</label>
-                  <select
-                    value={newBookingForm.serviceId}
-                    onChange={(e) => {
-                      const srvId = e.target.value;
-                      const availablePkgs = packages.filter((p) => p.serviceId === srvId);
-                      const selPkg = availablePkgs[0];
-                      const dpAmount = selPkg?.downPayment && selPkg.downPayment > 0 ? selPkg.downPayment : Math.ceil((selPkg?.price ?? 5000000) * 0.2);
-                      const autoEndTime = calculateEndTime(newBookingForm.startTime, selPkg?.duration || '6 Jam');
-                      setNewBookingForm({
-                        ...newBookingForm,
-                        serviceId: srvId,
-                        packageId: selPkg?.id || '',
-                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
-                        downPayment: dpAmount,
-                        endTime: autoEndTime,
-                      });
-                    }}
-                    className="bg-zinc-900 border border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 font-semibold focus:outline-none"
-                  >
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">2. Paket Dipilih *</label>
-                  <select
-                    value={newBookingForm.packageId}
-                    onChange={(e) => {
-                      const pkgId = e.target.value;
-                      const selPkg = packages.find((p) => p.id === pkgId);
-                      const dpAmount = selPkg?.downPayment && selPkg.downPayment > 0 ? selPkg.downPayment : Math.ceil((selPkg?.price ?? 5000000) * 0.2);
-                      const autoEndTime = calculateEndTime(newBookingForm.startTime, selPkg?.duration || '6 Jam');
-                      setNewBookingForm({
-                        ...newBookingForm,
-                        packageId: pkgId,
-                        totalPrice: selPkg?.price ?? newBookingForm.totalPrice,
-                        downPayment: dpAmount,
-                        endTime: autoEndTime,
-                      });
-                    }}
-                    className="bg-zinc-900 border border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 font-semibold focus:outline-none"
-                  >
-                    {packages
-                      .filter((p) => !newBookingForm.serviceId || p.serviceId === newBookingForm.serviceId)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.duration || '6 Jam'}) - {formatCurrency(p.price)}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* SECTION 2: JADWAL & JAM SESI OTOMATIS */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Tanggal Acara *</label>
-                  <input
-                    type="date"
-                    required
-                    value={newBookingForm.bookingDate}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, bookingDate: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Jam Mulai Sesi</label>
-                  <input
-                    type="time"
-                    value={newBookingForm.startTime}
-                    onChange={(e) => {
-                      const newStart = e.target.value;
-                      const selPkg = packages.find((p) => p.id === newBookingForm.packageId);
-                      const autoEnd = calculateEndTime(newStart, selPkg?.duration || '6 Jam');
-                      setNewBookingForm({
-                        ...newBookingForm,
-                        startTime: newStart,
-                        endTime: autoEnd,
-                      });
-                    }}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium flex items-center justify-between">
-                    <span>Jam Selesai</span>
-                    <span className="text-[9px] text-amber-400 font-mono font-normal">(Otomatis)</span>
-                  </label>
-                  <input
-                    type="time"
-                    value={newBookingForm.endTime}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, endTime: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* SECTION 3: DATA PELANGGAN & LOKASI */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-zinc-300 uppercase font-mono font-medium">Nama Pelanggan / Client *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Rian & Amanda"
-                  value={newBookingForm.customerName}
-                  onChange={(e) => setNewBookingForm({ ...newBookingForm, customerName: e.target.value })}
-                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Nomor WhatsApp *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="081931107481"
-                    value={newBookingForm.whatsapp}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, whatsapp: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Email (Opsional)</label>
-                  <input
-                    type="email"
-                    placeholder="client@example.com"
-                    value={newBookingForm.email}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, email: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Instagram (@username)</label>
-                  <input
-                    type="text"
-                    placeholder="@username"
-                    value={newBookingForm.instagram}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, instagram: e.target.value })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-zinc-300 uppercase font-mono font-medium">Lokasi / Venue Acara *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Gedung Graha Medika, Bangkalan"
-                  value={newBookingForm.location}
-                  onChange={(e) => setNewBookingForm({ ...newBookingForm, location: e.target.value })}
-                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none"
-                />
-              </div>
-
-              {/* SECTION 4: KEUANGAN & PEMBAYARAN */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Total Harga (IDR)</label>
-                  <input
-                    type="number"
-                    value={newBookingForm.totalPrice}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, totalPrice: Number(e.target.value) })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-sm font-semibold"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Nominal DP (IDR)</label>
-                  <input
-                    type="number"
-                    value={newBookingForm.downPayment}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, downPayment: Number(e.target.value) })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-amber-300 focus:outline-none font-mono text-sm font-semibold"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-300 uppercase font-mono font-medium">Status Pembayaran</label>
-                  <select
-                    value={newBookingForm.paymentStatus}
-                    onChange={(e) => setNewBookingForm({ ...newBookingForm, paymentStatus: e.target.value as any })}
-                    className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-mono text-xs"
-                  >
-                    <option value="unpaid">Belum DP (Unpaid)</option>
-                    <option value="dp_paid">DP Terbayar (DP Paid)</option>
-                    <option value="paid_full">Lunas (Paid Full)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* SECTION 5: CATATAN TAMBAHAN */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-zinc-300 uppercase font-mono font-medium">Catatan / Rincian Fasilitas Tambahan (Notes)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Contoh: Nama pasangan: Amanda, Fasilitas kustom: Unlimited raw files, 2 videographer"
-                  value={newBookingForm.notes}
-                  onChange={(e) => setNewBookingForm({ ...newBookingForm, notes: e.target.value })}
-                  className="bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none font-sans text-xs"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Menyimpan Booking...</span>
-                  </>
-                ) : (
-                  <span>Simpan Booking Manual</span>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+        <AddBookingModal
+          services={services}
+          packages={packages}
+          onClose={() => setShowAddBookingModal(false)}
+          onSuccess={async () => {
+            setShowAddBookingModal(false);
+            await refreshData();
+          }}
+        />
       )}
 
-      {/* ===== MODAL: BOOKING DETAIL ===== */}
-      {selectedBookingForDetail && (() => {
-        const isDpPaid = selectedBookingForDetail.paymentStatus === 'dp_paid';
-        const isPaidFull = selectedBookingForDetail.paymentStatus === 'paid_full';
+      {selectedBookingForDetail && (
+        <BookingDetailModal
+          booking={selectedBookingForDetail}
+          onClose={() => setSelectedBookingForDetail(null)}
+          onUpdatePayment={handleUpdatePaymentStatus}
+          onOpenInvoice={(b) => {
+            setSelectedBookingForDetail(null);
+            setSelectedInvoiceBooking(b);
+          }}
+        />
+      )}
 
-        return (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 shadow-2xl">
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                <div>
-                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">Detail Pemesanan</span>
-                  <h3 className="font-mono text-xl font-bold text-[#0066CC]">
-                    {selectedBookingForDetail.bookingCode}
-                  </h3>
-                </div>
-                <button onClick={() => setSelectedBookingForDetail(null)} className="text-zinc-400 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {selectedInvoiceBooking && (
+        <InvoiceModal
+          booking={selectedInvoiceBooking}
+          packages={packages}
+          studioSettings={studioSettings}
+          onClose={() => setSelectedInvoiceBooking(null)}
+        />
+      )}
 
-              <div className="flex flex-col gap-3 text-xs text-zinc-300 font-light">
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Nama Pelanggan:</span>
-                  <strong className="text-zinc-100 text-sm font-semibold">{selectedBookingForDetail.customerName}</strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">WhatsApp:</span>
-                  <strong className="font-mono text-emerald-400">{selectedBookingForDetail.whatsapp}</strong>
-                </div>
-                {selectedBookingForDetail.instagram && (
-                  <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                    <span className="text-zinc-500 font-mono">Instagram Client:</span>
-                    <a
-                      href={`https://instagram.com/${selectedBookingForDetail.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-[#0066CC] hover:underline font-semibold"
-                    >
-                      {selectedBookingForDetail.instagram}
-                    </a>
-                  </div>
-                )}
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Layanan:</span>
-                  <strong className="text-zinc-200">{selectedBookingForDetail.serviceName} ({selectedBookingForDetail.packageName})</strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Tanggal & Sesi Jam:</span>
-                  <strong className="text-amber-400 font-mono">
-                    {formatDate(selectedBookingForDetail.bookingDate)} ({selectedBookingForDetail.startTime || '08:00'} – {selectedBookingForDetail.endTime || '14:00'} WIB)
-                  </strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Lokasi / Venue:</span>
-                  <strong className="text-zinc-200">{selectedBookingForDetail.location}</strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Est. Investasi:</span>
-                  <strong className="text-[#0066CC] font-mono text-lg font-bold">
-                    {selectedBookingForDetail.totalPrice ? formatCurrency(selectedBookingForDetail.totalPrice) : '-'}
-                  </strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 font-mono">Status Pembayaran:</span>
-                  <span
-                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${isPaidFull
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : isDpPaid
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      }`}
-                  >
-                    {isPaidFull ? 'LUNAS (100%) ✓' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP'}
-                  </span>
-                </div>
-                {selectedBookingForDetail.notes && (
-                  <div className="flex flex-col gap-1 pt-2">
-                    <span className="text-zinc-500 font-mono text-[10px] uppercase">Catatan Khusus:</span>
-                    <p className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-300 italic">
-                      &ldquo;{selectedBookingForDetail.notes}&rdquo;
-                    </p>
-                  </div>
-                )}
-
-                {/* Payment Action Buttons - Disabled Logic */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800">
-                  <span className="text-[10px] text-zinc-400 font-mono uppercase">Ubah Status Pembayaran:</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      disabled={isDpPaid || isPaidFull}
-                      onClick={() => handleUpdatePaymentStatus(selectedBookingForDetail.id, 'dp_paid')}
-                      className={`py-2 text-xs font-semibold uppercase rounded-lg transition-all text-center ${isDpPaid || isPaidFull
-                        ? 'opacity-50 cursor-not-allowed bg-zinc-950 text-zinc-500 border border-zinc-800'
-                        : 'bg-[#0066CC] hover:bg-[#0052A3] text-white cursor-pointer shadow-md'
-                        }`}
-                    >
-                      {isDpPaid ? 'DP Terbayar ✓' : isPaidFull ? 'DP Selesai ✓' : 'Set DP Terbayar'}
-                    </button>
-
-                    <button
-                      disabled={isPaidFull}
-                      onClick={() => handleUpdatePaymentStatus(selectedBookingForDetail.id, 'paid_full')}
-                      className={`py-2 text-xs font-semibold uppercase rounded-lg transition-all text-center ${isPaidFull
-                        ? 'opacity-50 cursor-not-allowed bg-emerald-950/60 text-emerald-400 border border-emerald-800/80'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-md'
-                        }`}
-                    >
-                      {isPaidFull ? 'Lunas (100%) ✓' : 'Set Lunas (100%)'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons: Chat WA & Generate Invoice */}
-              <div className="flex items-center gap-3 pt-2">
-                <a
-                  href={`https://wa.me/${selectedBookingForDetail.whatsapp.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase text-center rounded-lg flex items-center justify-center gap-2 shadow-md transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat WA</span>
-                </a>
-                <button
-                  onClick={() => {
-                    const currentB = selectedBookingForDetail;
-                    setSelectedBookingForDetail(null);
-                    setSelectedInvoiceBooking(currentB);
-                  }}
-                  className="flex-1 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-wider uppercase text-center rounded-lg flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Generate Invoice</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ===== MODAL: HIGH-END PRINTABLE INVOICE ===== */}
-      {selectedInvoiceBooking && (() => {
-        const inv = selectedInvoiceBooking;
-        const totalPrice = inv.totalPrice || 0;
-        const dpAmount = Math.round(totalPrice * 0.2);
-        const isPaidFull = inv.paymentStatus === 'paid_full';
-        const isDpPaid = inv.paymentStatus === 'dp_paid';
-
-        let paidTotal = 0;
-        let remainingBalance = totalPrice;
-
-        if (isPaidFull) {
-          paidTotal = totalPrice;
-          remainingBalance = 0;
-        } else if (isDpPaid) {
-          paidTotal = dpAmount;
-          remainingBalance = totalPrice - dpAmount;
-        }
-
-        const handlePrintInvoice = () => {
-          window.print();
-        };
-
-        const generateWaInvoiceMsg = () => {
-          const statusText = isPaidFull ? 'LUNAS' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP';
-          const studioName = studioSettings.studioName || 'Margasera Photography';
-          const bankName = (studioSettings.bankName || 'BCA').toUpperCase();
-          const bankAcc = studioSettings.bankAccountNumber || '1234567890';
-          const bankHolder = (studioSettings.bankAccountHolder || 'MARGASERA CREATIVE').toUpperCase();
-
-          const msg = encodeURIComponent(
-            `Halo kak ${inv.customerName},\n\n` +
-            `Berikut rincian Invoice Pemesanan ${studioName}:\n\n` +
-            `📄 *INVOICE:* INV-${inv.bookingCode}\n` +
-            `📸 *Layanan:* ${inv.serviceName} (${inv.packageName})\n` +
-            `📅 *Tanggal Event:* ${formatDate(inv.bookingDate)}\n` +
-            `📍 *Lokasi:* ${inv.location}\n\n` +
-            `💰 *Total Investasi:* ${formatCurrency(totalPrice)}\n` +
-            `✅ *Status Pembayaran:* ${statusText}\n` +
-            `💳 *Total Terbayar:* ${formatCurrency(paidTotal)}\n` +
-            `📌 *Sisa Pelunasan:* ${formatCurrency(remainingBalance)}\n\n` +
-            `Rekening Pembayaran:\n` +
-            `🏦 *${bankName}: ${bankAcc}* a.n *${bankHolder}*\n\n` +
-            `Terima kasih telah mempercayakan momen berharga kamu bersama ${studioName}! ✨`
-          );
-          return `https://wa.me/${inv.whatsapp.replace(/[^0-9]/g, '')}?text=${msg}`;
-        };
-
-        return (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full flex flex-col shadow-2xl my-8 overflow-hidden">
-              {/* Top Modal Controls (Hidden in Print) */}
-              <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-[#0066CC]" />
-                  <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wide">Pratinjau Invoice Resmi Studio</h4>
-                </div>
-                <button
-                  onClick={() => setSelectedInvoiceBooking(null)}
-                  className="text-zinc-400 hover:text-white p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* ===== PRINTABLE INVOICE CARD CONTAINER ===== */}
-              <div id="printable-invoice" className="p-8 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-8">
-                {/* Invoice Header: Logo & Studio Info */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-200">
-                  <div className="flex flex-col gap-2">
-                    <div className="py-1 w-fit">
-                      <Image
-                        src="/logo.png"
-                        alt="Margasera Logo"
-                        width={160}
-                        height={48}
-                        className="h-9 w-auto object-contain"
-                        priority
-                      />
-                    </div>
-                    <span className="text-[11px] text-zinc-500 tracking-wider uppercase font-semibold">
-                      Editorial & Cinematic Visual Stories
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed">
-                    <strong className="text-zinc-900 font-semibold text-sm">
-                      {(studioSettings.studioName || 'MARGASERA PHOTOGRAPHY').toUpperCase()}
-                    </strong>
-                    <span>{studioSettings.address || 'Jl. Raya Madura No. 88, Madura, Jawa Timur'}</span>
-                    <span>WhatsApp: {studioSettings.whatsapp || '0858-0613-8955'} | Email: {studioSettings.email || 'hello@margasera.id'}</span>
-                    <span>Website: https://margasera.id</span>
-                  </div>
-                </div>
-
-                {/* Invoice Title & Meta */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-mono font-bold tracking-widest text-[#0066CC] uppercase">INVOICE OFFICIAL</span>
-                    <h2 className="text-3xl font-extrabold text-zinc-900 tracking-tight font-mono">
-                      INV-{inv.bookingCode}
-                    </h2>
-                  </div>
-
-                  {/* Payment Status Stamp Badge */}
-                  <div className="sm:text-right">
-                    <div
-                      className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs uppercase font-mono font-bold tracking-wider border shadow-sm ${isPaidFull
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-400'
-                        : isDpPaid
-                          ? 'bg-blue-50 text-blue-700 border-blue-400'
-                          : 'bg-amber-50 text-amber-700 border-amber-400'
-                        }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${isPaidFull ? 'bg-emerald-600' : isDpPaid ? 'bg-blue-600' : 'bg-amber-600'}`} />
-                      {isPaidFull ? 'LUNAS / FULLY PAID' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP / UNPAID'}
-                    </div>
-                    <div className="text-[11px] text-zinc-500 font-mono mt-1">
-                      Tanggal Diterbitkan: {formatDate(new Date().toISOString().split('T')[0])}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Client & Event Info Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-zinc-50 rounded-xl border border-zinc-200/80 text-xs">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DITUJUKAN KEPADA CLIENT:</span>
-                    <strong className="text-zinc-900 text-sm font-semibold">{inv.customerName}</strong>
-                    <span className="text-zinc-600 font-mono">WhatsApp: {inv.whatsapp}</span>
-                    {inv.instagram && <span className="text-zinc-600 font-mono">Instagram: {inv.instagram}</span>}
-                    {inv.email && <span className="text-zinc-600 font-mono">Email: {inv.email}</span>}
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 sm:text-right">
-                    <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DETAIL JADWAL EVENT:</span>
-                    <strong className="text-zinc-900 text-sm font-semibold">{formatDate(inv.bookingDate)}</strong>
-                    <span className="text-amber-700 font-mono font-medium">
-                      Sesi: {inv.startTime || '08:00'} – {inv.endTime || '14:00'} WIB
-                    </span>
-                    <span className="text-zinc-600">Venue: {inv.location}</span>
-                  </div>
-                </div>
-
-                {/* Itemized Services Pricing Table */}
-                <div className="overflow-x-auto rounded-lg border border-zinc-200">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-zinc-100 border-b border-zinc-200 text-zinc-700 font-mono font-semibold uppercase text-[10px]">
-                      <tr>
-                        <th className="p-3">Deskripsi Layanan & Paket</th>
-                        <th className="p-3 text-center">Durasi</th>
-                        <th className="p-3 text-right">Harga Satuan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200 text-zinc-800">
-                      {(() => {
-                        // 1. Match package by BOTH service AND package name/ID to prevent cross-service false matches
-                        let matchedPkg = packages.find((p) => {
-                          const matchesService =
-                            (inv.serviceId && p.serviceId === inv.serviceId) ||
-                            (inv.serviceName && p.serviceName && p.serviceName.toLowerCase().trim() === inv.serviceName.toLowerCase().trim());
-                          const matchesName = Boolean(inv.packageName && p.name.toLowerCase().trim() === inv.packageName.toLowerCase().trim());
-                          const matchesId = Boolean(inv.packageId && (p.id === inv.packageId || p.slug === inv.packageId));
-                          return matchesService && (matchesName || matchesId);
-                        });
-
-                        // 2. Fallback: match by exact package name if service metadata was omitted
-                        if (!matchedPkg && inv.packageName) {
-                          matchedPkg = packages.find(
-                            (p) => p.name.toLowerCase().trim() === inv.packageName?.toLowerCase().trim()
-                          );
-                        }
-                        const pkgFeatures = matchedPkg?.features || [];
-                        const notesFeatures = inv.notes
-                          ? inv.notes.split('\n').filter((l) => l.trim().length > 0 && !l.toLowerCase().startsWith('nama pasangan:'))
-                          : [];
-                        const featuresToShow = pkgFeatures.length > 0 ? pkgFeatures : notesFeatures;
-
-                        // 3. Extract duration from notes if custom (e.g. "durasi sesi 6 jam" -> "6 jam")
-                        let extractedDuration: string | null = null;
-                        if (inv.notes) {
-                          const match = inv.notes.match(/(?:durasi\s*(?:sesi)?|s\/d)\s*:?\s*(\d+\s*(?:jam|menit|hari))/i);
-                          if (match && match[1]) {
-                            extractedDuration = match[1].trim();
-                          }
-                        }
-
-                        const displayDuration = matchedPkg?.duration
-                          ? matchedPkg.duration
-                          : extractedDuration
-                            ? extractedDuration
-                            : inv.startTime && inv.endTime
-                              ? `${inv.startTime} – ${inv.endTime} WIB`
-                              : null;
-
-                        return (
-                          <tr>
-                            <td className="p-3.5 align-top">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <strong className="text-zinc-900 font-bold text-sm">{inv.serviceName || 'Layanan Studio'}</strong>
-                                  {inv.packageName && (
-                                    <>
-                                      <span className="text-zinc-400 font-bold">•</span>
-                                      <span className="text-zinc-700 font-semibold text-xs">{inv.packageName}</span>
-                                    </>
-                                  )}
-                                </div>
-
-                                {featuresToShow.length > 0 ? (
-                                  <ul className="mt-1 flex flex-col gap-0.5 text-[10px] text-zinc-500 font-light pl-0.5">
-                                    {featuresToShow.map((ft, fIdx) => (
-                                      <li key={fIdx} className="flex items-start gap-1.5 leading-tight">
-                                        <span className="text-zinc-400 select-none">-</span>
-                                        <span>{ft.replace(/^[-•*]\s*/, '')}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <span className="text-zinc-500 text-[10.5px] italic mt-0.5">
-                                    Dokumentasi Visual & Sinematik Marga Sera Photography
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3.5 text-center font-mono align-top">
-                              <strong className="text-zinc-900 font-semibold">{displayDuration || '1 Event'}</strong>
-                              {displayDuration && (
-                                <div className="text-[10px] text-zinc-500 font-sans mt-0.5">1 Sesi / Event</div>
-                              )}
-                            </td>
-                            <td className="p-3.5 text-right font-mono font-semibold align-top">{formatCurrency(totalPrice)}</td>
-                          </tr>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Calculation Summary & Bank Account Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                  {/* Rekening Pembayaran */}
-                  <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-xl flex flex-col gap-2 text-xs">
-                    <span className="text-[10px] font-mono uppercase font-bold text-[#0066CC] tracking-wider flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5" /> Rekening Pembayaran Resmi Studio:
-                    </span>
-                    <div className="flex justify-between border-b border-blue-200/60 pb-1 text-zinc-700 font-mono">
-                      <span>Bank:</span>
-                      <strong className="text-zinc-900">{studioSettings.bankName || 'BCA'}</strong>
-                    </div>
-                    <div className="flex justify-between border-b border-blue-200/60 pb-1 text-zinc-700 font-mono">
-                      <span>No. Rekening:</span>
-                      <strong className="text-zinc-900 text-sm font-extrabold">{studioSettings.bankAccountNumber || '1234567890'}</strong>
-                    </div>
-                    <div className="flex justify-between text-zinc-700 font-mono">
-                      <span>Atas Nama:</span>
-                      <strong className="text-zinc-900">{studioSettings.bankAccountHolder || 'MARGASERA CREATIVE'}</strong>
-                    </div>
-                  </div>
-
-                  {/* Price Totals Breakdown */}
-                  <div className="flex flex-col gap-2 text-xs text-zinc-700 font-mono justify-end">
-                    <div className="flex justify-between py-1 border-b border-zinc-200">
-                      <span>Total Pembayaran Paket:</span>
-                      <strong className="text-zinc-900">{formatCurrency(totalPrice)}</strong>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-zinc-200">
-                      <span>Total Terbayar:</span>
-                      <strong className="text-emerald-700">{formatCurrency(paidTotal)}</strong>
-                    </div>
-                    <div className="flex justify-between py-2 border-b-2 border-zinc-900 text-sm">
-                      <span className="font-bold text-zinc-900">SISA PELUNASAN:</span>
-                      <strong className={`font-extrabold ${remainingBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-                        {formatCurrency(remainingBalance)}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Notes & Signatures */}
-                <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-end gap-6 text-[11px] text-zinc-500 font-light">
-                  <div className="flex flex-col gap-1">
-                    <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Syarat & Ketentuan Studio:</strong>
-                    <span>• DP minimal untuk mengunci tanggal pada kalender studio.</span>
-                    <span>• Pelunasan sisa dilakukan setelah acara selesai (di tempat).</span>
-                    <span>• Invoice ini merupakan bukti pembayaran sah yang dikeluarkan oleh Margasera.</span>
-                  </div>
-
-                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1">
-                    <span className="font-mono text-[10px]">Hormat Kami,</span>
-                    <div className="h-12 w-32 border-b border-zinc-400 flex items-center justify-center italic text-zinc-400 text-xs">
-                      [ Signed Digital ]
-                    </div>
-                    <strong className="text-zinc-900 font-semibold font-mono text-xs">MARGASERA Official</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* ===== MODAL BOTTOM ACTIONS (HIDDEN IN PRINT) ===== */}
-              <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3">
-                <button
-                  onClick={() => setSelectedInvoiceBooking(null)}
-                  className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
-                >
-                  Tutup
-                </button>
-
-                <div className="flex items-center gap-3">
-                  <a
-                    href={generateWaInvoiceMsg()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Kirim WA Invoice</span>
-                  </a>
-
-                  <button
-                    onClick={handlePrintInvoice}
-                    className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.4)] cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Cetak / Save PDF (A4)</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ===== MODAL: PRINTABLE REKAPITULASI PDF ===== */}
       {showPdfRekapModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full flex flex-col shadow-2xl my-8 overflow-hidden">
-            {/* Top Modal Controls (Hidden in Print) */}
-            <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#0066CC]" />
-                <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wide">Pratinjau Laporan Rekapitulasi PDF</h4>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-md transition-colors cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Cetak / Save PDF</span>
-                </button>
-                <button
-                  onClick={() => setShowPdfRekapModal(false)}
-                  className="text-zinc-400 hover:text-white p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* ===== PRINTABLE REKAP CONTAINER ===== */}
-            <div id="printable-rekap" className="p-8 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-6">
-              {/* Header: Logo & Studio Info */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-300">
-                <div className="flex flex-col gap-2">
-                  <div className="py-1 w-fit">
-                    <Image
-                      src="/logo.png"
-                      alt="Margasera Logo"
-                      width={160}
-                      height={48}
-                      className="h-9 w-auto object-contain"
-                      priority
-                    />
-                  </div>
-                  <span className="text-[11px] text-zinc-500 tracking-wider uppercase font-semibold">
-                    Editorial & Cinematic Visual Stories
-                  </span>
-                </div>
-
-                <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed">
-                  <strong className="text-zinc-900 font-semibold text-sm">
-                    {(studioSettings.studioName || 'MARGASERA PHOTOGRAPHY').toUpperCase()}
-                  </strong>
-                  <span>{studioSettings.address || 'Jl. Raya Madura No. 88, Madura, Jawa Timur'}</span>
-                  <span>WhatsApp: {studioSettings.whatsapp || '0858-0613-8955'} | Email: {studioSettings.email || 'hello@margasera.id'}</span>
-                </div>
-              </div>
-
-              {/* Document Title & Period */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <span className="text-xs font-mono font-bold tracking-widest text-[#0066CC] uppercase">LAPORAN RESMI STUDIO</span>
-                  <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight font-sans uppercase">
-                    Rekapitulasi Pemesanan Client
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5 font-medium">
-                    Periode: <span className="text-zinc-900 font-semibold">{monthFilter !== 'all' ? formatMonthLabel(monthFilter) : 'Semua Periode / Bulan Ini'}</span>
-                    {serviceFilter !== 'all' && ` | Layanan: ${services.find(s => s.id === serviceFilter)?.name}`}
-                    {bookingStatusFilter !== 'all' && ` | Status: ${bookingStatusFilter.toUpperCase()}`}
-                  </p>
-                </div>
-                <div className="text-left sm:text-right text-xs text-zinc-500 font-mono">
-                  <div>Tanggal Dicetak: {formatDate(new Date().toISOString().split('T')[0])}</div>
-                  <div>Total Data: {filteredBookings.length} Booking</div>
-                </div>
-              </div>
-
-              {/* Summary Cards Row (Rekap Booking Masuk & Total Pendapatan) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-xs">
-                <div className="flex flex-col gap-0.5 border-r border-zinc-200 pr-2">
-                  <span className="text-[10px] font-mono uppercase text-zinc-500 font-semibold">Total Booking Masuk:</span>
-                  <strong className="text-zinc-900 text-base font-extrabold font-mono">{filteredBookings.length} Pesanan</strong>
-                </div>
-                <div className="flex flex-col gap-0.5 border-r border-zinc-200 pr-2">
-                  <span className="text-[10px] font-mono uppercase text-emerald-700 font-semibold">Confirmed:</span>
-                  <strong className="text-emerald-700 text-base font-extrabold font-mono">
-                    {filteredBookings.filter((b) => b.status === 'confirmed').length} Event
-                  </strong>
-                </div>
-                <div className="flex flex-col gap-0.5 border-r border-zinc-200 pr-2">
-                  <span className="text-[10px] font-mono uppercase text-amber-700 font-semibold">Pending / Terbuka:</span>
-                  <strong className="text-amber-700 text-base font-extrabold font-mono">
-                    {filteredBookings.filter((b) => b.status === 'pending').length} Booking
-                  </strong>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-mono uppercase text-[#0066CC] font-semibold">Total Est. Pendapatan:</span>
-                  <strong className="text-[#0066CC] text-base font-extrabold font-mono">{formatCurrency(totalRevenue)}</strong>
-                </div>
-              </div>
-
-              {/* Table Data Client */}
-              <div className="overflow-x-auto rounded-lg border border-zinc-200 mt-2">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead className="bg-zinc-100 border-b border-zinc-200 text-zinc-700 font-mono font-semibold uppercase text-[9px]">
-                    <tr>
-                      <th className="p-2.5 border-r border-zinc-200 text-center">No</th>
-                      <th className="p-2.5 border-r border-zinc-200">Kode & Client</th>
-                      <th className="p-2.5 border-r border-zinc-200">Layanan & Paket</th>
-                      <th className="p-2.5 border-r border-zinc-200">Tanggal & Jam Event</th>
-                      <th className="p-2.5 border-r border-zinc-200">Lokasi / Venue</th>
-                      <th className="p-2.5 border-r border-zinc-200 text-center">Status</th>
-                      <th className="p-2.5 text-right">Total Harga</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 text-zinc-800">
-                    {filteredBookings.length > 0 ? (
-                      filteredBookings.map((b, idx) => (
-                        <tr key={b.id} className={idx % 2 === 1 ? 'bg-zinc-50/50' : ''}>
-                          <td className="p-2.5 border-r border-zinc-200 text-center font-mono font-semibold text-zinc-500">{idx + 1}</td>
-                          <td className="p-2.5 border-r border-zinc-200">
-                            <div className="flex flex-col">
-                              <span className="font-mono text-[10px] font-bold text-[#0066CC]">INV-{b.bookingCode}</span>
-                              <strong className="text-zinc-900 font-semibold">{b.customerName}</strong>
-                              <span className="text-zinc-500 text-[10px] font-mono">WA: {b.whatsapp}</span>
-                            </div>
-                          </td>
-                          <td className="p-2.5 border-r border-zinc-200">
-                            <div className="flex flex-col">
-                              <strong className="text-zinc-900 font-semibold">{b.serviceName || '-'}</strong>
-                              <span className="text-zinc-500 text-[10px]">{b.packageName || '-'}</span>
-                            </div>
-                          </td>
-                          <td className="p-2.5 border-r border-zinc-200 font-mono">
-                            <div className="flex flex-col">
-                              <strong className="text-zinc-900 font-semibold">{formatDate(b.bookingDate)}</strong>
-                              <span className="text-amber-700 text-[10px]">{b.startTime || '08:00'} - {b.endTime || '14:00'} WIB</span>
-                            </div>
-                          </td>
-                          <td className="p-2.5 border-r border-zinc-200 text-zinc-700 max-w-[140px] truncate">
-                            {b.location || '-'}
-                          </td>
-                          <td className="p-2.5 border-r border-zinc-200 text-center font-mono">
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span
-                                className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${b.status === 'confirmed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : b.status === 'completed'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : b.status === 'pending'
-                                      ? 'bg-amber-100 text-amber-800'
-                                      : 'bg-rose-100 text-rose-800'
-                                  }`}
-                              >
-                                {b.status}
-                              </span>
-                              <span
-                                className={`text-[8px] font-bold uppercase ${b.paymentStatus === 'paid_full'
-                                  ? 'text-emerald-700'
-                                  : b.paymentStatus === 'dp_paid'
-                                    ? 'text-blue-700'
-                                    : 'text-amber-700'
-                                  }`}
-                              >
-                                {b.paymentStatus === 'paid_full'
-                                  ? 'Lunas'
-                                  : b.paymentStatus === 'dp_paid'
-                                    ? 'DP Terbayar'
-                                    : 'Belum DP'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-extrabold text-zinc-900">
-                            {formatCurrency(b.totalPrice || 0)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="p-6 text-center text-zinc-400 font-light italic">
-                          Tidak ada data booking yang sesuai dengan filter.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Document Sign-off & Footer */}
-              <div className="pt-6 border-t border-zinc-200 flex justify-between items-end text-xs text-zinc-500 font-light">
-                <div className="flex flex-col gap-1">
-                  <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Catatan Laporan:</strong>
-                  <span>• Laporan rekapitulasi ini di-generate secara otomatis dari sistem admin Margasera.</span>
-                  <span>• Total nilai pendapatan dihitung berdasarkan estimasi nilai paket dari data booking aktif.</span>
-                </div>
-
-                <div className="text-right flex flex-col items-end gap-1">
-                  <span className="text-[10px] font-mono text-zinc-400">Penanggung Jawab:</span>
-                  <div className="h-10 w-28 border-b border-zinc-400 flex items-center justify-end italic text-zinc-400 text-xs">
-                    [ Signature ]
-                  </div>
-                  <strong className="text-zinc-900 font-semibold font-mono text-xs">MARGASERA Official</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Modal Actions (Hidden in Print) */}
-            <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3">
-              <button
-                onClick={() => setShowPdfRekapModal(false)}
-                className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
-              >
-                Tutup
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.4)] cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Cetak / Save PDF (A4)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <PdfRekapModal
+          filteredBookings={filteredBookings}
+          services={services}
+          studioSettings={studioSettings}
+          totalRevenue={totalRevenue}
+          monthFilter={monthFilter}
+          serviceFilter={serviceFilter}
+          bookingStatusFilter={bookingStatusFilter}
+          formatMonthLabel={formatMonthLabel}
+          onClose={() => setShowPdfRekapModal(false)}
+        />
       )}
     </div>
   );

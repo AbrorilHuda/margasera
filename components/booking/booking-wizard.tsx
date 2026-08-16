@@ -574,7 +574,10 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-serif-editorial text-2xl text-zinc-100">{pkg.name}</h4>
                             {pkg.isPopular && (
-                              <span className="px-2 py-0.5 bg-[#0066CC] text-white text-[9px] font-bold tracking-widest uppercase rounded">Popular</span>
+                              <span className="popular-badge px-2.5 py-0.5 bg-[#0066CC] text-white text-[9px] font-bold tracking-widest uppercase rounded-full shadow-sm flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5 text-white shrink-0" />
+                                <span>Popular</span>
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-zinc-400 font-light mb-4">{pkg.description}</p>

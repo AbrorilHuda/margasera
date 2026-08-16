@@ -3,17 +3,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
+import { isValidUUID } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Service, Package } from '@/lib/types';
 
 type ServiceRow = Database['public']['Tables']['services']['Row'];
 type PackageRow = Database['public']['Tables']['packages']['Row'];
 
-function isValidUUID(uuid?: string | null): boolean {
-  if (!uuid) return false;
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return regex.test(uuid);
-}
+// isValidUUID diimport dari '@/lib/utils'
 
 /** Ambil semua layanan aktif (public) dari Supabase */
 export async function getServices(): Promise<Service[]> {

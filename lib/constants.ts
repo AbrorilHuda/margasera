@@ -14,3 +14,26 @@ export const DEFAULT_STUDIO_SETTINGS: StudioSettings = {
   bankAccountNumber: '1234567890',
   bankAccountHolder: 'MARGASERA CREATIVE',
 };
+
+/** Default waktu sesi */
+export const DEFAULT_START_TIME = '06:00';
+export const DEFAULT_END_TIME = '14:00';
+
+/** Default nilai form tambah booking manual */
+export const BOOKING_FORM_DEFAULTS = {
+  customerName: '',
+  whatsapp: '',
+  email: '',
+  instagram: '',
+  serviceId: '',
+  packageId: '',
+  bookingDate: '',
+  startTime: DEFAULT_START_TIME,
+  endTime: DEFAULT_END_TIME,
+  location: '',
+  totalPrice: 14_500_000,
+  downPayment: 1_000_000,
+  paymentStatus: 'unpaid' as 'unpaid' | 'dp_paid' | 'paid_full',
+  notes: '',
+};
+

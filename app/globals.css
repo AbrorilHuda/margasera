@@ -492,6 +492,25 @@ html.light textarea::placeholder {
   color: #94A3B8 !important;
 }
 
+/* POPULAR / PALING DIREKOMENDASIKAN CARD LIGHT MODE STYLING */
+html.light .popular-card {
+  background: #FFFFFF !important;
+  background-image: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 60%) !important;
+  border-color: #0066CC !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 102, 204, 0.18), 0 4px 12px -2px rgba(0, 102, 204, 0.08) !important;
+}
+
+html.light .popular-card .border-zinc-900,
+html.light .popular-card .border-zinc-800 {
+  border-color: #E2E8F0 !important;
+}
+
+html.light .popular-badge {
+  background-color: #0066CC !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(0, 102, 204, 0.35) !important;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
