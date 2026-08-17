@@ -397,14 +397,14 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
         totalPrice: selectedPackage?.price,
         downPayment: selectedPackage
           ? (selectedPackage.downPayment && selectedPackage.downPayment > 0
-              ? selectedPackage.downPayment
-              : Math.ceil(selectedPackage.price * 0.2))
+            ? selectedPackage.downPayment
+            : Math.ceil(selectedPackage.price * 0.2))
           : undefined,
         remainingAmount: selectedPackage
           ? selectedPackage.price -
-            (selectedPackage.downPayment && selectedPackage.downPayment > 0
-              ? selectedPackage.downPayment
-              : Math.ceil(selectedPackage.price * 0.2))
+          (selectedPackage.downPayment && selectedPackage.downPayment > 0
+            ? selectedPackage.downPayment
+            : Math.ceil(selectedPackage.price * 0.2))
           : undefined,
         paymentStatus: 'unpaid',
       });
@@ -901,7 +901,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: JW Marriott Medan"
+                    placeholder="Contoh: Pamekasan"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-3.5 rounded-xl text-sm focus:outline-none transition-colors"
@@ -1085,10 +1085,10 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   <strong className="text-amber-300 font-mono">
                     {selectedPackage
                       ? formatCurrency(
-                          selectedPackage.downPayment && selectedPackage.downPayment > 0
-                            ? selectedPackage.downPayment
-                            : Math.ceil(selectedPackage.price * 0.2)
-                        )
+                        selectedPackage.downPayment && selectedPackage.downPayment > 0
+                          ? selectedPackage.downPayment
+                          : Math.ceil(selectedPackage.price * 0.2)
+                      )
                       : 'DP'}
                   </strong>{' '}
                   ke rekening resmi Margasera:

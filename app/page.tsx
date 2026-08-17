@@ -48,7 +48,7 @@ export default async function Home() {
               Seni Visual Sinematik & Storytelling Abadi
             </h2>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Margasera Photography lahir dari passion untuk mengabadikan momen cinta, kebahagiaan, dan ekspresi paling otentik. Kami memadukan pendekatan visual editorial berstandar internasional dengan kehangatan rasa lokal Medan & Sumatera Utara.
+              Margasera Photography lahir dari passion untuk mengabadikan momen cinta, kebahagiaan, dan ekspresi paling otentik. Kami memadukan pendekatan visual editorial berstandar internasional dengan kehangatan rasa lokal.
             </p>
 
             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-900">

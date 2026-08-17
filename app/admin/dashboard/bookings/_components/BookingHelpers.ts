@@ -16,7 +16,7 @@ export function generateGoogleCalendarUrl(b: Booking): string {
     `Lokasi: ${b.location || '-'}\n` +
     `Catatan: ${b.notes || '-'}`
   );
-  const loc = encodeURIComponent(b.location || 'Medan');
+  const loc = encodeURIComponent(b.location || 'Pamekasan');
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${loc}`;
 }
 

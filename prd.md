@@ -101,7 +101,7 @@ Marga Sera Photography
 ├── Tentang & Kontak
 │   ├── Cerita Fotografer
 │   ├── Formulir Kontak
-│   └── Lokasi & Medan
+│   └── Lokasi & Madura
 │
 ├── Kalender Ketersediaan
 │   ├── Tampilan Kalender
@@ -338,7 +338,7 @@ Field:
 
 ---
 
-## Lokasi & Medan
+## Lokasi & Madura
 
 Menampilkan:
 

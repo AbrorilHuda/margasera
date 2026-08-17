@@ -33,7 +33,7 @@ export async function Footer() {
               />
             </Link>
             <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-md">
-              Margasera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, &amp; portraiture profesional di Medan dan seluruh Indonesia.
+              Margasera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, &amp; portraiture profesional di Madura dan seluruh Indonesia.
             </p>
             <div className="flex items-center gap-4 pt-2">
               {s.instagram && (

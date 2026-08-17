@@ -5,7 +5,7 @@ import { InstagramIcon } from '@/components/ui/icons';
 
 export const metadata = {
   title: 'Tentang & Kontak',
-  description: 'Cerita filosofi brand, profil fotografer, dan formulir kontak Marga Sera Photography Medan.',
+  description: 'Cerita filosofi brand, profil fotografer, dan formulir kontak Marga Sera Photography.',
 };
 
 export default function AboutPage() {

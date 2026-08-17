@@ -206,7 +206,7 @@ export function ServicesPricing({ initialServices = [], initialPackages = [] }: 
             Butuh Konsep / Paket Kustom Khusus?
           </h4>
           <p className="text-xs text-zinc-400 font-light max-w-2xl">
-            Jika lokasi acara di luar kota Medan, membutuhkan durasi khusus, atau paket gabungan pre-wedding & wedding, kami dapat menyusun proposal khusus untuk Anda.
+            Jika lokasi acara di luar kota Madura, membutuhkan durasi khusus, atau paket gabungan pre-wedding & wedding, kami dapat menyusun proposal khusus untuk Anda.
           </p>
         </div>
         <Link
