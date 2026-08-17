@@ -5,7 +5,7 @@ import { fetchStudioSettings } from '@/lib/data/settings';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Cek Status Booking - Margasera Photography',
+  title: 'Cek Status Booking',
   description: 'Pantau perkembangan status jadwal & persetujuan pemesanan sesi foto Marga Sera Photography.',
 };
 

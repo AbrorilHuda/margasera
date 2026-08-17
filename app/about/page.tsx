@@ -4,7 +4,7 @@ import { Camera, MapPin, MessageCircle, Mail, Phone, Send, Sparkles } from 'luci
 import { InstagramIcon } from '@/components/ui/icons';
 
 export const metadata = {
-  title: 'Tentang & Kontak - Margasera Photography',
+  title: 'Tentang & Kontak',
   description: 'Cerita filosofi brand, profil fotografer, dan formulir kontak Marga Sera Photography Medan.',
 };
 

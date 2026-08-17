@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const project = await getGalleryProjectBySlug(resolvedParams.slug);
   if (!project) return { title: 'Portofolio - Margasera Photography' };
   return {
-    title: `${project.title} - Margasera Photography`,
+    title: `${project.title}`,
     description: project.description,
   };
 }

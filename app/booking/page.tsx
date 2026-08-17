@@ -5,7 +5,7 @@ import { fetchStudioSettings } from '@/lib/data/settings';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Pemesanan Sesi Foto - Margasera Photography',
+  title: 'Pemesanan Sesi Foto',
   description: 'Formulir pemesanan sesi foto bertahap untuk wedding, pre-wedding, couple, & portrait Marga Sera.',
 };
 

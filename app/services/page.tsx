@@ -2,7 +2,7 @@ import React from 'react';
 import { ServicesPricing } from '@/components/services/services-pricing';
 
 export const metadata = {
-  title: 'Layanan & Paket Harga - Margasera Photography',
+  title: 'Layanan & Paket Harga',
   description: 'Daftar paket dan layanan photography wedding, pre-wedding, couple, & portraiture Marga Sera Photography.',
 };
 

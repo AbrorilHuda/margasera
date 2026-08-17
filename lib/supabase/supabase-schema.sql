@@ -145,6 +145,26 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 );
 
 -- ----------------------------------------------------------------
+-- TABLE: studio_settings
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.studio_settings (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  studio_name         TEXT,
+  owner_name          TEXT,
+  whatsapp            TEXT,
+  instagram           TEXT,
+  tiktok              TEXT,
+  email               TEXT,
+  address             TEXT,
+  google_maps_url     TEXT,
+  bank_name           TEXT,
+  bank_account_number TEXT,
+  bank_account_holder TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------
 -- UPDATED_AT TRIGGER
 -- ----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -159,7 +179,7 @@ DO $$
 DECLARE
   tbl TEXT;
 BEGIN
-  FOREACH tbl IN ARRAY ARRAY['profiles','services','packages','gallery_projects','availability','bookings']
+  FOREACH tbl IN ARRAY ARRAY['profiles','services','packages','gallery_projects','availability','bookings','studio_settings']
   LOOP
     EXECUTE format('
       DROP TRIGGER IF EXISTS set_updated_at ON public.%I;
@@ -181,6 +201,7 @@ ALTER TABLE public.gallery_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gallery_images  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.availability    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.studio_settings ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
@@ -232,9 +253,16 @@ CREATE POLICY "Public can read own booking by code" ON public.bookings
 CREATE POLICY "Admin can manage all bookings" ON public.bookings
   FOR ALL USING (public.is_admin());
 
+-- studio_settings
+CREATE POLICY "Public can read studio settings" ON public.studio_settings
+  FOR SELECT USING (TRUE);
+CREATE POLICY "Admin can manage studio settings" ON public.studio_settings
+  FOR ALL USING (public.is_admin());
+
 -- ================================================================
 -- SETELAH MENJALANKAN SQL INI:
 -- 1. Isi .env.local dengan NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 -- 2. Buat user admin: Supabase → Authentication → Users → Add User
 -- 3. Set role: UPDATE public.profiles SET role = 'admin' WHERE email = 'email@kamu.com';
 -- ================================================================
+
