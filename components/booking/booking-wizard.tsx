@@ -10,7 +10,7 @@ import { getServices, getPackages } from '@/lib/actions/services';
 import { getAvailability } from '@/lib/actions/availability';
 import { createBooking } from '@/lib/actions/bookings';
 import type { Service, Package, Availability, AvailabilityStatus, StudioSettings } from '@/lib/types';
-import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod } from '@/lib/utils';
+import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod, getTodayDateString } from '@/lib/utils';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/components/ui/toast-context';
 
@@ -116,7 +116,12 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
       if (targetServiceId) setSelectedServiceId(targetServiceId);
       if (targetPackageId) setSelectedPackageId(targetPackageId);
-      if (paramDate) setSelectedDate(paramDate);
+      if (paramDate) {
+        const todayStr = getTodayDateString();
+        if (paramDate >= todayStr) {
+          setSelectedDate(paramDate);
+        }
+      }
       if (paramTime) setStartTime(paramTime);
 
       setIsDataLoading(false);
@@ -287,6 +292,11 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
     if (currentStep === 2) {
       if (!selectedDate) {
         toast.warning('Silakan pilih Tanggal Rencana Acara terlebih dahulu.');
+        return;
+      }
+      const todayStr = getTodayDateString();
+      if (selectedDate < todayStr) {
+        toast.error('Tanggal rencana acara tidak boleh berada di masa lalu (sebelum tanggal hari ini).');
         return;
       }
       if (!startTime || !endTime) {
@@ -640,11 +650,25 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   <input
                     type="date"
                     value={selectedDate}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getTodayDateString()}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 p-4 rounded-xl font-mono text-sm focus:outline-none transition-colors"
                   />
                   {(() => {
+                    const todayStr = getTodayDateString();
+                    if (selectedDate && selectedDate < todayStr) {
+                      return (
+                        <div className="p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-rose-200 uppercase tracking-wider text-[11px] font-mono">⚠️ Tanggal Sudah Lewat</span>
+                            <p className="text-rose-300 font-light">
+                              Tanggal {formatDate(selectedDate)} sudah berada di masa lalu. Silakan pilih tanggal hari ini atau tanggal yang akan datang.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
                     const dateInfo = getSelectedDateInfo(selectedDate);
                     if (dateInfo.status === 'blocked') {
                       return (

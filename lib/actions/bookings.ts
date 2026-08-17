@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
-import { isValidUUID, isWeddingService } from '@/lib/utils';
+import { isValidUUID, isWeddingService, getTodayDateString } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 
@@ -81,7 +81,17 @@ export async function createBooking(
 
   // Validasi ketersediaan tanggal & bentrok jam di database Supabase
   if (formData.bookingDate) {
+    // 0. Validasi tanggal tidak boleh berada di masa lalu
+    const todayStr = getTodayDateString();
+    if (formData.bookingDate < todayStr) {
+      return {
+        success: false,
+        error: `Tanggal pemesanan (${formData.bookingDate}) tidak boleh berada di masa lalu. Silakan pilih tanggal hari ini atau tanggal yang akan datang.`,
+      };
+    }
+
     // 1. Cek status ketersediaan tanggal dari tabel availability (blocked / booked override)
+
     const { data: dateAvailability } = await (supabase as any)
       .from('availability')
       .select('status, notes')

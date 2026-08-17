@@ -6,6 +6,7 @@ import { LayoutWrapper } from '@/components/navigation/layout-wrapper';
 import { Footer } from '@/components/navigation/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/ui/toast-context';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -20,6 +21,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://margasera.id';
+const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -27,7 +29,7 @@ export const metadata: Metadata = {
     default: 'Margasera Photography - Editorial & Cinematic Visual Stories',
     template: '%s - Margasera Photography',
   },
-  description: 'Platform portofolio fotografi sinematik & pemesanan tanggal untuk wedding, pre-wedding, couple, & portrait di Madura dan sekitarnya.',
+  description: 'Platform portofolio fotografi sinematik & pemesanan tanggal untuk wedding, pre-wedding, couple, graduation & portrait di Madura dan sekitarnya.',
   keywords: [
     'Margasera Photography',
     'Fotografer Wedding Madura',
@@ -108,7 +110,9 @@ export default function RootLayout({
             </LayoutWrapper>
           </ToastProvider>
         </ThemeProvider>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );
 }
+

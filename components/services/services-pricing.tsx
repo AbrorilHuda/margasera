@@ -8,13 +8,21 @@ import { getServices, getPackages } from '@/lib/actions/services';
 import type { Service, Package } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 
-export function ServicesPricing() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+interface ServicesPricingProps {
+  initialServices?: Service[];
+  initialPackages?: Package[];
+}
+
+export function ServicesPricing({ initialServices = [], initialPackages = [] }: ServicesPricingProps) {
+  const [services, setServices] = useState<Service[]>(initialServices);
+  const [packages, setPackages] = useState<Package[]>(initialPackages);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(
+    initialServices[0]?.id || ''
+  );
+  const [loading, setLoading] = useState(initialServices.length === 0);
 
   useEffect(() => {
+    if (initialServices.length > 0 && initialPackages.length > 0) return;
     async function load() {
       setLoading(true);
       const [srvList, pkgList] = await Promise.all([getServices(), getPackages()]);
@@ -24,7 +32,7 @@ export function ServicesPricing() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [initialServices, initialPackages]);
 
   const filteredPackages = packages.filter(
     (pkg) => pkg.serviceId === selectedServiceId
@@ -59,9 +67,9 @@ export function ServicesPricing() {
         <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
           Investment & Packages
         </span>
-        <h2 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">
+        <h1 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">
           Layanan & Paket Harga
-        </h2>
+        </h1>
         <p className="text-sm text-zinc-400 font-light leading-relaxed mt-4">
           Setiap momen abadi pantas didokumentasikan dengan tingkat ketelitian dan estetika terbaik. Pilih kategori layanan dan temukan paket yang paling sesuai dengan kebutuhan sesi foto Anda.
         </p>
