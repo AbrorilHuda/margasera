@@ -6,8 +6,16 @@ import { FeaturedWorks } from '@/components/gallery/featured-works';
 import { ServicesPricing } from '@/components/services/services-pricing';
 import { AvailabilityCalendar } from '@/components/calendar/availability-calendar';
 import { ArrowRight, Camera, Sparkles, Heart, Award } from 'lucide-react';
+import { getServices, getPackages } from '@/lib/actions/services';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const [services, packages] = await Promise.all([
+    getServices(),
+    getPackages(),
+  ]);
+
   return (
     <div className="flex flex-col w-full bg-zinc-950 text-zinc-100">
       {/* 1. Hero Sinematik */}
@@ -71,7 +79,7 @@ export default function Home() {
       <FeaturedWorks limit={3} />
 
       {/* 4. Layanan & Paket Harga */}
-      <ServicesPricing />
+      <ServicesPricing initialServices={services} initialPackages={packages} />
 
       {/* 5. Kalender Ketersediaan Tanggal */}
       <section className="py-20 bg-zinc-950 border-t border-zinc-900">

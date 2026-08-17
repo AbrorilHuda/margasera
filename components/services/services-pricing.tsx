@@ -19,20 +19,39 @@ export function ServicesPricing({ initialServices = [], initialPackages = [] }: 
   const [selectedServiceId, setSelectedServiceId] = useState<string>(
     initialServices[0]?.id || ''
   );
-  const [loading, setLoading] = useState(initialServices.length === 0);
+  const [loading, setLoading] = useState(
+    initialServices.length === 0 && initialPackages.length === 0
+  );
 
   useEffect(() => {
-    if (initialServices.length > 0 && initialPackages.length > 0) return;
+    if (initialServices.length > 0) {
+      setServices(initialServices);
+      if (!selectedServiceId && initialServices[0]?.id) {
+        setSelectedServiceId(initialServices[0].id);
+      }
+    }
+    if (initialPackages.length > 0) {
+      setPackages(initialPackages);
+    }
+  }, [initialServices, initialPackages]);
+
+  useEffect(() => {
+    if (services.length > 0 && packages.length > 0) {
+      setLoading(false);
+      return;
+    }
     async function load() {
       setLoading(true);
       const [srvList, pkgList] = await Promise.all([getServices(), getPackages()]);
       setServices(srvList);
       setPackages(pkgList);
-      if (srvList.length > 0) setSelectedServiceId(srvList[0].id);
+      if (srvList.length > 0 && !selectedServiceId) {
+        setSelectedServiceId(srvList[0].id);
+      }
       setLoading(false);
     }
     load();
-  }, [initialServices, initialPackages]);
+  }, []);
 
   const filteredPackages = packages.filter(
     (pkg) => pkg.serviceId === selectedServiceId
