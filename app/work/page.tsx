@@ -4,6 +4,9 @@ import { FeaturedWorks } from '@/components/gallery/featured-works';
 export const metadata = {
   title: 'Portofolio Gallery',
   description: 'Galeri portofolio photography editorial untuk wedding, pre-wedding, couple, portrait, dan event di Madura.',
+  alternates: {
+    canonical: '/work',
+  },
 };
 
 export default function WorkPage() {

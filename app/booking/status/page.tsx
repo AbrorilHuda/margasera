@@ -7,6 +7,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Cek Status Booking',
   description: 'Pantau perkembangan status jadwal & persetujuan pemesanan sesi foto Marga Sera Photography.',
+  alternates: {
+    canonical: '/booking/status',
+  },
 };
 
 export default async function BookingStatusPage() {

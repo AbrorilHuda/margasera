@@ -4,6 +4,9 @@ import { AvailabilityCalendar } from '@/components/calendar/availability-calenda
 export const metadata = {
   title: 'Kalender Ketersediaan Tanggal',
   description: 'Cek jadwal ketersediaan tanggal fotografer Marga Sera Photography secara real-time.',
+  alternates: {
+    canonical: '/availability',
+  },
 };
 
 export default function AvailabilityPage() {
