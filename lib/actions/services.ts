@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
 import { isValidUUID } from '@/lib/utils';
@@ -15,7 +15,7 @@ type PackageRow = Database['public']['Tables']['packages']['Row'];
 /** Ambil semua layanan aktif (public) dari Supabase */
 export async function getServices(): Promise<Service[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data, error } = await (supabase as any)
       .from('services')
@@ -41,7 +41,7 @@ export async function getServices(): Promise<Service[]> {
 /** Ambil semua paket aktif (opsional: filter by service_id) dari Supabase */
 export async function getPackages(serviceId?: string): Promise<Package[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     let query = (supabase as any)
       .from('packages')

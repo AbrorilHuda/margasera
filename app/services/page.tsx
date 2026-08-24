@@ -4,7 +4,7 @@ import { ServicesPricing } from '@/components/services/services-pricing';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { formatCurrency } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // revalidate every hour
 
 
 export async function generateMetadata(): Promise<Metadata> {

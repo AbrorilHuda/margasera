@@ -72,68 +72,68 @@ export default function AdminOverviewPage() {
       {/* ===== METRIC CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Revenue */}
-        <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
+        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-medium">Est. Investasi Masuk</span>
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Est. Investasi Masuk</span>
+            <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100 mt-1">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
             {formatCurrency(totalRevenue)}
           </span>
-          <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" />
+          <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1 truncate">
+            <TrendingUp className="w-3.5 h-3.5 shrink-0" />
             {confirmedCount} Pesanan Dikonfirmasi
           </span>
         </div>
 
         {/* Total Bookings */}
-        <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
+        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-medium">Total Booking</span>
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Total Booking</span>
+            <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100 mt-1">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
             {bookings.length} Pesanan
           </span>
-          <span className="text-[11px] text-zinc-400 font-light">Termasuk Booking Online & Offline</span>
+          <span className="text-[10px] text-zinc-400 font-light truncate">Termasuk Booking Online & Offline</span>
         </div>
 
         {/* Portfolio */}
-        <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
+        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-medium">Portofolio Karya</span>
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Portofolio Karya</span>
+            <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Camera className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100 mt-1">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
             {projects.length} Project
           </span>
-          <span className="text-[11px] text-zinc-400 font-light">
+          <span className="text-[10px] text-zinc-400 font-light truncate">
             {projects.filter((p) => p.isFeatured).length} Project Featured Beranda
           </span>
         </div>
 
         {/* Services & Packages */}
-        <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
+        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-medium">Layanan & Paket</span>
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Layanan & Paket</span>
+            <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100 mt-1">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
             {packages.length} Paket
           </span>
-          <span className="text-[11px] text-zinc-400 font-light">{services.length} Kategori Layanan Aktif</span>
+          <span className="text-[10px] text-zinc-400 font-light truncate">{services.length} Kategori Layanan Aktif</span>
         </div>
       </div>
 
