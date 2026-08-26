@@ -58,6 +58,26 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
   const paymentBadgeDot = isPaidFull ? 'bg-emerald-600' : isDpPaid ? 'bg-blue-600' : 'bg-amber-600';
   const paymentBadgeLabel = isPaidFull ? 'LUNAS / FULLY PAID' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP / UNPAID';
 
+  const printInvoice = () => {
+    const el = document.getElementById('printable-invoice');
+    if (!el) { window.print(); return; }
+
+    // Clone invoice content
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.cssText = 'padding:0;margin:0;';
+
+    // Stash and clear body
+    const original = Array.from(document.body.children);
+    original.forEach((c) => document.body.removeChild(c));
+    document.body.appendChild(clone);
+
+    window.print();
+
+    // Restore
+    document.body.removeChild(clone);
+    original.forEach((c) => document.body.appendChild(c));
+  };
+
   const generateWaInvoiceMsg = () => {
     const statusText = isPaidFull ? 'LUNAS' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP';
     const studioName = studioSettings.studioName || 'Margasera Photography';
@@ -100,7 +120,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
         {/* Printable Invoice */}
         <div id="printable-invoice" className="p-8 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-200 print-flex-row">
             <div className="flex flex-col gap-2">
               <div className="py-1 w-fit">
                 <Image src="/logo.png" alt="Margasera Logo" width={160} height={48} className="h-9 w-auto object-contain" priority />
@@ -109,7 +129,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
                 Editorial &amp; Cinematic Visual Stories
               </span>
             </div>
-            <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed">
+            <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed print-text-right">
               <strong className="text-zinc-900 font-semibold text-sm">
                 {(studioSettings.studioName || 'MARGASERA PHOTOGRAPHY').toUpperCase()}
               </strong>
@@ -120,12 +140,12 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
           </div>
 
           {/* Invoice Title & Meta */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 print-flex-row">
             <div className="flex flex-col">
               <span className="text-xs font-mono font-bold tracking-widest text-[#0066CC] uppercase">INVOICE OFFICIAL</span>
               <h2 className="text-3xl font-extrabold text-zinc-900 tracking-tight font-mono">INV-{inv.bookingCode}</h2>
             </div>
-            <div className="sm:text-right">
+            <div className="sm:text-right print-text-right">
               <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs uppercase font-mono font-bold tracking-wider border shadow-sm ${paymentBadgeStyle}`}>
                 <span className={`w-2 h-2 rounded-full ${paymentBadgeDot}`} />
                 {paymentBadgeLabel}
@@ -137,7 +157,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
           </div>
 
           {/* Client & Event Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-zinc-50 rounded-xl border border-zinc-200/80 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-zinc-50 rounded-xl border border-zinc-200/80 text-xs print-grid-2">
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DITUJUKAN KEPADA CLIENT:</span>
               <strong className="text-zinc-900 text-sm font-semibold">{inv.customerName}</strong>
@@ -145,7 +165,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
               {inv.instagram && <span className="text-zinc-600 font-mono">Instagram: {inv.instagram}</span>}
               {inv.email && <span className="text-zinc-600 font-mono">Email: {inv.email}</span>}
             </div>
-            <div className="flex flex-col gap-1.5 sm:text-right">
+            <div className="flex flex-col gap-1.5 sm:text-right print-text-right">
               <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DETAIL JADWAL EVENT:</span>
               <strong className="text-zinc-900 text-sm font-semibold">{formatDate(inv.bookingDate)}</strong>
               <span className="text-amber-700 font-mono font-medium">
@@ -205,7 +225,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
           </div>
 
           {/* Calculation & Bank Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 print-grid-2">
             {/* Bank Account */}
             <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-xl flex flex-col gap-2 text-xs">
               <span className="text-[10px] font-mono uppercase font-bold text-[#0066CC] tracking-wider flex items-center gap-1">
@@ -243,14 +263,14 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
           </div>
 
           {/* Footer */}
-          <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-end gap-6 text-[11px] text-zinc-500 font-light">
+          <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-end gap-6 text-[11px] text-zinc-500 font-light print-flex-row">
             <div className="flex flex-col gap-1">
               <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Syarat &amp; Ketentuan Studio:</strong>
               <span>• DP minimal untuk mengunci tanggal pada kalender studio.</span>
               <span>• Pelunasan sisa dilakukan setelah acara selesai (di tempat).</span>
               <span>• Invoice ini merupakan bukti pembayaran sah yang dikeluarkan oleh Margasera.</span>
             </div>
-            <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1">
+            <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1 print-text-right print-items-end">
               <span className="font-mono text-[10px]">Hormat Kami,</span>
               <div className="h-12 w-32 border-b border-zinc-400 flex items-center justify-center italic text-zinc-400 text-xs">
                 [ Signed Digital ]
@@ -279,7 +299,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
               <span>Kirim WA Invoice</span>
             </a>
             <button
-              onClick={() => window.print()}
+              onClick={printInvoice}
               className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.4)] cursor-pointer"
             >
               <Printer className="w-4 h-4" />

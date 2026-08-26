@@ -23,9 +23,14 @@ export async function signInAdmin(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    const errorMsg =
+      error.message === 'Invalid login credentials'
+        ? 'Email atau password salah (User tidak ditemukan atau password tidak cocok.'
+        : error.message;
+
     return {
       success: false,
-      error: 'Email atau password salah. Silakan coba lagi.',
+      error: errorMsg,
     };
   }
 

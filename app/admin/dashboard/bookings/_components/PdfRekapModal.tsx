@@ -54,6 +54,23 @@ export function PdfRekapModal({
   const periodLabel = monthFilter !== 'all' ? formatMonthLabel(monthFilter) : 'Semua Periode / Bulan Ini';
   const serviceLabel = serviceFilter !== 'all' ? services.find((s) => s.id === serviceFilter)?.name : null;
 
+  const printRekap = () => {
+    const el = document.getElementById('printable-rekap');
+    if (!el) { window.print(); return; }
+
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.cssText = 'padding:0;margin:0;';
+
+    const original = Array.from(document.body.children);
+    original.forEach((c) => document.body.removeChild(c));
+    document.body.appendChild(clone);
+
+    window.print();
+
+    document.body.removeChild(clone);
+    original.forEach((c) => document.body.appendChild(c));
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full flex flex-col shadow-2xl my-8 overflow-hidden">
@@ -65,7 +82,7 @@ export function PdfRekapModal({
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => window.print()}
+              onClick={printRekap}
               className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-md transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
@@ -80,7 +97,7 @@ export function PdfRekapModal({
         {/* Printable Content */}
         <div id="printable-rekap" className="p-8 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-300 print-flex-row">
             <div className="flex flex-col gap-2">
               <div className="py-1 w-fit">
                 <Image src="/logo.png" alt="Margasera Logo" width={160} height={48} className="h-9 w-auto object-contain" priority />
@@ -89,7 +106,7 @@ export function PdfRekapModal({
                 Editorial &amp; Cinematic Visual Stories
               </span>
             </div>
-            <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed">
+            <div className="flex flex-col text-left sm:text-right text-xs text-zinc-600 font-light leading-relaxed print-text-right">
               <strong className="text-zinc-900 font-semibold text-sm">
                 {(studioSettings.studioName || 'MARGASERA PHOTOGRAPHY').toUpperCase()}
               </strong>
@@ -99,7 +116,7 @@ export function PdfRekapModal({
           </div>
 
           {/* Document Title */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print-flex-row">
             <div>
               <span className="text-xs font-mono font-bold tracking-widest text-[#0066CC] uppercase">LAPORAN RESMI STUDIO</span>
               <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight font-sans uppercase">
@@ -111,14 +128,14 @@ export function PdfRekapModal({
                 {bookingStatusFilter !== 'all' && ` | Status: ${bookingStatusFilter.toUpperCase()}`}
               </p>
             </div>
-            <div className="text-left sm:text-right text-xs text-zinc-500 font-mono">
+            <div className="text-left sm:text-right text-xs text-zinc-500 font-mono print-text-right">
               <div>Tanggal Dicetak: {formatDate(new Date().toISOString().split('T')[0])}</div>
               <div>Total Data: {filteredBookings.length} Booking</div>
             </div>
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-xs print-grid-4">
             {[
               { label: 'Total Booking Masuk:', value: `${filteredBookings.length} Pesanan`, color: 'text-zinc-900' },
               { label: 'Confirmed:', value: `${confirmedCount} Event`, color: 'text-emerald-700' },
@@ -200,13 +217,13 @@ export function PdfRekapModal({
           </div>
 
           {/* Footer */}
-          <div className="pt-6 border-t border-zinc-200 flex justify-between items-end text-xs text-zinc-500 font-light">
+          <div className="pt-6 border-t border-zinc-200 flex justify-between items-end text-xs text-zinc-500 font-light print-flex-row">
             <div className="flex flex-col gap-1">
               <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Catatan Laporan:</strong>
               <span>• Laporan rekapitulasi ini di-generate secara otomatis dari sistem admin Margasera.</span>
               <span>• Total nilai pendapatan dihitung berdasarkan estimasi nilai paket dari data booking aktif.</span>
             </div>
-            <div className="text-right flex flex-col items-end gap-1">
+            <div className="text-right flex flex-col items-end gap-1 print-text-right print-items-end">
               <span className="text-[10px] font-mono text-zinc-400">Penanggung Jawab:</span>
               <div className="h-10 w-28 border-b border-zinc-400 flex items-center justify-end italic text-zinc-400 text-xs">
                 [ Signature ]
@@ -225,7 +242,7 @@ export function PdfRekapModal({
             Tutup
           </button>
           <button
-            onClick={() => window.print()}
+            onClick={printRekap}
             className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.4)] cursor-pointer"
           >
             <Printer className="w-4 h-4" />

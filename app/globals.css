@@ -511,31 +511,89 @@ html.light .popular-badge {
   box-shadow: 0 4px 14px rgba(0, 102, 204, 0.35) !important;
 }
 
+@page {
+  size: A4 portrait;
+  margin: 10mm 12mm;
+}
+
 @media print {
+  /* Collapse body so hidden DOM doesn't create a blank second page */
+  html, body {
+    height: auto !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything */
   body * {
     visibility: hidden !important;
   }
-  #printable-invoice, #printable-invoice *,
-  #printable-rekap, #printable-rekap * {
+
+  /* Only show printable content */
+  #printable-invoice,
+  #printable-invoice *,
+  #printable-rekap,
+  #printable-rekap * {
     visibility: visible !important;
   }
-  #printable-invoice, #printable-rekap {
-    position: fixed !important;
-    left: 0 !important;
+
+  /* Pull invoice/rekap out of modal and cover full page */
+  #printable-invoice,
+  #printable-rekap {
+    position: absolute !important;
     top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: auto !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    padding: 24px !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #09090b !important;
     box-shadow: none !important;
     border: none !important;
-    z-index: 99999 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    z-index: 999999 !important;
   }
-  .no-print {
-    display: none !important;
+
+  /* Force desktop horizontal layout on tablet, iPad & iOS print preview */
+  #printable-invoice .print-flex-row,
+  #printable-rekap .print-flex-row {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+  }
+
+  #printable-invoice .print-grid-2,
+  #printable-rekap .print-grid-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #printable-rekap .print-grid-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  #printable-invoice .print-text-right,
+  #printable-rekap .print-text-right {
+    text-align: right !important;
+  }
+
+  #printable-invoice .print-items-end,
+  #printable-rekap .print-items-end {
+    align-items: flex-end !important;
   }
 }
+
+
+
+
 
 
