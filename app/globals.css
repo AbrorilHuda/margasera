@@ -533,10 +533,9 @@ html.light .popular-badge {
 }
 
 @media print {
-  /* Collapse body so hidden DOM doesn't create a blank second page */
   html, body {
     height: auto !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -544,101 +543,47 @@ html.light .popular-badge {
     print-color-adjust: exact !important;
   }
 
-  /* Hide UI chrome (header bar, action buttons) */
+  /* Hide UI chrome (header bar, action buttons, modals when not printing them) */
   .no-print {
     display: none !important;
   }
 
-  /* Hide everything */
-  body * {
-    visibility: hidden !important;
-  }
-
-  /* Only show printable content */
-  #printable-invoice,
-  #printable-invoice *,
-  #printable-rekap,
-  #printable-rekap * {
-    visibility: visible !important;
-  }
-
-  /* KEY FIX for mobile/tablet:
-     The modal overlay is position:fixed — so #printable-invoice's
-     position:absolute is relative to that fixed overlay, which on mobile
-     is only as wide as the screen (375-414px), not A4 paper width.
-     Resetting the overlay to position:static makes the absolute child
-     anchor to body/page width (A4) on all devices. */
-  .fixed.inset-0 {
-    position: static !important;
-    inset: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Also reset the inner modal card max-height & scroll lock */
-  .max-h-\[90vh\] {
-    max-height: none !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Pull invoice/rekap out of modal and cover full page */
-  #printable-invoice,
-  #printable-rekap {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    color: #09090b !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
-    z-index: 999999 !important;
+  /* Ensure crisp black logo on white paper */
+  img[src*="logo.png"] {
+    filter: brightness(0) !important;
   }
 
   /* Force desktop horizontal layout on tablet, iPad & iOS print preview */
-  #printable-invoice .print-flex-row,
-  #printable-rekap .print-flex-row {
+  .print-flex-row {
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: flex-start !important;
   }
 
-  #printable-invoice .print-grid-2,
-  #printable-rekap .print-grid-2 {
+  .print-grid-2 {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1.25rem !important;
   }
 
-  #printable-rekap .print-grid-4 {
+  .print-grid-4 {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
   }
 
-  #printable-invoice .print-text-right,
-  #printable-rekap .print-text-right {
+  .print-text-right {
     text-align: right !important;
   }
 
-  #printable-invoice .print-items-end,
-  #printable-rekap .print-items-end {
+  .print-items-end {
     align-items: flex-end !important;
+  }
+
+  table, tr, td, th {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
 

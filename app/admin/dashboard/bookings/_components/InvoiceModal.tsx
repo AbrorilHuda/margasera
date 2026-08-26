@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { X, Receipt, Share2, Printer, Building2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { printDocument } from '@/lib/print';
 import type { Booking, Package, StudioSettings } from '@/lib/types';
 
 interface InvoiceModalProps {
@@ -66,23 +67,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
   const paymentBadgeLabel = isPaidFull ? 'LUNAS / FULLY PAID' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP / UNPAID';
 
   const printInvoice = () => {
-    const el = document.getElementById('printable-invoice');
-    if (!el) { window.print(); return; }
-
-    // Clone invoice content
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.style.cssText = 'padding:0;margin:0;';
-
-    // Stash and clear body
-    const original = Array.from(document.body.children);
-    original.forEach((c) => document.body.removeChild(c));
-    document.body.appendChild(clone);
-
-    window.print();
-
-    // Restore
-    document.body.removeChild(clone);
-    original.forEach((c) => document.body.appendChild(c));
+    printDocument('printable-invoice', `Invoice Official - INV-${inv.bookingCode}`);
   };
 
   const generateWaInvoiceMsg = () => {

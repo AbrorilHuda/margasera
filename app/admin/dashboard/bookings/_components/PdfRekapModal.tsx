@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { X, FileText, Printer } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { printDocument } from '@/lib/print';
 import type { Booking, Service, StudioSettings } from '@/lib/types';
 
 interface PdfRekapModalProps {
@@ -26,15 +27,17 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const PAYMENT_COLOR: Record<string, string> = {
-  paid_full: 'text-emerald-700',
-  dp_paid: 'text-blue-700',
-  unpaid: 'text-amber-700',
+  unpaid: 'bg-amber-100 text-amber-800',
+  dp_paid: 'bg-blue-100 text-blue-800',
+  paid_full: 'bg-emerald-100 text-emerald-800',
+  refunded: 'bg-zinc-200 text-zinc-700',
 };
 
 const PAYMENT_LABEL: Record<string, string> = {
-  paid_full: 'Lunas',
-  dp_paid: 'DP Terbayar',
   unpaid: 'Belum DP',
+  dp_paid: 'DP Paid',
+  paid_full: 'Lunas',
+  refunded: 'Refund',
 };
 
 export function PdfRekapModal({
@@ -55,20 +58,7 @@ export function PdfRekapModal({
   const serviceLabel = serviceFilter !== 'all' ? services.find((s) => s.id === serviceFilter)?.name : null;
 
   const printRekap = () => {
-    const el = document.getElementById('printable-rekap');
-    if (!el) { window.print(); return; }
-
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.style.cssText = 'padding:0;margin:0;';
-
-    const original = Array.from(document.body.children);
-    original.forEach((c) => document.body.removeChild(c));
-    document.body.appendChild(clone);
-
-    window.print();
-
-    document.body.removeChild(clone);
-    original.forEach((c) => document.body.appendChild(c));
+    printDocument('printable-rekap', `Laporan Rekapitulasi Booking - ${periodLabel}`);
   };
 
   return (
