@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #0066CC;
   --color-primary-hover: #0052A3;
@@ -288,12 +290,16 @@ html.light .bg-zinc-900\/50 {
   box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.03) !important;
 }
 
-html.light .bg-zinc-950\/80,
+html.light .bg-zinc-950\/95,
 html.light .bg-zinc-950\/90,
+html.light .bg-zinc-950\/85,
+html.light .bg-zinc-950\/80,
+html.light .bg-zinc-950\/70,
 html.light .bg-zinc-950\/40,
 html.light .bg-zinc-950\/50 {
-  background-color: #F8FAFC !important;
+  background-color: #FFFFFF !important;
   border-color: #E2E8F0 !important;
+  color: #0F172A !important;
 }
 
 html.light .border-zinc-800,
@@ -338,12 +344,22 @@ html.light .bg-glass-card {
 }
 
 /* Form Inputs & Selects */
+option {
+  background-color: #18181b;
+  color: #f4f4f5;
+}
+
 html.light input,
 html.light select,
 html.light textarea {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
   border-color: #CBD5E1 !important;
+}
+
+html.light option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
 html.light input:focus,
@@ -353,16 +369,16 @@ html.light textarea:focus {
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15) !important;
 }
 
-/* Primary #0066CC Button Glow in Light Mode */
+/* Primary #0066CC Button in Light Mode */
 html.light .bg-\[\#0066CC\] {
   background-color: #0066CC !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 14px rgba(0, 102, 204, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.2) !important;
 }
 
 html.light .bg-\[\#0066CC\]:hover {
   background-color: #0052A3 !important;
-  box-shadow: 0 6px 20px rgba(0, 102, 204, 0.35) !important;
+  box-shadow: 0 4px 10px rgba(0, 102, 204, 0.25) !important;
 }
 
 /* CALENDAR LIGHT MODE HIGH CONTRAST STYLING */

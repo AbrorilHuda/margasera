@@ -72,10 +72,10 @@ export function PdfRekapModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full flex flex-col shadow-2xl my-8 overflow-hidden">
-        {/* Modal Controls */}
-        <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+        {/* Sticky Modal Controls Header */}
+        <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#0066CC]" />
             <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wide">Pratinjau Laporan Rekapitulasi PDF</h4>
@@ -88,14 +88,14 @@ export function PdfRekapModal({
               <Printer className="w-4 h-4" />
               <span>Cetak / Save PDF</span>
             </button>
-            <button onClick={onClose} className="text-zinc-400 hover:text-white p-1">
+            <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Printable Content */}
-        <div id="printable-rekap" className="p-8 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-6">
+        {/* Scrollable Printable Content */}
+        <div id="printable-rekap" className="p-6 sm:p-10 bg-white text-zinc-900 font-sans flex flex-col gap-6 flex-1 overflow-y-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-300 print-flex-row">
             <div className="flex flex-col gap-2">
@@ -233,17 +233,17 @@ export function PdfRekapModal({
           </div>
         </div>
 
-        {/* Bottom Actions */}
-        <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3">
+        {/* Sticky Bottom Actions */}
+        <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+            className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
           >
             Tutup
           </button>
           <button
             onClick={printRekap}
-            className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.4)] cursor-pointer"
+            className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak / Save PDF (A4)</span>

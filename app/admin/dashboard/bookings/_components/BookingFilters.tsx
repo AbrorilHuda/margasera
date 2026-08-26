@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   FileText,
+  ListFilter,
   X,
 } from 'lucide-react';
 import type { Booking, Service } from '@/lib/types';
@@ -22,6 +23,7 @@ interface BookingFiltersProps {
   serviceFilter: string;
   bookingSort: 'newest' | 'oldest' | 'upcoming_event';
   bookingSearch: string;
+  pageSize: number;
   filteredCount: number;
   availableMonths: string[];
   // Setters
@@ -30,6 +32,7 @@ interface BookingFiltersProps {
   setServiceFilter: (v: string) => void;
   setBookingSort: (v: 'newest' | 'oldest' | 'upcoming_event') => void;
   setBookingSearch: (v: string) => void;
+  setPageSize: (v: number) => void;
   // Actions
   onOpenPdfRekap: () => void;
   onOpenAddBooking: () => void;
@@ -52,6 +55,7 @@ export function BookingFilters({
   serviceFilter,
   bookingSort,
   bookingSearch,
+  pageSize,
   filteredCount,
   availableMonths,
   setBookingStatusFilter,
@@ -59,17 +63,20 @@ export function BookingFilters({
   setServiceFilter,
   setBookingSort,
   setBookingSearch,
+  setPageSize,
   onOpenPdfRekap,
   onOpenAddBooking,
   formatMonthLabel,
 }: BookingFiltersProps) {
-  const statusCounts = {
-    all: bookings.length,
-    pending: bookings.filter((b) => b.status === 'pending').length,
-    confirmed: bookings.filter((b) => b.status === 'confirmed').length,
-    completed: bookings.filter((b) => b.status === 'completed').length,
-    cancelled: bookings.filter((b) => b.status === 'cancelled').length,
-  };
+  const statusCounts = React.useMemo(() => {
+    const counts = { all: bookings.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    bookings.forEach((b) => {
+      if (b.status in counts) {
+        counts[b.status as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [bookings]);
 
   return (
     <div className="p-6 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex flex-col gap-5 shadow-xl backdrop-blur-md">
@@ -89,7 +96,7 @@ export function BookingFilters({
                 onClick={() => setBookingStatusFilter(st.id)}
                 className={`px-3.5 py-1.5 text-xs tracking-wide rounded-lg transition-all whitespace-nowrap font-medium flex items-center gap-1.5 ${
                   isActive
-                    ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_12px_rgba(0,102,204,0.4)]'
+                    ? 'bg-[#0066CC] text-white font-semibold shadow-md'
                     : 'bg-zinc-950/80 text-zinc-400 hover:text-white border border-zinc-800'
                 }`}
               >
@@ -119,7 +126,7 @@ export function BookingFilters({
 
           <button
             onClick={onOpenAddBooking}
-            className="px-4 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(0,102,204,0.3)] cursor-pointer"
+            className="px-4 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Booking</span>
@@ -127,22 +134,22 @@ export function BookingFilters({
         </div>
       </div>
 
-      {/* Row 2: Secondary Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-zinc-800/80">
+      {/* Row 2: Secondary Filters & Limit Selector */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-zinc-800/80">
         {/* MONTH FILTER */}
-        <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 px-3 py-2 rounded-lg">
           <Calendar className="w-4 h-4 text-[#0066CC] shrink-0" />
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[9px] font-mono uppercase text-zinc-400">Filter Bulan Acara:</span>
+            <span className="text-[9px] font-mono uppercase text-zinc-400 font-semibold">Filter Bulan Acara:</span>
             <select
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
               className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
             >
-              <option value="all" className="bg-zinc-900">🗓️ Semua Bulan Acara</option>
+              <option value="all">Semua Bulan Acara</option>
               {availableMonths.map((ym) => (
-                <option key={ym} value={ym} className="bg-zinc-900">
-                  📅 {formatMonthLabel(ym)}
+                <option key={ym} value={ym}>
+                  {formatMonthLabel(ym)}
                 </option>
               ))}
             </select>
@@ -155,18 +162,18 @@ export function BookingFilters({
         </div>
 
         {/* SERVICE FILTER */}
-        <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 px-3 py-2 rounded-lg">
           <SlidersHorizontal className="w-4 h-4 text-[#0066CC] shrink-0" />
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[9px] font-mono uppercase text-zinc-400">Filter Layanan:</span>
+            <span className="text-[9px] font-mono uppercase text-zinc-400 font-semibold">Filter Layanan:</span>
             <select
               value={serviceFilter}
               onChange={(e) => setServiceFilter(e.target.value)}
               className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
             >
-              <option value="all" className="bg-zinc-900">✨ Semua Layanan</option>
+              <option value="all">Semua Layanan</option>
               {services.map((s) => (
-                <option key={s.id} value={s.id} className="bg-zinc-900">
+                <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
@@ -180,18 +187,37 @@ export function BookingFilters({
         </div>
 
         {/* SORT SELECTOR */}
-        <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 px-3 py-2 rounded-lg">
           <ArrowUpDown className="w-4 h-4 text-[#0066CC] shrink-0" />
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[9px] font-mono uppercase text-zinc-400">Urutkan Data:</span>
+            <span className="text-[9px] font-mono uppercase text-zinc-400 font-semibold">Urutkan Data:</span>
             <select
               value={bookingSort}
               onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
               className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
             >
-              <option value="newest" className="bg-zinc-900">🔥 Booking Terbaru</option>
-              <option value="upcoming_event" className="bg-zinc-900">📅 Jadwal Acara Terdekat</option>
-              <option value="oldest" className="bg-zinc-900">⏳ Booking Terlama</option>
+              <option value="newest">Booking Terbaru</option>
+              <option value="upcoming_event">Jadwal Acara Terdekat</option>
+              <option value="oldest">Booking Terlama</option>
+            </select>
+          </div>
+        </div>
+
+        {/* PAGE SIZE / LIMIT SELECTOR */}
+        <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 px-3 py-2 rounded-lg">
+          <ListFilter className="w-4 h-4 text-[#0066CC] shrink-0" />
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[9px] font-mono uppercase text-zinc-400 font-semibold">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="bg-transparent text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
+            >
+              <option value={5}>5 Data per Hal</option>
+              <option value={10}>10 Data per Hal</option>
+              <option value={25}>25 Data per Hal</option>
+              <option value={50}>50 Data per Hal</option>
+              <option value={9999}>Semua Data</option>
             </select>
           </div>
         </div>
@@ -201,7 +227,7 @@ export function BookingFilters({
           <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari Kode, Client, WA, Venue..."
+            placeholder="Cari Kode, Client, WA..."
             value={bookingSearch}
             onChange={(e) => setBookingSearch(e.target.value)}
             className="w-full h-full bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] text-zinc-100 pl-9 pr-8 py-2 rounded-lg text-xs focus:outline-none transition-colors"

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ClipboardList, CheckCircle2, Clock, Wallet } from 'lucide-react';
 import {
   getAllBookings,
   updateBookingStatus,
@@ -30,12 +31,19 @@ export default function BookingsPage() {
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Filter & Sort States
+  // Filter & Pagination States
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [bookingSort, setBookingSort] = useState<'newest' | 'oldest' | 'upcoming_event'>('newest');
   const [bookingSearch, setBookingSearch] = useState<string>('');
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Auto Reset to page 1 whenever any filter or limit changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [bookingStatusFilter, monthFilter, serviceFilter, bookingSort, bookingSearch, pageSize]);
 
   // Modal States
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
@@ -101,6 +109,15 @@ export default function BookingsPage() {
         return 0;
       });
   }, [bookings, bookingStatusFilter, monthFilter, serviceFilter, bookingSearch, bookingSort]);
+
+  // Pagination Slice
+  const totalFiltered = filteredBookings.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+
+  const startIndex = totalFiltered === 0 ? 0 : (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalFiltered);
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
 
   const totalRevenue = useMemo(
     () => filteredBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0),
@@ -220,38 +237,38 @@ export default function BookingsPage() {
             value: `${bookings.length} Pesanan`,
             sub: 'Semua riwayat pemesanan',
             color: '#0066CC',
-            icon: '📋',
+            icon: ClipboardList,
           },
           {
             label: 'Dikonfirmasi',
             value: `${confirmedCount} Event`,
             sub: 'Jadwal acara siap eksekusi',
             color: '#10b981',
-            icon: '✅',
+            icon: CheckCircle2,
           },
           {
             label: 'Perlu Konfirmasi',
             value: `${pendingCount} Booking`,
             sub: 'Menunggu verifikasi admin',
             color: '#f59e0b',
-            icon: '⏳',
+            icon: Clock,
           },
           {
             label: 'Est. Total Omset',
             value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalRevenue),
             sub: `${filteredBookings.length} booking dalam filter`,
             color: '#0066CC',
-            icon: '💰',
+            icon: Wallet,
           },
-        ].map(({ label, value, sub, color, icon }) => (
-          <div key={label} className="p-5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl flex items-center justify-between shadow-lg">
+        ].map(({ label, value, sub, color, icon: Icon }) => (
+          <div key={label} className="p-5 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between shadow-md">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest font-medium" style={{ color }}>{label}</span>
-              <span className="font-sans text-xl font-extrabold" style={{ color }}>{value}</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest font-semibold" style={{ color }}>{label}</span>
+              <span className="font-sans text-xl font-extrabold text-zinc-100">{value}</span>
               <span className="text-[11px] text-zinc-400 font-light">{sub}</span>
             </div>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: `${color}15` }}>
-              {icon}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}15`, color }}>
+              <Icon className="w-5 h-5" />
             </div>
           </div>
         ))}
@@ -266,6 +283,7 @@ export default function BookingsPage() {
         serviceFilter={serviceFilter}
         bookingSort={bookingSort}
         bookingSearch={bookingSearch}
+        pageSize={pageSize}
         filteredCount={filteredBookings.length}
         availableMonths={availableMonths}
         setBookingStatusFilter={setBookingStatusFilter}
@@ -273,6 +291,7 @@ export default function BookingsPage() {
         setServiceFilter={setServiceFilter}
         setBookingSort={setBookingSort}
         setBookingSearch={setBookingSearch}
+        setPageSize={setPageSize}
         onOpenPdfRekap={() => setShowPdfRekapModal(true)}
         onOpenAddBooking={handleOpenAddBooking}
         formatMonthLabel={formatMonthLabel}
@@ -280,14 +299,22 @@ export default function BookingsPage() {
 
       {/* TABLE */}
       <BookingTable
-        filteredBookings={filteredBookings}
+        paginatedBookings={paginatedBookings}
+        filteredCount={totalFiltered}
         totalBookings={bookings.length}
+        currentPage={validCurrentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        startIndex={totalFiltered === 0 ? 0 : startIndex + 1}
+        endIndex={endIndex}
         monthFilter={monthFilter}
         bookingSearch={bookingSearch}
         bookingStatusFilter={bookingStatusFilter}
         serviceFilter={serviceFilter}
         formatMonthLabel={formatMonthLabel}
         onResetFilters={resetFilters}
+        onPageChange={(page) => setCurrentPage(page)}
+        onPageSizeChange={(size) => setPageSize(size)}
         onDetail={setSelectedBookingForDetail}
         onInvoice={setSelectedInvoiceBooking}
         onUpdateStatus={handleUpdateBookingStatus}

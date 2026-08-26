@@ -124,20 +124,21 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
   const labelClass = 'text-zinc-300 uppercase font-mono font-medium';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        {/* Sticky Header */}
+        <div className="p-4 sm:p-6 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#0066CC]/20 text-[#0066CC] flex items-center justify-center font-bold">+</div>
-            <h3 className="font-sans text-xl font-bold text-zinc-100">Tambah Booking Manual Baru</h3>
+            <h3 className="font-sans text-lg sm:text-xl font-bold text-zinc-100">Tambah Booking Manual Baru</h3>
           </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
+        {/* Scrollable Form */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
           {/* SECTION 1: Layanan & Paket */}
           <div className="grid grid-cols-2 gap-4 bg-zinc-950/80 p-3.5 border border-[#0066CC]/40 rounded-xl">
             <div className="flex flex-col gap-1.5">

@@ -11,20 +11,32 @@ import {
   FileText,
   Search,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
-import type { Booking, BookingStatus, Package } from '@/lib/types';
+import type { Booking, BookingStatus } from '@/lib/types';
 
 interface BookingTableProps {
-  filteredBookings: Booking[];
+  paginatedBookings: Booking[];
+  filteredCount: number;
   totalBookings: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  startIndex: number;
+  endIndex: number;
   monthFilter: string;
   bookingSearch: string;
   bookingStatusFilter: string;
   serviceFilter: string;
   formatMonthLabel: (ym: string) => string;
   onResetFilters: () => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
   onDetail: (b: Booking) => void;
   onInvoice: (b: Booking) => void;
   onUpdateStatus: (id: string, status: BookingStatus) => void;
@@ -32,51 +44,81 @@ interface BookingTableProps {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  confirmed: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40',
-  completed: 'bg-blue-500/15 text-blue-300 border border-blue-500/40',
-  pending: 'bg-amber-500/15 text-amber-400 border border-amber-500/40',
-  cancelled: 'bg-rose-950/50 text-rose-400 border border-rose-900/60',
+  confirmed: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40',
+  completed: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-500/40',
+  pending: 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40',
+  cancelled: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-900/60',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  confirmed: 'bg-emerald-400',
-  completed: 'bg-blue-400',
-  pending: 'bg-amber-400',
+  confirmed: 'bg-emerald-500 dark:bg-emerald-400',
+  completed: 'bg-blue-500 dark:bg-blue-400',
+  pending: 'bg-amber-500 dark:bg-amber-400',
   cancelled: 'bg-rose-500',
 };
 
 const PAYMENT_STYLE: Record<string, string> = {
-  paid_full: 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60',
-  dp_paid: 'bg-blue-950/40 text-blue-300 border-blue-800/60',
-  unpaid: 'bg-amber-950/40 text-amber-300 border-amber-800/60',
+  paid_full: 'bg-emerald-100/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60',
+  dp_paid: 'bg-blue-100/80 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60',
+  unpaid: 'bg-amber-100/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60',
 };
 
 const PAYMENT_LABEL: Record<string, string> = {
   paid_full: 'LUNAS (100%)',
-  dp_paid: 'DP (30%)',
+  dp_paid: 'DP Terbayar',
   unpaid: 'BELUM DP',
 };
 
 export function BookingTable({
-  filteredBookings,
+  paginatedBookings,
+  filteredCount,
   totalBookings,
+  currentPage,
+  totalPages,
+  pageSize,
+  startIndex,
+  endIndex,
   monthFilter,
   bookingSearch,
   bookingStatusFilter,
   serviceFilter,
   formatMonthLabel,
   onResetFilters,
+  onPageChange,
+  onPageSizeChange,
   onDetail,
   onInvoice,
   onUpdateStatus,
   onDelete,
 }: BookingTableProps) {
-  const hasActiveFilter = bookingSearch || bookingStatusFilter !== 'all' || monthFilter !== 'all' || serviceFilter !== 'all';
+  const hasActiveFilter =
+    bookingStatusFilter !== 'all' ||
+    monthFilter !== 'all' ||
+    serviceFilter !== 'all' ||
+    Boolean(bookingSearch.trim());
+
+  // Generate page numbers e.g. [1, 2, 3]
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
 
   return (
     <div className="bg-zinc-900/70 border border-zinc-800/80 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md">
+      {/* Table Scroll Area */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs font-light">
+        <table className="w-full text-left border-collapse min-w-[900px]">
           <thead className="bg-zinc-950/90 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
             <tr>
               <th className="p-4">Kode Booking</th>
@@ -89,8 +131,8 @@ export function BookingTable({
               <th className="p-4 text-right">Aksi Admin</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/60">
-            {filteredBookings.map((b) => {
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
+            {paginatedBookings.map((b) => {
               const initial = b.customerName ? b.customerName.charAt(0).toUpperCase() : 'C';
               const statusStyle = STATUS_STYLE[b.status] || STATUS_STYLE.cancelled;
               const statusDot = STATUS_DOT[b.status] || STATUS_DOT.cancelled;
@@ -99,7 +141,7 @@ export function BookingTable({
               const paymentLabel = PAYMENT_LABEL[paymentKey] || 'BELUM DP';
 
               return (
-                <tr key={b.id} className="hover:bg-zinc-800/50 transition-colors group">
+                <tr key={b.id} className="hover:bg-slate-100 dark:hover:bg-zinc-800/50 transition-colors group">
                   {/* Booking Code */}
                   <td className="p-4 font-mono font-bold text-[#0066CC] whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
@@ -111,16 +153,16 @@ export function BookingTable({
                   {/* Client Info */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 font-bold text-zinc-200 flex items-center justify-center text-xs shrink-0 font-mono">
+                      <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-bold text-zinc-800 dark:text-zinc-200 flex items-center justify-center text-xs shrink-0 font-mono">
                         {initial}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-zinc-100 tracking-wide truncate">{b.customerName}</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-wide truncate">{b.customerName}</span>
                         <a
                           href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] text-emerald-400 font-mono hover:underline flex items-center gap-1"
+                          className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono hover:underline flex items-center gap-1"
                         >
                           <MessageCircle className="w-3 h-3" />
                           <span>{b.whatsapp}</span>
@@ -132,8 +174,8 @@ export function BookingTable({
                   {/* Service & Package */}
                   <td className="p-4">
                     <div className="flex flex-col">
-                      <span className="text-zinc-100 font-medium">{b.serviceName}</span>
-                      <span className="text-[10px] text-zinc-400 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/80 w-fit mt-0.5">
+                      <span className="text-zinc-900 dark:text-zinc-100 font-medium">{b.serviceName}</span>
+                      <span className="text-[10px] text-zinc-600 dark:text-zinc-400 font-mono bg-zinc-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800/80 w-fit mt-0.5">
                         {b.packageName}
                       </span>
                     </div>
@@ -182,7 +224,7 @@ export function BookingTable({
                       {/* Detail Modal */}
                       <button
                         onClick={() => onDetail(b)}
-                        className="p-2 bg-zinc-950 border border-zinc-800 hover:border-[#0066CC] text-zinc-300 hover:text-white rounded-lg transition-all"
+                        className="p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all"
                         title="Lihat Detail Booking"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -193,20 +235,20 @@ export function BookingTable({
                         href={generateGoogleCalendarUrl(b)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
+                        className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
                         title="Tambah ke Google Calendar"
                       >
-                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="hidden xl:inline">+ GCal</span>
+                        <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span className="hidden xl:inline">Gcal</span>
                       </a>
 
                       {/* Invoice Button */}
                       <button
                         onClick={() => onInvoice(b)}
-                        className="px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
+                        className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
                         title="Lihat / Cetak Invoice Pembayaran"
                       >
-                        <FileText className="w-3.5 h-3.5 text-blue-400" />
+                        <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span className="hidden xl:inline">Invoice</span>
                       </button>
 
@@ -231,7 +273,7 @@ export function BookingTable({
                       {/* Delete Button */}
                       <button
                         onClick={() => onDelete(b.id, b.bookingCode)}
-                        className="p-2 bg-zinc-950 border border-zinc-800 hover:border-rose-900/60 text-zinc-400 hover:text-rose-400 rounded-lg transition-colors"
+                        className="p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-500 dark:hover:border-rose-900/60 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors"
                         title="Hapus Booking"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -243,7 +285,7 @@ export function BookingTable({
             })}
 
             {/* Empty State */}
-            {filteredBookings.length === 0 && (
+            {filteredCount === 0 && (
               <tr>
                 <td colSpan={8} className="p-12 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
@@ -257,7 +299,7 @@ export function BookingTable({
                     {hasActiveFilter && (
                       <button
                         onClick={onResetFilters}
-                        className="mt-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg flex items-center gap-1.5 font-mono"
+                        className="mt-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg flex items-center gap-1.5 font-mono cursor-pointer"
                       >
                         <RefreshCw className="w-3.5 h-3.5" /> Reset Semua Filter
                       </button>
@@ -270,13 +312,79 @@ export function BookingTable({
         </table>
       </div>
 
-      {/* Table Footer */}
-      <div className="p-4 bg-zinc-950/80 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 font-mono">
-        <span>
-          Menampilkan <strong>{filteredBookings.length}</strong> dari <strong>{totalBookings}</strong> total booking
-        </span>
-        {monthFilter !== 'all' && (
-          <span className="text-[#0066CC] font-semibold">Filter Bulan: {formatMonthLabel(monthFilter)}</span>
+      {/* Table Footer with Full Pagination Controls */}
+      <div className="p-4 bg-zinc-950/80 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-mono">
+        <div>
+          {filteredCount > 0 ? (
+            <span>
+              Menampilkan <strong>{startIndex}</strong>–<strong>{endIndex}</strong> dari{' '}
+              <strong>{filteredCount}</strong> booking
+              {filteredCount !== totalBookings && <span> (Total: {totalBookings})</span>}
+            </span>
+          ) : (
+            <span>Total <strong>{totalBookings}</strong> booking</span>
+          )}
+        </div>
+
+        {/* Pagination Navigation Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1.5">
+            {/* First Page */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => onPageChange(1)}
+              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Halaman Pertama"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+
+            {/* Prev Page */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => onPageChange(currentPage - 1)}
+              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Page Number Buttons */}
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((p) => (
+                <button
+                  key={p}
+                  onClick={() => onPageChange(p)}
+                  className={`w-7 h-7 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${currentPage === p
+                      ? 'bg-[#0066CC] text-white shadow-sm'
+                      : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            {/* Next Page */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(currentPage + 1)}
+              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Halaman Selanjutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            {/* Last Page */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(totalPages)}
+              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Halaman Terakhir"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
     </div>

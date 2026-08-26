@@ -106,7 +106,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
           {/* Admin Profile Card */}
           <div className="p-3.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#0066CC] text-white font-bold flex items-center justify-center text-sm shadow-[0_0_15px_rgba(0,102,204,0.4)]">
+            <div className="w-10 h-10 rounded-full bg-[#0066CC] text-white font-bold flex items-center justify-center text-sm shadow-sm">
               AH
             </div>
             <div className="flex flex-col">
@@ -131,7 +131,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 ${isActive
-                      ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.35)] border border-[#0066CC]/50'
+                      ? 'bg-[#0066CC] text-white font-semibold shadow-md border border-[#0066CC]/50'
                       : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
                     }`}
                 >
@@ -205,7 +205,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             <ThemeToggle />
             <Link
               href="/admin/dashboard/bookings"
-              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] flex items-center gap-2"
+              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Tambah Booking</span>
