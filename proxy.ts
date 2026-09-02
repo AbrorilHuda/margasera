@@ -32,8 +32,14 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protect /admin/* routes (except /admin/login)
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  // Skip static manifest files
+  if (pathname === '/admin-manifest.json' || pathname.endsWith('.json') || pathname.endsWith('.webmanifest')) {
+    return supabaseResponse;
+  }
+
+  // Protect /admin and /admin/* routes (except /admin/login)
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  if (isAdminRoute && pathname !== '/admin/login') {
     if (!user) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/admin/login';
@@ -73,9 +79,10 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization)
-     * - favicon.ico, sitemap.xml, robots.txt
+     * - favicon.ico, sitemap.xml, robots.txt, json, webmanifest
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|admin-manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|webmanifest)$).*)',
   ],
 };
+

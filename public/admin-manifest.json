@@ -1,0 +1,49 @@
+{
+  "id": "/admin/",
+  "name": "Margasera Admin Control Center",
+  "short_name": "Margasera Admin",
+  "description": "Control Center & Manajemen Reservasi Margasera Photography Studio",
+  "start_url": "/admin/dashboard",
+  "scope": "/admin/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#0066CC",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "management"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Margasera Admin Control Center Desktop"
+    },
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Margasera Admin Mobile Control Center"
+    }
+  ]
+}

@@ -28,6 +28,7 @@ import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/components/ui/toast-context';
 import { QuickActionsBottomSheet } from './_components/QuickActionsBottomSheet';
+import { PwaInstallPrompt } from '@/app/admin/_components/PwaInstallPrompt';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -306,7 +307,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         isOpen={showQuickActions}
         onClose={() => setShowQuickActions(false)}
       />
+
+      {/* Floating PWA Install Prompt for Admin */}
+      <PwaInstallPrompt />
     </div>
   );
 }
+
 
