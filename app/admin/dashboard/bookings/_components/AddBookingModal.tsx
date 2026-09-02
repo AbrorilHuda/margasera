@@ -119,20 +119,20 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
     }
   };
 
-  const inputClass = 'bg-zinc-950 border border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 focus:outline-none';
-  const selectClass = 'bg-zinc-900 border border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-100 font-semibold focus:outline-none';
-  const labelClass = 'text-zinc-300 uppercase font-mono font-medium';
+  const inputClass = 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none transition-colors';
+  const selectClass = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none transition-colors';
+  const labelClass = 'text-zinc-600 dark:text-zinc-300 uppercase font-mono font-medium text-[10px]';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         {/* Sticky Header */}
-        <div className="p-4 sm:p-6 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
+        <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/20 text-[#0066CC] flex items-center justify-center font-bold">+</div>
-            <h3 className="font-sans text-lg sm:text-xl font-bold text-zinc-100">Tambah Booking Manual Baru</h3>
+            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/15 text-[#0066CC] flex items-center justify-center font-bold">+</div>
+            <h3 className="font-sans text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100">Tambah Booking Manual Baru</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
+          <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -140,7 +140,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
         {/* Scrollable Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
           {/* SECTION 1: Layanan & Paket */}
-          <div className="grid grid-cols-2 gap-4 bg-zinc-950/80 p-3.5 border border-[#0066CC]/40 rounded-xl">
+          <div className="grid grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-950/80 p-3.5 border border-[#0066CC]/30 rounded-xl">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>1. Kategori Layanan *</label>
               <select value={form.serviceId} onChange={(e) => handleServiceChange(e.target.value)} className={selectClass}>
@@ -175,16 +175,16 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
               <label className={labelClass}>Jam Mulai Sesi</label>
               <input type="time" value={form.startTime}
                 onChange={(e) => handleStartTimeChange(e.target.value)}
-                className={`${inputClass} text-amber-300 font-mono`} />
+                className={`${inputClass} text-amber-600 dark:text-amber-400 font-mono`} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={`${labelClass} flex items-center justify-between`}>
                 <span>Jam Selesai</span>
-                <span className="text-[9px] text-amber-400 font-mono font-normal">(Otomatis)</span>
+                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-normal">(Otomatis)</span>
               </label>
               <input type="time" value={form.endTime}
                 onChange={(e) => patch({ endTime: e.target.value })}
-                className={`${inputClass} text-amber-300 font-mono`} />
+                className={`${inputClass} text-amber-600 dark:text-amber-400 font-mono`} />
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
               <label className={labelClass}>Nominal DP (IDR)</label>
               <input type="number" value={form.downPayment}
                 onChange={(e) => patch({ downPayment: Number(e.target.value) })}
-                className={`${inputClass} text-amber-300 font-mono text-sm font-semibold`} />
+                className={`${inputClass} text-amber-600 dark:text-amber-400 font-mono text-sm font-semibold`} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Status Pembayaran</label>

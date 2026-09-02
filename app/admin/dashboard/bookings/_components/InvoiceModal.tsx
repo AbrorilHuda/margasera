@@ -96,15 +96,19 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
         {/* Sticky Modal Controls Header */}
-        <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
+        <div className="no-print p-4 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Receipt className="w-5 h-5 text-[#0066CC]" />
-            <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wide">Pratinjau Invoice Resmi Studio</h4>
+            <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">Pratinjau Invoice Resmi Studio</h4>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer"
+            title="Tutup Modal"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -148,115 +152,97 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
             </div>
           </div>
 
-          {/* Client & Event Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-zinc-50 rounded-xl border border-zinc-200/80 text-xs print-grid-2">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DITUJUKAN KEPADA CLIENT:</span>
-              <strong className="text-zinc-900 text-sm font-semibold">{inv.customerName}</strong>
-              <span className="text-zinc-600 font-mono">WhatsApp: {inv.whatsapp}</span>
-              {inv.instagram && <span className="text-zinc-600 font-mono">Instagram: {inv.instagram}</span>}
-              {inv.email && <span className="text-zinc-600 font-mono">Email: {inv.email}</span>}
+          {/* Customer & Event Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-xs print-grid-2">
+            <div className="flex flex-col gap-1.5 border-b sm:border-b-0 sm:border-r border-zinc-200 pb-3 sm:pb-0 sm:pr-4">
+              <span className="font-mono text-[10px] text-[#0066CC] uppercase font-bold tracking-wider">Ditagihkan Kepada (Client):</span>
+              <span className="font-bold text-base text-zinc-900">{inv.customerName}</span>
+              <span className="text-zinc-600">WhatsApp: {inv.whatsapp}</span>
+              {inv.email && <span className="text-zinc-600">Email: {inv.email}</span>}
+              {inv.instagram && <span className="text-zinc-600">IG: {inv.instagram}</span>}
             </div>
-            <div className="flex flex-col gap-1.5 sm:text-right print-text-right">
-              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-semibold">DETAIL JADWAL EVENT:</span>
-              <strong className="text-zinc-900 text-sm font-semibold">{formatDate(inv.bookingDate)}</strong>
-              <span className="text-amber-700 font-mono font-medium">
-                Sesi: {inv.startTime || '08:00'} – {inv.endTime || '14:00'} WIB
-              </span>
-              <span className="text-zinc-600">Venue: {inv.location}</span>
+
+            <div className="flex flex-col gap-1.5 sm:pl-2">
+              <span className="font-mono text-[10px] text-[#0066CC] uppercase font-bold tracking-wider">Detail Acara &amp; Sesi:</span>
+              <span className="text-zinc-800">Tanggal: <strong>{formatDate(inv.bookingDate)}</strong></span>
+              {displayDuration && <span className="text-zinc-800">Sesi: <strong>{displayDuration}</strong></span>}
+              <span className="text-zinc-800">Lokasi: <strong>{inv.location}</strong></span>
             </div>
           </div>
 
-          {/* Itemized Table */}
-          <div className="overflow-x-auto rounded-lg border border-zinc-200">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-100 border-b border-zinc-200 text-zinc-700 font-mono font-semibold uppercase text-[10px]">
-                <tr>
-                  <th className="p-3">Deskripsi Layanan &amp; Paket</th>
-                  <th className="p-3 text-center">Durasi</th>
-                  <th className="p-3 text-right">Harga Satuan</th>
+          {/* Item Breakdown Table */}
+          <div className="flex flex-col">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b-2 border-zinc-900 text-zinc-900 font-mono uppercase text-[11px]">
+                  <th className="py-2.5">Deskripsi Layanan &amp; Paket</th>
+                  <th className="py-2.5 text-right">Durasi</th>
+                  <th className="py-2.5 text-right">Jumlah</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 text-zinc-800">
+              <tbody className="divide-y divide-zinc-200">
                 <tr>
-                  <td className="p-3.5 align-top">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <strong className="text-zinc-900 font-bold text-sm">{inv.serviceName || 'Layanan Studio'}</strong>
-                        {inv.packageName && (
-                          <>
-                            <span className="text-zinc-400 font-bold">•</span>
-                            <span className="text-zinc-700 font-semibold text-xs">{inv.packageName}</span>
-                          </>
-                        )}
-                      </div>
-                      {featuresToShow.length > 0 ? (
-                        <ul className="mt-1 flex flex-col gap-0.5 text-[10px] text-zinc-500 font-light pl-0.5">
-                          {featuresToShow.map((ft, fIdx) => (
-                            <li key={fIdx} className="flex items-start gap-1.5 leading-tight">
-                              <span className="text-zinc-400 select-none">-</span>
-                              <span>{ft.replace(/^[-•*]\s*/, '')}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-zinc-500 text-[10.5px] italic mt-0.5">
-                          Dokumentasi Visual &amp; Sinematik Marga Sera Photography
-                        </span>
-                      )}
-                    </div>
+                  <td className="py-3.5 pr-4">
+                    <strong className="text-zinc-900 text-sm block">{inv.serviceName}</strong>
+                    <span className="text-zinc-600 text-xs font-medium">Paket: {inv.packageName}</span>
+                    {featuresToShow.length > 0 && (
+                      <ul className="mt-2 space-y-1 text-zinc-600 text-[11px] list-disc list-inside">
+                        {featuresToShow.map((f, idx) => (
+                          <li key={idx}>{f}</li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
-                  <td className="p-3.5 text-center font-mono align-top">
-                    <strong className="text-zinc-900 font-semibold">{displayDuration || '1 Event'}</strong>
-                    {displayDuration && <div className="text-[10px] text-zinc-500 font-sans mt-0.5">1 Sesi / Event</div>}
+                  <td className="py-3.5 text-right font-mono text-zinc-700 whitespace-nowrap">
+                    {displayDuration || '-'}
                   </td>
-                  <td className="p-3.5 text-right font-mono font-semibold align-top">{formatCurrency(totalPrice)}</td>
+                  <td className="py-3.5 text-right font-mono font-bold text-zinc-900 text-sm whitespace-nowrap">
+                    {formatCurrency(totalPrice)}
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Calculation & Bank Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 print-grid-2">
-            {/* Bank Account */}
-            <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-xl flex flex-col gap-2 text-xs">
-              <span className="text-[10px] font-mono uppercase font-bold text-[#0066CC] tracking-wider flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5" /> Rekening Pembayaran Resmi Studio:
-              </span>
-              {[
-                { label: 'Bank:', value: studioSettings.bankName || 'BCA' },
-                { label: 'No. Rekening:', value: studioSettings.bankAccountNumber || '1234567890', bold: true },
-                { label: 'Atas Nama:', value: studioSettings.bankAccountHolder || 'MARGASERA CREATIVE' },
-              ].map(({ label, value, bold }) => (
-                <div key={label} className="flex justify-between border-b border-blue-200/60 pb-1 text-zinc-700 font-mono last:border-0 last:pb-0">
-                  <span>{label}</span>
-                  <strong className={`text-zinc-900 ${bold ? 'text-sm font-extrabold' : ''}`}>{value}</strong>
-                </div>
-              ))}
+          {/* Calculation Summary */}
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2 print-flex-row">
+            {/* Payment Method Instructions */}
+            <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl flex flex-col gap-2 max-w-sm w-full text-xs">
+              <div className="flex items-center gap-2 text-zinc-900 font-bold font-mono text-xs uppercase">
+                <Building2 className="w-4 h-4 text-[#0066CC]" />
+                <span>Instruksi Transfer Bank</span>
+              </div>
+              <div className="flex flex-col text-zinc-700 gap-0.5">
+                <span>Bank: <strong>{(studioSettings.bankName || 'BCA').toUpperCase()}</strong></span>
+                <span className="font-mono text-sm font-bold text-zinc-900">
+                  {studioSettings.bankAccountNumber || '1234567890'}
+                </span>
+                <span>a.n <strong>{(studioSettings.bankAccountHolder || 'MARGASERA CREATIVE').toUpperCase()}</strong></span>
+              </div>
             </div>
 
-            {/* Price Breakdown */}
-            <div className="flex flex-col gap-2 text-xs text-zinc-700 font-mono justify-end">
-              <div className="flex justify-between py-1 border-b border-zinc-200">
-                <span>Total Pembayaran Paket:</span>
+            {/* Total Math Table */}
+            <div className="flex flex-col gap-2 w-full sm:w-72 text-xs font-mono">
+              <div className="flex justify-between py-1 border-b border-zinc-200 text-zinc-600">
+                <span>Total Investasi:</span>
                 <strong className="text-zinc-900">{formatCurrency(totalPrice)}</strong>
               </div>
-              <div className="flex justify-between py-1 border-b border-zinc-200">
+              <div className="flex justify-between py-1 border-b border-zinc-200 text-emerald-700">
                 <span>Total Terbayar:</span>
-                <strong className="text-emerald-700">{formatCurrency(paidTotal)}</strong>
+                <strong>{formatCurrency(paidTotal)}</strong>
               </div>
-              <div className="flex justify-between py-2 border-b-2 border-zinc-900 text-sm">
-                <span className="font-bold text-zinc-900">SISA PELUNASAN:</span>
-                <strong className={`font-extrabold ${remainingBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              <div className="flex justify-between py-2 border-b-2 border-zinc-900 text-sm font-bold">
+                <span className="text-zinc-900">Sisa Pelunasan:</span>
+                <span className={remainingBalance > 0 ? 'text-amber-700' : 'text-emerald-700'}>
                   {formatCurrency(remainingBalance)}
-                </strong>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-end gap-6 text-[11px] text-zinc-500 font-light print-flex-row">
-            <div className="flex flex-col gap-1">
+          {/* Notes / Footer */}
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-6 pt-6 border-t border-zinc-200 text-xs text-zinc-500 print-flex-row">
+            <div className="flex flex-col gap-1 max-w-md">
               <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Syarat &amp; Ketentuan Studio:</strong>
               <span>• DP minimal untuk mengunci tanggal pada kalender studio.</span>
               <span>• Pelunasan sisa dilakukan setelah acara selesai (di tempat).</span>
@@ -273,10 +259,10 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
         </div>
 
         {/* Sticky Bottom Actions */}
-        <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10">
+        <div className="no-print p-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-2.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
           >
             Tutup
           </button>
@@ -285,14 +271,14 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
               href={generateWaInvoiceMsg()}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-xs"
             >
               <Share2 className="w-4 h-4" />
               <span>Kirim WA Invoice</span>
             </a>
             <button
               onClick={printInvoice}
-              className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+              className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / Save PDF (A4)</span>

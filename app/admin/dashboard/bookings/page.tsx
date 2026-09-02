@@ -52,8 +52,8 @@ export default function BookingsPage() {
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
 
   // Data Fetching 
-  const refreshData = useCallback(async () => {
-    setLoadingData(true);
+  const refreshData = useCallback(async (showSkeleton = false) => {
+    if (showSkeleton) setLoadingData(true);
     try {
       const [bList, sList, pkgList, sSettings] = await Promise.all([
         getAllBookings(),
@@ -68,12 +68,12 @@ export default function BookingsPage() {
     } catch (err) {
       console.error('Failed to load bookings data', err);
     } finally {
-      setLoadingData(false);
+      if (showSkeleton) setLoadingData(false);
     }
   }, []);
 
   useEffect(() => {
-    refreshData();
+    refreshData(true);
   }, [refreshData]);
 
   // Derived Data
@@ -141,13 +141,28 @@ export default function BookingsPage() {
     setBookingSearch('');
   };
 
-  // Handlers
+  // Handlers with Optimistic Updates (Zero Full-Page Reloading)
   const handleUpdateBookingStatus = async (id: string, newStatus: BookingStatus) => {
+    const previousBookings = [...bookings];
+    const previousSelected = selectedBookingForDetail ? { ...selectedBookingForDetail } : null;
+
+    // 1. Optimistic local state update
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
+    );
+    if (selectedBookingForDetail?.id === id) {
+      setSelectedBookingForDetail((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+
+    // 2. Background server action execution
     const res = await updateBookingStatus(id, newStatus);
     if (res.success) {
-      await refreshData();
       toast.success(`Status booking berhasil diubah menjadi ${newStatus}.`);
+      await refreshData(false);
     } else {
+      // Revert if server action failed
+      setBookings(previousBookings);
+      if (previousSelected) setSelectedBookingForDetail(previousSelected);
       toast.error(`Gagal memperbarui status: ${res.error}`);
     }
   };
@@ -178,14 +193,50 @@ export default function BookingsPage() {
       }
     }
 
+    const previousBookings = [...bookings];
+    const previousSelected = selectedBookingForDetail ? { ...selectedBookingForDetail } : null;
+
+    // 1. Optimistic local state update
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              paymentStatus: newPaymentStatus,
+              paidAmount: paidAmt !== undefined ? paidAmt : b.paidAmount,
+              remainingAmount:
+                b.totalPrice !== undefined && paidAmt !== undefined
+                  ? Math.max(0, b.totalPrice - paidAmt)
+                  : b.remainingAmount,
+            }
+          : b
+      )
+    );
+    if (selectedBookingForDetail?.id === id) {
+      setSelectedBookingForDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              paymentStatus: newPaymentStatus,
+              paidAmount: paidAmt !== undefined ? paidAmt : prev.paidAmount,
+              remainingAmount:
+                prev.totalPrice !== undefined && paidAmt !== undefined
+                  ? Math.max(0, prev.totalPrice - paidAmt)
+                  : prev.remainingAmount,
+            }
+          : null
+      );
+    }
+
+    // 2. Background server action execution
     const res = await updatePaymentStatus(id, newPaymentStatus, paidAmt);
     if (res.success) {
-      await refreshData();
-      if (selectedBookingForDetail?.id === id) {
-        setSelectedBookingForDetail({ ...selectedBookingForDetail, paymentStatus: newPaymentStatus, paidAmount: paidAmt });
-      }
       toast.success('Status pembayaran berhasil diperbarui.');
+      await refreshData(false);
     } else {
+      // Revert if server action failed
+      setBookings(previousBookings);
+      if (previousSelected) setSelectedBookingForDetail(previousSelected);
       toast.error(`Gagal memperbarui status pembayaran: ${res.error}`);
     }
   };
@@ -197,11 +248,22 @@ export default function BookingsPage() {
       confirmText: 'Ya, Hapus Permanen',
       variant: 'danger',
       onConfirm: async () => {
+        const previousBookings = [...bookings];
+        const previousSelected = selectedBookingForDetail ? { ...selectedBookingForDetail } : null;
+
+        // Optimistic remove
+        setBookings((prev) => prev.filter((b) => b.id !== id));
+        if (selectedBookingForDetail?.id === id) {
+          setSelectedBookingForDetail(null);
+        }
+
         const res = await deleteBooking(id);
         if (res.success) {
-          await refreshData();
           toast.success(`Data booking ${code} berhasil dihapus.`);
+          await refreshData(false);
         } else {
+          setBookings(previousBookings);
+          if (previousSelected) setSelectedBookingForDetail(previousSelected);
           toast.error(`Gagal menghapus booking: ${res.error}`);
         }
       },
@@ -212,17 +274,17 @@ export default function BookingsPage() {
     setShowAddBookingModal(true);
   };
 
-  // Loading State
+  // Initial Full Skeleton Loading State (Only on first page load)
   if (loadingData) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
+            <div key={i} className="h-24 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
           ))}
         </div>
-        <div className="h-24 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
-        <div className="h-96 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
+        <div className="h-24 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
+        <div className="h-96 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
       </div>
     );
   }
@@ -261,11 +323,11 @@ export default function BookingsPage() {
             icon: Wallet,
           },
         ].map(({ label, value, sub, color, icon: Icon }) => (
-          <div key={label} className="p-5 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between shadow-md">
+          <div key={label} className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-between shadow-xs">
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-mono uppercase tracking-widest font-semibold" style={{ color }}>{label}</span>
-              <span className="font-sans text-xl font-extrabold text-zinc-100">{value}</span>
-              <span className="text-[11px] text-zinc-400 font-light">{sub}</span>
+              <span className="font-sans text-xl font-extrabold text-zinc-900 dark:text-zinc-100">{value}</span>
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-light">{sub}</span>
             </div>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}15`, color }}>
               <Icon className="w-5 h-5" />
@@ -329,7 +391,7 @@ export default function BookingsPage() {
           onClose={() => setShowAddBookingModal(false)}
           onSuccess={async () => {
             setShowAddBookingModal(false);
-            await refreshData();
+            await refreshData(false);
           }}
         />
       )}

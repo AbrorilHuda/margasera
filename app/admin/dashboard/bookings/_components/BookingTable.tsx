@@ -115,11 +115,11 @@ export function BookingTable({
   };
 
   return (
-    <div className="bg-zinc-900/70 border border-zinc-800/80 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md">
+    <div className="bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-sm dark:shadow-2xl backdrop-blur-md">
       {/* Table Scroll Area */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[900px]">
-          <thead className="bg-zinc-950/90 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
+          <thead className="bg-zinc-50 dark:bg-zinc-950/90 border-b border-zinc-200 dark:border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
             <tr>
               <th className="p-4">Kode Booking</th>
               <th className="p-4">Client / Contact</th>
@@ -141,7 +141,7 @@ export function BookingTable({
               const paymentLabel = PAYMENT_LABEL[paymentKey] || 'BELUM DP';
 
               return (
-                <tr key={b.id} className="hover:bg-slate-100 dark:hover:bg-zinc-800/50 transition-colors group">
+                <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors group">
                   {/* Booking Code */}
                   <td className="p-4 font-mono font-bold text-[#0066CC] whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
@@ -184,8 +184,8 @@ export function BookingTable({
                   {/* Event Date & Time */}
                   <td className="p-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="text-zinc-200 font-semibold">{formatDate(b.bookingDate)}</span>
-                      <span className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
+                      <span className="text-zinc-900 dark:text-zinc-200 font-semibold">{formatDate(b.bookingDate)}</span>
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {b.startTime ? `${b.startTime} – ${b.endTime} WIB` : '08:00 – 14:00 WIB'}
                       </span>
@@ -193,7 +193,7 @@ export function BookingTable({
                   </td>
 
                   {/* Location */}
-                  <td className="p-4 text-zinc-400 max-w-[140px]">
+                  <td className="p-4 text-zinc-600 dark:text-zinc-400 max-w-[140px]">
                     <div className="flex items-center gap-1 truncate" title={b.location}>
                       <MapPin className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
                       <span className="truncate">{b.location}</span>
@@ -224,7 +224,7 @@ export function BookingTable({
                       {/* Detail Modal */}
                       <button
                         onClick={() => onDetail(b)}
-                        className="p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all"
+                        className="p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all cursor-pointer"
                         title="Lihat Detail Booking"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -245,7 +245,7 @@ export function BookingTable({
                       {/* Invoice Button */}
                       <button
                         onClick={() => onInvoice(b)}
-                        className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
+                        className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors cursor-pointer"
                         title="Lihat / Cetak Invoice Pembayaran"
                       >
                         <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -256,7 +256,7 @@ export function BookingTable({
                       {b.status === 'pending' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'confirmed')}
-                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow"
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
                         >
                           Confirm
                         </button>
@@ -264,7 +264,7 @@ export function BookingTable({
                       {b.status === 'confirmed' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'completed')}
-                          className="px-2.5 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow"
+                          className="px-2.5 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
                         >
                           Complete
                         </button>
@@ -273,7 +273,7 @@ export function BookingTable({
                       {/* Delete Button */}
                       <button
                         onClick={() => onDelete(b.id, b.bookingCode)}
-                        className="p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-500 dark:hover:border-rose-900/60 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors"
+                        className="p-2 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
                         title="Hapus Booking"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -289,17 +289,17 @@ export function BookingTable({
               <tr>
                 <td colSpan={8} className="p-12 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500">
+                    <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-500">
                       <Search className="w-6 h-6" />
                     </div>
-                    <span className="text-zinc-300 text-sm font-semibold">Tidak ada booking ditemukan</span>
+                    <span className="text-zinc-900 dark:text-zinc-300 text-sm font-semibold">Tidak ada booking ditemukan</span>
                     <p className="text-zinc-500 text-xs font-light max-w-sm">
                       Coba sesuaikan kata kunci pencarian, filter status, atau filter bulan acara di atas.
                     </p>
                     {hasActiveFilter && (
                       <button
                         onClick={onResetFilters}
-                        className="mt-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg flex items-center gap-1.5 font-mono cursor-pointer"
+                        className="mt-2 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs rounded-lg flex items-center gap-1.5 font-mono cursor-pointer transition-colors border border-zinc-200 dark:border-transparent"
                       >
                         <RefreshCw className="w-3.5 h-3.5" /> Reset Semua Filter
                       </button>
@@ -313,7 +313,7 @@ export function BookingTable({
       </div>
 
       {/* Table Footer with Full Pagination Controls */}
-      <div className="p-4 bg-zinc-950/80 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-mono">
+      <div className="p-4 bg-zinc-50 dark:bg-zinc-950/80 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
         <div>
           {filteredCount > 0 ? (
             <span>
@@ -333,7 +333,7 @@ export function BookingTable({
             <button
               disabled={currentPage === 1}
               onClick={() => onPageChange(1)}
-              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               title="Halaman Pertama"
             >
               <ChevronsLeft className="w-4 h-4" />
@@ -343,7 +343,7 @@ export function BookingTable({
             <button
               disabled={currentPage === 1}
               onClick={() => onPageChange(currentPage - 1)}
-              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -356,8 +356,8 @@ export function BookingTable({
                   key={p}
                   onClick={() => onPageChange(p)}
                   className={`w-7 h-7 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${currentPage === p
-                      ? 'bg-[#0066CC] text-white shadow-sm'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                      ? 'bg-[#0066CC] text-white shadow-xs'
+                      : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                 >
                   {p}
@@ -369,7 +369,7 @@ export function BookingTable({
             <button
               disabled={currentPage === totalPages}
               onClick={() => onPageChange(currentPage + 1)}
-              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               title="Halaman Selanjutnya"
             >
               <ChevronRight className="w-4 h-4" />
@@ -379,7 +379,7 @@ export function BookingTable({
             <button
               disabled={currentPage === totalPages}
               onClick={() => onPageChange(totalPages)}
-              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               title="Halaman Terakhir"
             >
               <ChevronsRight className="w-4 h-4" />

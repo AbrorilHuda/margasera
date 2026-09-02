@@ -62,23 +62,27 @@ export function PdfRekapModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
         {/* Sticky Modal Controls Header */}
-        <div className="no-print p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
+        <div className="no-print p-4 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#0066CC]" />
-            <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wide">Pratinjau Laporan Rekapitulasi PDF</h4>
+            <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">Pratinjau Laporan Rekapitulasi PDF</h4>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={printRekap}
-              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-md transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-sm hover:shadow transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / Save PDF</span>
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer"
+              title="Tutup Modal"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>

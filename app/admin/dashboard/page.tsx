@@ -18,6 +18,7 @@ import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package } from '@/lib/types';
+import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
 
 export default function AdminOverviewPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -58,11 +59,12 @@ export default function AdminOverviewPage() {
       <div className="flex flex-col gap-6 animate-pulse">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
+            <div key={i} className="h-32 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
           ))}
         </div>
-        <div className="h-40 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
-        <div className="h-64 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
+        <div className="h-80 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-2xl" />
+        <div className="h-40 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
+        <div className="h-64 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
       </div>
     );
   }
@@ -72,131 +74,134 @@ export default function AdminOverviewPage() {
       {/* ===== METRIC CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Revenue */}
-        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
+        <div className="p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Est. Investasi Masuk</span>
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">Est. Investasi Masuk</span>
             <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
             {formatCurrency(totalRevenue)}
           </span>
-          <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1 truncate">
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 truncate">
             <TrendingUp className="w-3.5 h-3.5 shrink-0" />
             {confirmedCount} Pesanan Dikonfirmasi
           </span>
         </div>
 
         {/* Total Bookings */}
-        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
+        <div className="p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Total Booking</span>
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">Total Booking</span>
             <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
             {bookings.length} Pesanan
           </span>
-          <span className="text-[10px] text-zinc-400 font-light truncate">Termasuk Booking Online & Offline</span>
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light truncate">Termasuk Booking Online &amp; Offline</span>
         </div>
 
         {/* Portfolio */}
-        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
+        <div className="p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Portofolio Karya</span>
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">Portofolio Karya</span>
             <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Camera className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
             {projects.length} Project
           </span>
-          <span className="text-[10px] text-zinc-400 font-light truncate">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light truncate">
             {projects.filter((p) => p.isFeatured).length} Project Featured Beranda
           </span>
         </div>
 
         {/* Services & Packages */}
-        <div className="p-5 bg-zinc-900/60 border border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-lg min-w-0">
+        <div className="p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-xl flex flex-col gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase font-medium truncate">Layanan & Paket</span>
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">Layanan &amp; Paket</span>
             <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-100 truncate">
+          <span className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
             {packages.length} Paket
           </span>
-          <span className="text-[10px] text-zinc-400 font-light truncate">{services.length} Kategori Layanan Aktif</span>
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light truncate">{services.length} Kategori Layanan Aktif</span>
         </div>
       </div>
 
+      {/* ===== MONTHLY BOOKING ANALYTICS CHART ===== */}
+      <MonthlyBookingChart bookings={bookings} />
+
       {/* ===== QUICK ACTIONS ===== */}
-      <div className="p-6 sm:p-8 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col gap-5 shadow-xl">
+      <div className="p-6 sm:p-8 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col gap-5 shadow-xs dark:shadow-xl">
         <span className="text-[11px] font-mono tracking-[0.25em] text-[#0066CC] uppercase font-semibold">
           Aksi Cepat Manajemen Studio
         </span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Link
             href="/admin/dashboard/portfolio"
-            className="p-4 bg-zinc-950 border border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-md"
+            className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-xs"
           >
             <FolderPlus className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium text-zinc-200 tracking-wide">Tambah Portofolio</span>
+            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 tracking-wide">Tambah Portofolio</span>
           </Link>
 
           <Link
             href="/admin/dashboard/pricing"
-            className="p-4 bg-zinc-950 border border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-md"
+            className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-xs"
           >
             <PackagePlus className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium text-zinc-200 tracking-wide">Tambah Paket Baru</span>
+            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 tracking-wide">Tambah Paket Baru</span>
           </Link>
 
           <Link
             href="/admin/dashboard/bookings"
-            className="p-4 bg-zinc-950 border border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-md"
+            className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-xs"
           >
             <Plus className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium text-zinc-200 tracking-wide">Booking Manual Baru</span>
+            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 tracking-wide">Booking Manual Baru</span>
           </Link>
 
           <Link
             href="/admin/dashboard/calendar"
-            className="p-4 bg-zinc-950 border border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-md"
+            className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC] rounded-xl flex flex-col items-center gap-2 text-center transition-all group shadow-xs"
           >
             <Clock className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium text-zinc-200 tracking-wide">Status Tanggal Libur</span>
+            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 tracking-wide">Status Tanggal Libur</span>
           </Link>
         </div>
       </div>
 
       {/* ===== RECENT BOOKINGS TABLE ===== */}
-      <div className="p-6 sm:p-8 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex flex-col gap-6 shadow-xl">
+      <div className="p-6 sm:p-8 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col gap-6 shadow-xs dark:shadow-xl">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest">Aktivitas Terbaru</span>
-            <h3 className="font-sans text-xl sm:text-2xl font-bold text-zinc-100 uppercase tracking-tight">
+            <span className="text-[10px] font-mono text-[#0066CC] uppercase tracking-widest font-semibold">Aktivitas Terbaru</span>
+            <h3 className="font-sans text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">
               Pesanan Terbaru
             </h3>
           </div>
           <Link
             href="/admin/dashboard/bookings"
-            className="text-xs text-[#0066CC] hover:underline font-medium tracking-wide"
+            className="text-xs text-[#0066CC] hover:underline font-semibold tracking-wide"
           >
             Lihat Semua Pesanan →
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-zinc-800/80">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800/80">
           <table className="w-full text-left text-xs font-light">
-            <thead className="bg-zinc-950 border-b border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.2em] uppercase text-[10px]">
+            <thead className="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.2em] uppercase text-[10px]">
               <tr>
                 <th className="p-4">Kode Booking</th>
                 <th className="p-4">Pelanggan</th>
@@ -206,13 +211,13 @@ export default function AdminOverviewPage() {
                 <th className="p-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
               {bookings.slice(0, 5).map((b) => (
-                <tr key={b.id} className="hover:bg-zinc-800/40 transition-colors">
+                <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
                   <td className="p-4 font-mono font-bold text-[#0066CC]">{b.bookingCode}</td>
-                  <td className="p-4 font-semibold text-zinc-100">{b.customerName}</td>
-                  <td className="p-4 text-zinc-300">{b.serviceName}</td>
-                  <td className="p-4 text-zinc-400">{formatDate(b.bookingDate)}</td>
+                  <td className="p-4 font-semibold text-zinc-900 dark:text-zinc-100">{b.customerName}</td>
+                  <td className="p-4 text-zinc-700 dark:text-zinc-300">{b.serviceName}</td>
+                  <td className="p-4 text-zinc-500 dark:text-zinc-400 font-mono">{formatDate(b.bookingDate)}</td>
                   <td className="p-4 font-mono text-sm font-semibold text-[#0066CC]">
                     {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
                   </td>
@@ -220,13 +225,13 @@ export default function AdminOverviewPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${
                         b.status === 'confirmed'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/30'
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30'
+                          : 'bg-blue-50 dark:bg-[#0066CC]/10 text-blue-700 dark:text-[#0066CC] border border-blue-300 dark:border-[#0066CC]/30'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          b.status === 'confirmed' ? 'bg-emerald-400' : 'bg-[#0066CC]'
+                          b.status === 'confirmed' ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-[#0066CC]'
                         }`}
                       />
                       {b.status}
@@ -236,7 +241,7 @@ export default function AdminOverviewPage() {
               ))}
               {bookings.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-zinc-400 font-light">
+                  <td colSpan={6} className="p-8 text-center text-zinc-500 font-light">
                     Belum ada booking terdaftar.
                   </td>
                 </tr>

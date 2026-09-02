@@ -137,23 +137,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* CONFIRMATION MODAL OVERLAY */}
       <AnimatePresence>
         {confirmState && (
-          <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[10000] bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl relative text-zinc-100"
+              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl relative text-zinc-900 dark:text-zinc-100"
             >
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-amber-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-mono text-xs uppercase tracking-wider font-semibold">
                   <AlertTriangle className="w-4 h-4" />
                   <span>Konfirmasi Tindakan</span>
                 </div>
-                <h3 className="font-serif-editorial text-2xl text-zinc-100 font-light leading-tight">
+                <h3 className="font-serif-editorial text-2xl text-zinc-900 dark:text-zinc-100 font-light leading-tight">
                   {confirmState.title}
                 </h3>
-                <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
                   {confirmState.message}
                 </p>
               </div>
@@ -163,7 +163,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   type="button"
                   disabled={isConfirming}
                   onClick={() => setConfirmState(null)}
-                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
                 >
                   {confirmState.cancelText || 'Batal'}
                 </button>
