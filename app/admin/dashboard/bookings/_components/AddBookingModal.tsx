@@ -119,28 +119,35 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
     }
   };
 
-  const inputClass = 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] p-3 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none transition-colors';
-  const selectClass = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:border-[#0066CC] p-3 rounded-lg text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none transition-colors';
-  const labelClass = 'text-zinc-600 dark:text-zinc-300 uppercase font-mono font-medium text-[10px]';
+  const inputClass = 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none transition-colors';
+  const selectClass = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none transition-colors';
+  const labelClass = 'text-zinc-600 dark:text-zinc-400 uppercase font-mono font-medium text-[10px]';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+        {/* iOS Drag Handle */}
+        <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
         {/* Sticky Header */}
-        <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#0066CC]/15 text-[#0066CC] flex items-center justify-center font-bold">+</div>
-            <h3 className="font-sans text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100">Tambah Booking Manual Baru</h3>
+        <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-[#0066CC]/15 text-[#0066CC] flex items-center justify-center font-bold text-sm">+</div>
+            <h3 className="font-sans text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100">Tambah Booking Baru</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer" title="Tutup Modal">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors active:scale-95 cursor-pointer"
+            title="Tutup Modal"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable Form */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 text-xs pb-safe">
           {/* SECTION 1: Layanan & Paket */}
-          <div className="grid grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-950/80 p-3.5 border border-[#0066CC]/30 rounded-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-950/80 p-3.5 border border-[#0066CC]/30 rounded-2xl">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>1. Kategori Layanan *</label>
               <select value={form.serviceId} onChange={(e) => handleServiceChange(e.target.value)} className={selectClass}>
@@ -164,7 +171,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
           </div>
 
           {/* SECTION 2: Jadwal */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Tanggal Acara *</label>
               <input type="date" required value={form.bookingDate}
@@ -180,7 +187,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
             <div className="flex flex-col gap-1.5">
               <label className={`${labelClass} flex items-center justify-between`}>
                 <span>Jam Selesai</span>
-                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-normal">(Otomatis)</span>
+                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-normal">(Auto)</span>
               </label>
               <input type="time" value={form.endTime}
                 onChange={(e) => patch({ endTime: e.target.value })}
@@ -195,7 +202,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
               onChange={(e) => patch({ customerName: e.target.value })} className={inputClass} />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Nomor WhatsApp *</label>
               <input type="text" required placeholder="081931107481" value={form.whatsapp}
@@ -220,7 +227,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
           </div>
 
           {/* SECTION 4: Keuangan */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Total Harga (IDR)</label>
               <input type="number" value={form.totalPrice}
@@ -250,11 +257,11 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
             <textarea rows={3}
               placeholder="Contoh: Nama pasangan: Amanda, Fasilitas kustom: Unlimited raw files, 2 videographer"
               value={form.notes} onChange={(e) => patch({ notes: e.target.value })}
-              className={`${inputClass} font-sans`} />
+              className={`${inputClass} font-sans resize-none`} />
           </div>
 
           <button type="submit" disabled={isSubmitting}
-            className="mt-4 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer">
+            className="mt-2 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />

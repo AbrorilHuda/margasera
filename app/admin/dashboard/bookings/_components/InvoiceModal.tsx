@@ -96,17 +96,20 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+        {/* iOS Drag Handle */}
+        <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
         {/* Sticky Modal Controls Header */}
         <div className="no-print p-4 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Receipt className="w-5 h-5 text-[#0066CC]" />
-            <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">Pratinjau Invoice Resmi Studio</h4>
+            <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">Pratinjau Invoice</h4>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors active:scale-95 cursor-pointer"
             title="Tutup Modal"
           >
             <X className="w-5 h-5" />
@@ -259,29 +262,29 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
         </div>
 
         {/* Sticky Bottom Actions */}
-        <div className="no-print p-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10">
+        <div className="no-print p-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 pb-safe">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
           >
             Tutup
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <a
               href={generateWaInvoiceMsg()}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-xs"
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
             >
               <Share2 className="w-4 h-4" />
-              <span>Kirim WA Invoice</span>
+              <span>Kirim WA</span>
             </a>
             <button
               onClick={printInvoice}
-              className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer"
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Cetak / Save PDF (A4)</span>
+              <span>Cetak PDF</span>
             </button>
           </div>
         </div>

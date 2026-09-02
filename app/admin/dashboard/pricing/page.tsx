@@ -15,6 +15,15 @@ export default function PricingPage() {
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
 
   const [showAddPackageModal, setShowAddPackageModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new') {
+        setShowAddPackageModal(true);
+      }
+    }
+  }, []);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -26,6 +26,15 @@ export default function PortfolioPage() {
 
   // Modal states
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new') {
+        setShowAddProjectModal(true);
+      }
+    }
+  }, []);
   const [selectedProjectForImages, setSelectedProjectForImages] = useState<GalleryProject | null>(null);
   const [projectImages, setProjectImages] = useState<GalleryImage[]>([]);
   const [isLoadingProjectImages, setIsLoadingProjectImages] = useState(false);

@@ -51,6 +51,16 @@ export default function BookingsPage() {
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
 
+  // Auto-open Add modal if ?action=new
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new') {
+        setShowAddBookingModal(true);
+      }
+    }
+  }, []);
+
   // Data Fetching 
   const refreshData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoadingData(true);
@@ -292,45 +302,52 @@ export default function BookingsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* STAT CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
-            label: 'Total Booking',
-            value: `${bookings.length} Pesanan`,
+            label: 'Total Bookings',
+            value: `${bookings.length}`,
+            unit: 'Pesanan',
             sub: 'Semua riwayat pemesanan',
             color: '#0066CC',
             icon: ClipboardList,
           },
           {
-            label: 'Dikonfirmasi',
-            value: `${confirmedCount} Event`,
-            sub: 'Jadwal acara siap eksekusi',
+            label: 'Confirmed',
+            value: `${confirmedCount}`,
+            unit: 'Event',
+            sub: 'Jadwal siap eksekusi',
             color: '#10b981',
             icon: CheckCircle2,
           },
           {
-            label: 'Perlu Konfirmasi',
-            value: `${pendingCount} Booking`,
-            sub: 'Menunggu verifikasi admin',
+            label: 'Pending Review',
+            value: `${pendingCount}`,
+            unit: 'Booking',
+            sub: 'Menunggu konfirmasi',
             color: '#f59e0b',
             icon: Clock,
           },
           {
-            label: 'Est. Total Omset',
+            label: 'Est. Total Revenue',
             value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalRevenue),
-            sub: `${filteredBookings.length} booking dalam filter`,
+            unit: '',
+            sub: `${filteredBookings.length} booking aktif`,
             color: '#0066CC',
             icon: Wallet,
           },
-        ].map(({ label, value, sub, color, icon: Icon }) => (
-          <div key={label} className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-between shadow-xs">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest font-semibold" style={{ color }}>{label}</span>
-              <span className="font-sans text-xl font-extrabold text-zinc-900 dark:text-zinc-100">{value}</span>
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-light">{sub}</span>
+        ].map(({ label, value, unit, sub, color, icon: Icon }) => (
+          <div key={label} className="p-4 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs backdrop-blur-md">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest font-semibold truncate" style={{ color }}>{label}</span>
+              <div className="flex items-baseline gap-1 truncate">
+                <span className="font-sans text-lg sm:text-xl font-extrabold text-zinc-900 dark:text-zinc-100 truncate">{value}</span>
+                {unit && <span className="text-xs text-zinc-500 font-medium">{unit}</span>}
+              </div>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light truncate">{sub}</span>
             </div>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}15`, color }}>
-              <Icon className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 self-end sm:self-center" style={{ background: `${color}15`, color }}>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         ))}

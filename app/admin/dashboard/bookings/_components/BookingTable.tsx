@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ChevronRight as ArrowRightIcon,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
@@ -115,9 +116,11 @@ export function BookingTable({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-sm dark:shadow-2xl backdrop-blur-md">
-      {/* Table Scroll Area */}
-      <div className="overflow-x-auto">
+    <div className="bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl overflow-hidden shadow-xs dark:shadow-2xl backdrop-blur-md">
+      {/* =========================================
+          DESKTOP TABLE (≥ 768px)
+          ========================================= */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[900px]">
           <thead className="bg-zinc-50 dark:bg-zinc-950/90 border-b border-zinc-200 dark:border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
             <tr>
@@ -312,6 +315,102 @@ export function BookingTable({
         </table>
       </div>
 
+      {/* =========================================
+          MOBILE VIEW: iOS Grouped Booking Cards (< 768px)
+          Matching PRD Section 14
+          ========================================= */}
+      <div className="flex md:hidden flex-col divide-y divide-zinc-200 dark:divide-zinc-800/80">
+        {paginatedBookings.map((b) => {
+          const statusStyle = STATUS_STYLE[b.status] || STATUS_STYLE.cancelled;
+          const statusDot = STATUS_DOT[b.status] || STATUS_DOT.cancelled;
+          const paymentKey = b.paymentStatus ?? 'unpaid';
+          const paymentStyle = PAYMENT_STYLE[paymentKey] || PAYMENT_STYLE.unpaid;
+          const paymentLabel = PAYMENT_LABEL[paymentKey] || 'BELUM DP';
+
+          return (
+            <div
+              key={b.id}
+              onClick={() => onDetail(b)}
+              className="p-4 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.98] transition-all cursor-pointer flex flex-col gap-3"
+            >
+              {/* Top Row: Booking Code + Chevron */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#0066CC]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
+                  <span>{b.bookingCode}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+
+              {/* Client Name & Service Info */}
+              <div className="flex flex-col gap-0.5">
+                <h4 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
+                  {b.customerName}
+                </h4>
+                <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+                  {b.serviceName}
+                </div>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+                  {b.packageName}
+                </div>
+              </div>
+
+              {/* Event Schedule & Location */}
+              <div className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400 font-mono pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>📅 {formatDate(b.bookingDate)} {b.startTime ? `(${b.startTime} – ${b.endTime} WIB)` : ''}</span>
+                </div>
+                {b.location && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
+                    <span className="truncate">{b.location}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Row: Total Price + Status Badges */}
+              <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                <span className="font-mono font-bold text-sm text-[#0066CC]">
+                  {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] uppercase font-mono font-semibold ${statusStyle}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+                    {b.status}
+                  </span>
+                  <span className={`px-2 py-0.2 rounded text-[8px] font-bold uppercase font-mono border ${paymentStyle}`}>
+                    {paymentLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Mobile Empty State */}
+        {filteredCount === 0 && (
+          <div className="p-8 text-center flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+              <Search className="w-6 h-6" />
+            </div>
+            <span className="text-zinc-900 dark:text-zinc-300 text-sm font-semibold">Tidak ada booking ditemukan</span>
+            <p className="text-zinc-500 text-xs font-light max-w-xs">
+              Coba sesuaikan kata kunci pencarian, filter status, atau filter bulan acara di atas.
+            </p>
+            {hasActiveFilter && (
+              <button
+                onClick={onResetFilters}
+                className="mt-2 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs rounded-xl flex items-center gap-1.5 font-mono cursor-pointer transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Reset Filter
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Table Footer with Full Pagination Controls */}
       <div className="p-4 bg-zinc-50 dark:bg-zinc-950/80 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
         <div>
@@ -390,3 +489,4 @@ export function BookingTable({
     </div>
   );
 }
+

@@ -43,6 +43,15 @@ export default function CalendarPage() {
   const [showInfoGuide, setShowInfoGuide] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'block') {
+        setShowModal(true);
+      }
+    }
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availabilityForm, setAvailabilityForm] = useState({
     date: new Date().toISOString().split('T')[0],
