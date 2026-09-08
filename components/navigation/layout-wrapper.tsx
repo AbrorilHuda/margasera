@@ -25,7 +25,7 @@ export function LayoutWrapper({
   return (
     <>
       <Navbar />
-      <main className="flex-1 w-full pt-20">
+      <main className="flex-1 w-full pt-[calc(env(safe-area-inset-top,0px)+5rem)]">
         {children}
       </main>
       {footer}

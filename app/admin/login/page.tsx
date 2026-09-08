@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center justify-center px-4 sm:px-6 py-12 relative transition-colors">
       {/* Top Bar with Theme Toggle */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+      <div className="absolute top-[calc(env(safe-area-inset-top,0px)+1rem)] right-4 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>
 

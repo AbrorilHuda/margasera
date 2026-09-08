@@ -46,8 +46,8 @@ export function Navbar() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || mobileMenuOpen
-        ? 'bg-zinc-950 backdrop-blur-md py-4 border-b border-zinc-800/60 shadow-2xl'
-        : 'bg-gradient-to-b from-black/80 via-black/40 to-transparent py-6'
+        ? 'bg-zinc-950 backdrop-blur-md pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:py-4 border-b border-zinc-800/60 shadow-2xl'
+        : 'bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-6 sm:py-6'
         }`}
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
@@ -112,7 +112,7 @@ export function Navbar() {
 
       {/* Mobile Drawer Navigation (Solid bg-zinc-950, No transparency bleed) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-[70px] bg-zinc-950 z-40 flex flex-col justify-between px-8 py-8 border-t border-zinc-800 overflow-y-auto min-h-[calc(100vh-70px)]">
+        <div className="lg:hidden fixed inset-0 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] bg-zinc-950 z-40 flex flex-col justify-between px-8 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] border-t border-zinc-800 overflow-y-auto min-h-[calc(100dvh-(env(safe-area-inset-top,0px)+4.5rem))]">
           <div className="flex flex-col gap-5 pt-2">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;

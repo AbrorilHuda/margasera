@@ -90,7 +90,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-[#0066CC] selection:text-white transition-colors">
       {/* ===== SIDEBAR / NAVIGATION DRAWER ===== */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 w-72 h-screen max-h-screen shrink-0 overflow-y-auto bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between p-6 transition-transform duration-300 ease-out shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed md:sticky top-0 left-0 z-50 w-72 h-screen max-h-screen shrink-0 overflow-y-auto bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] px-6 md:p-6 transition-transform duration-300 ease-out shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
       >
         <div className="flex flex-col gap-8">
@@ -199,7 +199,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       {/* ===== MAIN BODY ===== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header (Compact on Mobile, Full on Desktop) */}
-        <header className="sticky top-0 z-20 bg-white/90 dark:bg-zinc-950/85 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-900 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between transition-colors">
+        <header className="sticky top-0 z-20 bg-white/90 dark:bg-zinc-950/85 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-900 px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.875rem)] pb-3.5 sm:py-4 flex items-center justify-between transition-colors">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
