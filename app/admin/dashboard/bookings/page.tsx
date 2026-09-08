@@ -19,6 +19,13 @@ import { BookingDetailModal } from './_components/BookingDetailModal';
 import { InvoiceModal } from './_components/InvoiceModal';
 import { PdfRekapModal } from './_components/PdfRekapModal';
 import { calculateEndTime } from './_components/BookingHelpers';
+import {
+  cacheMasterData,
+  getCachedMasterData,
+  getOfflineQueue,
+  convertOfflineQueueToBookings,
+  OFFLINE_QUEUE_EVENT,
+} from '@/lib/offline-queue';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
 export default function BookingsPage() {
@@ -65,15 +72,57 @@ export default function BookingsPage() {
   const refreshData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoadingData(true);
     try {
-      const [bList, sList, pkgList, sSettings] = await Promise.all([
-        getAllBookings(),
-        getServices(),
-        getPackages(),
-        getStudioSettings(),
-      ]);
-      setBookings(bList);
-      setServices(sList);
-      setPackages(pkgList);
+      let bList: Booking[] = [];
+      let sList: Service[] = [];
+      let pkgList: Package[] = [];
+      let sSettings: StudioSettings | null = null;
+
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Mode Offline: Baca dari cache lokal
+        const cached = getCachedMasterData();
+        bList = cached.bookings;
+        sList = cached.services;
+        pkgList = cached.packages;
+        sSettings = cached.studioSettings;
+      } else {
+        try {
+          const [resBookings, resServices, resPackages, resSettings] = await Promise.all([
+            getAllBookings(),
+            getServices(),
+            getPackages(),
+            getStudioSettings(),
+          ]);
+          bList = resBookings;
+          sList = resServices;
+          pkgList = resPackages;
+          sSettings = resSettings;
+
+          // Simpan ke cache lokal untuk keperluan offline
+          cacheMasterData({
+            services: sList,
+            packages: pkgList,
+            bookings: bList,
+            studioSettings: sSettings || undefined,
+          });
+        } catch (fetchErr) {
+          console.warn('[BookingsPage] Fetch gagal, beralih ke cache lokal:', fetchErr);
+          const cached = getCachedMasterData();
+          bList = cached.bookings;
+          sList = cached.services;
+          pkgList = cached.packages;
+          sSettings = cached.studioSettings;
+        }
+      }
+
+      // Gabungkan dengan antrean booking offline (jika ada) di baris paling atas
+      const offlineQueue = getOfflineQueue();
+      const offlineBookings = convertOfflineQueueToBookings(offlineQueue);
+      const existingIds = new Set(bList.map((b) => b.id));
+      const activeOfflineItems = offlineBookings.filter((ob) => !existingIds.has(ob.id));
+
+      setBookings([...activeOfflineItems, ...bList]);
+      if (sList.length > 0) setServices(sList);
+      if (pkgList.length > 0) setPackages(pkgList);
       if (sSettings) setStudioSettings(sSettings);
     } catch (err) {
       console.error('Failed to load bookings data', err);
@@ -84,6 +133,15 @@ export default function BookingsPage() {
 
   useEffect(() => {
     refreshData(true);
+  }, [refreshData]);
+
+  // Listener untuk memperbarui tabel jika ada data booking offline baru atau baru selesai disinkronkan
+  useEffect(() => {
+    const handleQueueChange = () => {
+      refreshData(false);
+    };
+    window.addEventListener(OFFLINE_QUEUE_EVENT, handleQueueChange);
+    return () => window.removeEventListener(OFFLINE_QUEUE_EVENT, handleQueueChange);
   }, [refreshData]);
 
   // Derived Data

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Loader2, WifiOff } from 'lucide-react';
 import { createManualBooking } from '@/lib/actions/bookings';
+import { saveToOfflineQueue, getCachedMasterData } from '@/lib/offline-queue';
 import { formatCurrency } from '@/lib/utils';
 import { BOOKING_FORM_DEFAULTS } from '@/lib/constants';
 import { calculateEndTime } from './BookingHelpers';
@@ -18,9 +19,15 @@ interface AddBookingModalProps {
   onSuccess: () => void;
 }
 
-export function AddBookingModal({ services, packages, onClose, onSuccess }: AddBookingModalProps) {
+export function AddBookingModal({ services: propServices, packages: propPackages, onClose, onSuccess }: AddBookingModalProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Gunakan data dari props, jika kosong (offline) ambil dari cache lokal
+  const cachedData = useMemo(() => getCachedMasterData(), []);
+  const services = propServices.length > 0 ? propServices : cachedData.services;
+  const packages = propPackages.length > 0 ? propPackages : cachedData.packages;
+  const isCurrentlyOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
 
   const getInitialForm = (): BookingFormState => {
     const srvId = services[0]?.id || '';
@@ -83,7 +90,7 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
       const paidAmt = form.paymentStatus === 'paid_full' ? totalPriceVal
         : form.paymentStatus === 'dp_paid' ? dpVal : 0;
 
-      const res = await createManualBooking({
+      const payload = {
         bookingCode,
         customerName: form.customerName || 'Pelanggan Baru',
         whatsapp: form.whatsapp || '081931107481',
@@ -97,19 +104,36 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
         startTime: form.startTime || '08:00',
         endTime: form.endTime || '14:00',
         location: form.location || 'Madura',
-        status: 'confirmed',
+        status: 'confirmed' as const,
         paymentStatus: form.paymentStatus,
         totalPrice: totalPriceVal,
         downPayment: dpVal,
         remainingAmount: Math.max(0, totalPriceVal - paidAmt),
         notes: form.notes || undefined,
-      });
+      };
 
-      if (res.success) {
-        toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
+      // A. Jika perangkat sedang dalam mode offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const item = saveToOfflineQueue(payload);
+        toast.success(`Tersimpan Offline! Kode: ${item.data.bookingCode}. Data akan disinkronkan saat terhubung kembali.`);
         onSuccess();
-      } else {
-        toast.error(`Gagal menyimpan booking manual: ${res.error}`);
+        return;
+      }
+
+      // B. Jika online, coba kirim ke Supabase
+      try {
+        const res = await createManualBooking(payload);
+        if (res.success) {
+          toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
+          onSuccess();
+        } else {
+          toast.error(`Gagal menyimpan booking: ${res.error}`);
+        }
+      } catch {
+        // Fallback otomatis ke antrean offline jika koneksi mendadak putus/timeout
+        const item = saveToOfflineQueue(payload);
+        toast.warning(`Sinyal terputus. Booking diamankan di antrean offline (${item.data.bookingCode}).`);
+        onSuccess();
       }
     } catch (err) {
       console.error('Error creating booking:', err);
@@ -143,6 +167,14 @@ export function AddBookingModal({ services, packages, onClose, onSuccess }: AddB
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Banner Status Offline jika tanpa internet */}
+        {isCurrentlyOffline && (
+          <div className="mx-4 sm:mx-6 mt-3 px-3.5 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs shrink-0">
+            <WifiOff className="w-4 h-4 shrink-0" />
+            <span>Mode Offline: Booking baru akan disimpan di perangkat ini dan disinkronkan saat ada sinyal.</span>
+          </div>
+        )}
 
         {/* Scrollable Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 text-xs pb-safe">

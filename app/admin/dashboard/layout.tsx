@@ -29,6 +29,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/components/ui/toast-context';
 import { QuickActionsBottomSheet } from './_components/QuickActionsBottomSheet';
 import { PwaInstallPrompt } from '@/app/admin/_components/PwaInstallPrompt';
+import { OfflineSyncStatus } from '@/app/admin/_components/OfflineSyncStatus';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -219,6 +220,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <OfflineSyncStatus />
             <ThemeToggle />
             <button
               onClick={handleLogout}

@@ -147,9 +147,14 @@ export function BookingTable({
                 <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors group">
                   {/* Booking Code */}
                   <td className="p-4 font-mono font-bold text-[#0066CC] whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
                       <span>{b.bookingCode}</span>
+                      {(b as any).isOfflineDraft && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          Offline Draft
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -335,9 +340,14 @@ export function BookingTable({
             >
               {/* Top Row: Booking Code + Chevron */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#0066CC]">
+                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#0066CC] flex-wrap">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
                   <span>{b.bookingCode}</span>
+                  {(b as any).isOfflineDraft && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      Offline
+                    </span>
+                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
               </div>
