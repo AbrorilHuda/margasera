@@ -5,9 +5,12 @@ import { Wifi, WifiOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react
 import {
   getOfflineQueue,
   syncOfflineQueue,
+  cacheMasterData,
   OFFLINE_QUEUE_EVENT,
   type OfflineBookingItem,
 } from '@/lib/offline-queue';
+import { getServices, getPackages } from '@/lib/actions/services';
+import { getStudioSettings } from '@/lib/actions/settings';
 import { useToast } from '@/components/ui/toast-context';
 
 export function OfflineSyncStatus() {
@@ -61,11 +64,11 @@ export function OfflineSyncStatus() {
     updateQueueState();
 
     // 3. Register Service Worker untuk Cache PWA
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then(() => {
-          // SW berhasil didaftarkan
+        .then((reg) => {
+          reg.update().catch(() => {});
         })
         .catch((err) => {
           console.warn('[SW Registration Error]:', err);
@@ -75,8 +78,21 @@ export function OfflineSyncStatus() {
     // 4. Listeners untuk event Online / Offline
     const handleOnline = () => {
       setIsOnline(true);
-      toast.info('Koneksi internet kembali online. Memeriksa antrean sinkronisasi...');
+      toast.info('Koneksi internet kembali online. Memeriksa antrean & data...');
       handleSync(true);
+
+      // Re-fetch dan re-cache data master asli dari Supabase
+      Promise.all([getServices(), getPackages(), getStudioSettings()])
+        .then(([srvList, pkgList, settings]) => {
+          cacheMasterData({
+            services: srvList,
+            packages: pkgList,
+            studioSettings: settings,
+          });
+        })
+        .catch((err) => {
+          console.warn('[OfflineSync] Gagal memperbarui cache data master:', err);
+        });
     };
 
     const handleOffline = () => {

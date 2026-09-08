@@ -140,6 +140,8 @@ export async function syncOfflineQueue(): Promise<{
   return { total: queue.length, successCount, failedCount };
 }
 
+export const OFFLINE_MASTER_DATA_EVENT = 'margasera_offline_master_data_changed';
+
 /** Cache data master (Layanan, Paket, Booking, Settings) agar tersedia saat offline */
 export function cacheMasterData(data: {
   services?: Service[];
@@ -149,10 +151,35 @@ export function cacheMasterData(data: {
 }) {
   if (!isBrowser()) return;
   try {
-    if (data.services) localStorage.setItem(STORAGE_KEY_SERVICES, JSON.stringify(data.services));
-    if (data.packages) localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(data.packages));
-    if (data.bookings) localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(data.bookings));
-    if (data.studioSettings) localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(data.studioSettings));
+    let hasChanged = false;
+    // Jangan menimpa data yang sudah tersimpan dengan array kosong saat offline
+    if (data.services && data.services.length > 0) {
+      localStorage.setItem(STORAGE_KEY_SERVICES, JSON.stringify(data.services));
+      hasChanged = true;
+    }
+    if (data.packages && data.packages.length > 0) {
+      localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(data.packages));
+      hasChanged = true;
+    }
+    if (data.bookings) {
+      // Batasi maksimal 5 booking terbaru agar penyimpanan localStorage super ringan (~2 KB)
+      const MAX_CACHED_BOOKINGS = 5;
+      const trimmedBookings = data.bookings.slice(0, MAX_CACHED_BOOKINGS);
+      try {
+        localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(trimmedBookings));
+        hasChanged = true;
+      } catch (err) {
+        console.warn('[OfflineQueue] Gagal menyimpan cache booking:', err);
+      }
+    }
+    if (data.studioSettings) {
+      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(data.studioSettings));
+      hasChanged = true;
+    }
+
+    if (hasChanged && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(OFFLINE_MASTER_DATA_EVENT));
+    }
   } catch (err) {
     console.warn('[OfflineQueue] Kuota cache lokal penuh / tidak tersedia:', err);
   }

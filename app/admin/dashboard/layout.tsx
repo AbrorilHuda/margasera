@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { signOutAdmin } from '@/lib/actions/admin';
 import { getStudioSettings } from '@/lib/actions/settings';
+import { getServices, getPackages } from '@/lib/actions/services';
+import { cacheMasterData } from '@/lib/offline-queue';
 import type { StudioSettings } from '@/lib/types';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -30,6 +32,7 @@ import { useToast } from '@/components/ui/toast-context';
 import { QuickActionsBottomSheet } from './_components/QuickActionsBottomSheet';
 import { PwaInstallPrompt } from '@/app/admin/_components/PwaInstallPrompt';
 import { OfflineSyncStatus } from '@/app/admin/_components/OfflineSyncStatus';
+import { OfflineWhatsNewModal } from '@/app/admin/_components/OfflineWhatsNewModal';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -60,7 +63,32 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
 
   useEffect(() => {
-    getStudioSettings().then(setStudioSettings).catch(console.error);
+    // Sinkronisasi data asli Supabase ke cache offline lokal begitu admin online
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      Promise.all([
+        getServices(),
+        getPackages(),
+        getStudioSettings(),
+      ])
+        .then(([srvList, pkgList, settings]) => {
+          if (settings) setStudioSettings(settings);
+          cacheMasterData({
+            services: srvList,
+            packages: pkgList,
+            studioSettings: settings,
+          });
+        })
+        .catch((err) => {
+          console.warn('[AdminLayout] Sinkronisasi master data offline gagal:', err);
+        });
+
+      // Simpan halaman dashboard & booking berotentikasi ke cache Service Worker saat online
+      ['/admin/dashboard', '/admin/dashboard/bookings'].forEach((pageUrl) => {
+        fetch(pageUrl, { credentials: 'same-origin' }).catch(() => {});
+      });
+    } else {
+      getStudioSettings().then(setStudioSettings).catch(console.error);
+    }
   }, []);
 
   // Close sidebar and bottom sheets on route change
@@ -312,6 +340,9 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
       {/* Floating PWA Install Prompt for Admin */}
       <PwaInstallPrompt />
+
+      {/* First-time announcement modal for Offline Features */}
+      <OfflineWhatsNewModal />
     </div>
   );
 }

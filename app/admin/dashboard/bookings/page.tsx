@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ClipboardList, CheckCircle2, Clock, Wallet } from 'lucide-react';
+import { ClipboardList, CheckCircle2, Clock, Wallet, WifiOff } from 'lucide-react';
 import {
   getAllBookings,
   updateBookingStatus,
@@ -26,10 +26,31 @@ import {
   convertOfflineQueueToBookings,
   OFFLINE_QUEUE_EVENT,
 } from '@/lib/offline-queue';
+import { formatCompactIDR, formatCurrency } from '@/lib/utils';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
 export default function BookingsPage() {
   const { toast, confirmModal } = useToast();
+
+  // Connection & Offline State
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+      setIsOffline(offline);
+      if (offline) {
+        toast.info('Mode Offline: Menampilkan 5 data booking terbaru dari penyimpanan lokal.');
+      }
+    };
+    updateOnlineStatus();
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, [toast]);
 
   // Data
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -388,14 +409,15 @@ export default function BookingsPage() {
           },
           {
             label: 'Est. Total Revenue',
-            value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalRevenue),
-            unit: '',
+            value: formatCompactIDR(totalRevenue).value,
+            unit: formatCompactIDR(totalRevenue).unit,
             sub: `${filteredBookings.length} booking aktif`,
             color: '#0066CC',
             icon: Wallet,
+            tooltip: `Total Estimasi Pendapatan: ${formatCurrency(totalRevenue)}`,
           },
-        ].map(({ label, value, unit, sub, color, icon: Icon }) => (
-          <div key={label} className="p-4 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs backdrop-blur-md">
+        ].map(({ label, value, unit, sub, color, icon: Icon, tooltip }) => (
+          <div key={label} title={tooltip} className="p-4 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs backdrop-blur-md">
             <div className="flex flex-col gap-0.5 min-w-0">
               <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest font-semibold truncate" style={{ color }}>{label}</span>
               <div className="flex items-baseline gap-1 truncate">
@@ -410,6 +432,28 @@ export default function BookingsPage() {
           </div>
         ))}
       </div>
+
+      {/* Offline Mode Alert Banner */}
+      {isOffline && (
+        <div className="p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-800 dark:text-amber-300 text-xs shadow-xs animate-in fade-in duration-300">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
+                Mode Offline Aktif
+              </span>
+              <span className="text-[11px] text-amber-700/90 dark:text-amber-300/80 font-light truncate sm:whitespace-normal">
+                Menampilkan 5 data booking terbaru dari memori perangkat. Hubungkan ke internet untuk memuat seluruh riwayat pesanan.
+              </span>
+            </div>
+          </div>
+          <span className="shrink-0 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+            5 Booking Offline
+          </span>
+        </div>
+      )}
 
       {/* FILTERS */}
       <BookingFilters

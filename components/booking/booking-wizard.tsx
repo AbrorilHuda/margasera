@@ -9,6 +9,7 @@ import { InstagramIcon } from '@/components/ui/icons';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { getAvailability } from '@/lib/actions/availability';
 import { createBooking } from '@/lib/actions/bookings';
+import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
 import type { Service, Package, Availability, AvailabilityStatus, StudioSettings } from '@/lib/types';
 import { formatCurrency, formatDate, getTimeOfDayLabel, formatTimeWithPeriod, getTodayDateString } from '@/lib/utils';
 import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
@@ -55,11 +56,33 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   useEffect(() => {
     async function loadData() {
       setIsDataLoading(true);
-      const [srvList, pkgList, availList] = await Promise.all([
-        getServices(),
-        getPackages(),
-        getAvailability(),
-      ]);
+      let srvList: Service[] = [];
+      let pkgList: Package[] = [];
+      let availList: Availability[] = [];
+
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = getCachedMasterData();
+        srvList = cached.services;
+        pkgList = cached.packages;
+      } else {
+        try {
+          const res = await Promise.all([
+            getServices(),
+            getPackages(),
+            getAvailability(),
+          ]);
+          srvList = res[0];
+          pkgList = res[1];
+          availList = res[2];
+          cacheMasterData({ services: srvList, packages: pkgList });
+        } catch (err) {
+          console.warn('[BookingWizard] Gagal memuat data online, mencoba cache lokal:', err);
+          const cached = getCachedMasterData();
+          srvList = cached.services;
+          pkgList = cached.packages;
+        }
+      }
+
       setServices(srvList);
       setPackages(pkgList);
       setAvailabilityData(availList);

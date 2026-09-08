@@ -18,6 +18,7 @@ import {
 import { getAllBookings } from '@/lib/actions/bookings';
 import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getServices, getPackages } from '@/lib/actions/services';
+import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
@@ -32,12 +33,45 @@ export default function AdminOverviewPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [bList, pList, sList, pkgList] = await Promise.all([
-        getAllBookings(),
-        getGalleryProjects(),
-        getServices(),
-        getPackages(),
-      ]);
+      let bList: Booking[] = [];
+      let pList: GalleryProject[] = [];
+      let sList: Service[] = [];
+      let pkgList: Package[] = [];
+
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Mode offline: baca langsung dari cache lokal
+        const cached = getCachedMasterData();
+        bList = cached.bookings;
+        sList = cached.services;
+        pkgList = cached.packages;
+      } else {
+        try {
+          const res = await Promise.all([
+            getAllBookings(),
+            getGalleryProjects(),
+            getServices(),
+            getPackages(),
+          ]);
+          bList = res[0];
+          pList = res[1];
+          sList = res[2];
+          pkgList = res[3];
+
+          // Simpan data asli ke cache lokal
+          cacheMasterData({
+            bookings: bList,
+            services: sList,
+            packages: pkgList,
+          });
+        } catch (fetchErr) {
+          console.warn('[Overview] Gagal mengambil data online, menggunakan cache lokal:', fetchErr);
+          const cached = getCachedMasterData();
+          bList = cached.bookings;
+          sList = cached.services;
+          pkgList = cached.packages;
+        }
+      }
+
       setBookings(bList);
       setProjects(pList);
       setServices(sList);

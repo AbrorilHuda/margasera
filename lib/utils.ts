@@ -17,6 +17,21 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+export function formatCompactIDR(amount: number): { value: string; unit: string; full: string } {
+  const full = formatCurrency(amount);
+  if (amount >= 1_000_000) {
+    const inJt = amount / 1_000_000;
+    const formatted = Number(inJt.toFixed(3)).toString();
+    return { value: `Rp ${formatted}`, unit: 'jt', full };
+  }
+  if (amount >= 1_000) {
+    const inRb = amount / 1_000;
+    const formatted = Number(inRb.toFixed(1)).toString();
+    return { value: `Rp ${formatted}`, unit: 'rb', full };
+  }
+  return { value: `Rp ${amount.toLocaleString('id-ID')}`, unit: '', full };
+}
+
 export function formatDate(dateString: string): string {
   if (!dateString) return "";
   const date = new Date(dateString);

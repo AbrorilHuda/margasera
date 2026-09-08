@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Loader2, WifiOff } from 'lucide-react';
 import { createManualBooking } from '@/lib/actions/bookings';
-import { saveToOfflineQueue, getCachedMasterData } from '@/lib/offline-queue';
+import { saveToOfflineQueue, getCachedMasterData, OFFLINE_MASTER_DATA_EVENT } from '@/lib/offline-queue';
 import { formatCurrency } from '@/lib/utils';
 import { BOOKING_FORM_DEFAULTS } from '@/lib/constants';
 import { calculateEndTime } from './BookingHelpers';
@@ -23,8 +23,17 @@ export function AddBookingModal({ services: propServices, packages: propPackages
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Gunakan data dari props, jika kosong (offline) ambil dari cache lokal
-  const cachedData = useMemo(() => getCachedMasterData(), []);
+  // Ambil data dari cache lokal dan perbarui jika master data tersinkronisasi di background
+  const [cachedData, setCachedData] = useState(() => getCachedMasterData());
+
+  useEffect(() => {
+    const handleMasterUpdate = () => {
+      setCachedData(getCachedMasterData());
+    };
+    window.addEventListener(OFFLINE_MASTER_DATA_EVENT, handleMasterUpdate);
+    return () => window.removeEventListener(OFFLINE_MASTER_DATA_EVENT, handleMasterUpdate);
+  }, []);
+
   const services = propServices.length > 0 ? propServices : cachedData.services;
   const packages = propPackages.length > 0 ? propPackages : cachedData.packages;
   const isCurrentlyOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
@@ -47,6 +56,40 @@ export function AddBookingModal({ services: propServices, packages: propPackages
   const [form, setForm] = useState<BookingFormState>(getInitialForm);
 
   const patch = (partial: Partial<BookingFormState>) => setForm((prev) => ({ ...prev, ...partial }));
+
+  // Auto-select layanan dan paket pertama dari database jika form belum terisi
+  useEffect(() => {
+    if (services.length > 0) {
+      const currentSrvExists = services.some((s) => s.id === form.serviceId);
+      if (!form.serviceId || !currentSrvExists) {
+        const firstSrv = services[0];
+        const availablePkgs = packages.filter((p) => p.serviceId === firstSrv.id);
+        const firstPkg = availablePkgs[0];
+        const autoEndTime = calculateEndTime(form.startTime || '08:00', firstPkg?.duration || '6 Jam');
+        patch({
+          serviceId: firstSrv.id,
+          packageId: firstPkg?.id || '',
+          totalPrice: firstPkg?.price ?? form.totalPrice,
+          downPayment: firstPkg?.downPayment && firstPkg.downPayment > 0
+            ? firstPkg.downPayment
+            : Math.ceil((firstPkg?.price ?? 5_000_000) * 0.2),
+          endTime: autoEndTime,
+        });
+      } else if (!form.packageId) {
+        const availablePkgs = packages.filter((p) => p.serviceId === form.serviceId);
+        if (availablePkgs.length > 0) {
+          const firstPkg = availablePkgs[0];
+          patch({
+            packageId: firstPkg.id,
+            totalPrice: firstPkg.price ?? form.totalPrice,
+            downPayment: firstPkg.downPayment && firstPkg.downPayment > 0
+              ? firstPkg.downPayment
+              : Math.ceil((firstPkg.price ?? 5_000_000) * 0.2),
+          });
+        }
+      }
+    }
+  }, [services, packages, form.serviceId, form.packageId, form.startTime]);
 
   const handleServiceChange = (srvId: string) => {
     const availablePkgs = packages.filter((p) => p.serviceId === srvId);
@@ -183,6 +226,7 @@ export function AddBookingModal({ services: propServices, packages: propPackages
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>1. Kategori Layanan *</label>
               <select value={form.serviceId} onChange={(e) => handleServiceChange(e.target.value)} className={selectClass}>
+                {services.length === 0 && <option value="">Memuat kategori layanan...</option>}
                 {services.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -191,6 +235,9 @@ export function AddBookingModal({ services: propServices, packages: propPackages
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>2. Paket Dipilih *</label>
               <select value={form.packageId} onChange={(e) => handlePackageChange(e.target.value)} className={selectClass}>
+                {packages.filter((p) => !form.serviceId || p.serviceId === form.serviceId).length === 0 && (
+                  <option value="">{services.length === 0 ? 'Memuat paket...' : 'Pilih layanan terlebih dahulu'}</option>
+                )}
                 {packages
                   .filter((p) => !form.serviceId || p.serviceId === form.serviceId)
                   .map((p) => (

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PackagePlus, Check, Trash2, Pencil, X, Loader2, Sparkles } from 'lucide-react';
 import { getServices, getPackages, upsertPackage, deletePackage } from '@/lib/actions/services';
+import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast-context';
 import type { Service, Package } from '@/lib/types';
@@ -43,14 +44,30 @@ export default function PricingPage() {
   const refreshData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [sList, pkgList] = await Promise.all([getServices(), getPackages()]);
-      setServices(sList);
-      setPackages(pkgList);
-      if (sList.length > 0 && !selectedServiceId) {
-        setSelectedServiceId(sList[0].id);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = getCachedMasterData();
+        setServices(cached.services);
+        setPackages(cached.packages);
+        if (cached.services.length > 0 && !selectedServiceId) {
+          setSelectedServiceId(cached.services[0].id);
+        }
+      } else {
+        const [sList, pkgList] = await Promise.all([getServices(), getPackages()]);
+        setServices(sList);
+        setPackages(pkgList);
+        cacheMasterData({ services: sList, packages: pkgList });
+        if (sList.length > 0 && !selectedServiceId) {
+          setSelectedServiceId(sList[0].id);
+        }
       }
     } catch (err) {
-      console.error('Failed to load pricing data', err);
+      console.warn('[PricingPage] Gagal mengambil data online, beralih ke cache:', err);
+      const cached = getCachedMasterData();
+      setServices(cached.services);
+      setPackages(cached.packages);
+      if (cached.services.length > 0 && !selectedServiceId) {
+        setSelectedServiceId(cached.services[0].id);
+      }
     } finally {
       setLoadingData(false);
     }

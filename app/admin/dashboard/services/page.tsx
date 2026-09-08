@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Layers, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { getServices, upsertService, deleteService, getPackages } from '@/lib/actions/services';
+import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
 import { useToast } from '@/components/ui/toast-context';
 import type { Service, Package } from '@/lib/types';
 
@@ -20,11 +21,21 @@ export default function ServicesPage() {
   const refreshData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [sList, pkgList] = await Promise.all([getServices(), getPackages()]);
-      setServices(sList);
-      setPackages(pkgList);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = getCachedMasterData();
+        setServices(cached.services);
+        setPackages(cached.packages);
+      } else {
+        const [sList, pkgList] = await Promise.all([getServices(), getPackages()]);
+        setServices(sList);
+        setPackages(pkgList);
+        cacheMasterData({ services: sList, packages: pkgList });
+      }
     } catch (err) {
-      console.error('Failed to load services data', err);
+      console.warn('[ServicesPage] Gagal mengambil data online, beralih ke cache:', err);
+      const cached = getCachedMasterData();
+      setServices(cached.services);
+      setPackages(cached.packages);
     } finally {
       setLoadingData(false);
     }
