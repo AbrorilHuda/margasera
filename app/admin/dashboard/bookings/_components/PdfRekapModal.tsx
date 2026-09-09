@@ -223,9 +223,17 @@ export function PdfRekapModal({
             <div className="text-right flex flex-col items-end gap-1 print-text-right print-items-end">
               <span className="text-[10px] font-mono text-zinc-400">Penanggung Jawab:</span>
               <div className="h-10 w-28 border-b border-zinc-400 flex items-center justify-end italic text-zinc-400 text-xs">
-                [ Signature ]
+                <Image
+                  src="/ttd.PNG"
+                  alt="Tanda Tangan Margasera"
+                  width={250}
+                  height={100}
+                  className="h-20 w-auto object-contain"
+                  priority
+                />
               </div>
-              <strong className="text-zinc-900 font-semibold font-mono text-xs">MARGASERA Official</strong>
+              <strong className="text-zinc-900 font-semibold font-mono text-xs">ROYFAL ALIM, S.Kom</strong>
+              <span className="font-mono text-[10px]">Chief Executive Officer(CEO)</span>
             </div>
           </div>
         </div>

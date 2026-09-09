@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { X, Receipt, Share2, Printer, Building2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { printDocument } from '@/lib/print';
+import { calculateEndTime } from './BookingHelpers';
 import type { Booking, Package, StudioSettings } from '@/lib/types';
 
 interface InvoiceModalProps {
@@ -53,9 +54,15 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
     if (match && match[1]) extractedDuration = match[1].trim();
   }
 
+  const sessionTime = inv.startTime && inv.endTime
+    ? `${inv.startTime} - ${inv.endTime} WIB`
+    : inv.startTime
+      ? `${inv.startTime} - ${calculateEndTime(inv.startTime, matchedPkg?.duration || '6 Jam')} WIB`
+      : '08:00 - 17:00 WIB';
+
   const displayDuration = matchedPkg?.duration
     ?? extractedDuration
-    ?? (inv.startTime && inv.endTime ? `${inv.startTime} – ${inv.endTime} WIB` : null);
+    ?? null;
 
   const paymentBadgeStyle = isPaidFull
     ? 'bg-emerald-50 text-emerald-700 border-emerald-400'
@@ -83,6 +90,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
       `📄 *INVOICE:* INV-${inv.bookingCode}\n` +
       `📸 *Layanan:* ${inv.serviceName} (${inv.packageName})\n` +
       `📅 *Tanggal Event:* ${formatDate(inv.bookingDate)}\n` +
+      `⏰ *Jam Sesi:* ${sessionTime}\n` +
       `📍 *Lokasi:* ${inv.location}\n\n` +
       `💰 *Total Investasi:* ${formatCurrency(totalPrice)}\n` +
       `✅ *Status Pembayaran:* ${statusText}\n` +
@@ -168,7 +176,8 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
             <div className="flex flex-col gap-1.5 sm:pl-2">
               <span className="font-mono text-[10px] text-[#0066CC] uppercase font-bold tracking-wider">Detail Acara &amp; Sesi:</span>
               <span className="text-zinc-800">Tanggal: <strong>{formatDate(inv.bookingDate)}</strong></span>
-              {displayDuration && <span className="text-zinc-800">Sesi: <strong>{displayDuration}</strong></span>}
+              <span className="text-zinc-800">Jam Sesi: <strong>{sessionTime}</strong></span>
+              {displayDuration && <span className="text-zinc-800">Durasi: <strong>{displayDuration}</strong></span>}
               <span className="text-zinc-800">Lokasi: <strong>{inv.location}</strong></span>
             </div>
           </div>
@@ -197,7 +206,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
                     )}
                   </td>
                   <td className="py-3.5 text-right font-mono text-zinc-700 whitespace-nowrap">
-                    {displayDuration || '-'}
+                    {displayDuration || sessionTime || '-'}
                   </td>
                   <td className="py-3.5 text-right font-mono font-bold text-zinc-900 text-sm whitespace-nowrap">
                     {formatCurrency(totalPrice)}
@@ -253,8 +262,15 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
             </div>
             <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1 print-text-right print-items-end">
               <span className="font-mono text-[10px]">Hormat Kami,</span>
-              <div className="h-12 w-32 border-b border-zinc-400 flex items-center justify-center italic text-zinc-400 text-xs">
-                [ Signed Digital ]
+              <div className="h-10 w-30 border-b border-zinc-400 flex items-center justify-center pb-1">
+                <Image
+                  src="/ttd.PNG"
+                  alt="Tanda Tangan Margasera"
+                  width={250}
+                  height={100}
+                  className="h-20 w-auto object-contain"
+                  priority
+                />
               </div>
               <strong className="text-zinc-900 font-semibold font-mono text-xs">MARGASERA Official</strong>
             </div>

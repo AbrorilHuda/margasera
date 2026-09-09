@@ -122,16 +122,16 @@ export function BookingTable({
           ========================================= */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[900px]">
-          <thead className="bg-zinc-50 dark:bg-zinc-950/90 border-b border-zinc-200 dark:border-zinc-800 text-[#0066CC] font-mono font-medium tracking-[0.18em] uppercase text-[10px]">
+          <thead className="bg-zinc-50/90 dark:bg-zinc-950/90 border-b border-zinc-200 dark:border-zinc-800 text-[#0066CC] font-mono font-semibold tracking-wider uppercase text-[11px]">
             <tr>
-              <th className="p-4">Kode Booking</th>
-              <th className="p-4">Client / Contact</th>
-              <th className="p-4">Layanan &amp; Paket</th>
-              <th className="p-4">Jadwal Acara</th>
-              <th className="p-4">Lokasi Venue</th>
-              <th className="p-4">Est. Harga</th>
-              <th className="p-4">Status &amp; DP</th>
-              <th className="p-4 text-right">Aksi Admin</th>
+              <th className="py-3 px-3.5">Kode Booking</th>
+              <th className="py-3 px-3.5">Client / Contact</th>
+              <th className="py-3 px-3.5">Layanan &amp; Paket</th>
+              <th className="py-3 px-3.5">Jadwal Acara</th>
+              <th className="py-3 px-3.5">Lokasi Venue</th>
+              <th className="py-3 px-3.5">Est. Harga</th>
+              <th className="py-3 px-3.5">Status &amp; DP</th>
+              <th className="py-3 px-3.5 text-right">Aksi Admin</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
@@ -146,12 +146,12 @@ export function BookingTable({
               return (
                 <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors group">
                   {/* Booking Code */}
-                  <td className="p-4 font-mono font-bold text-[#0066CC] whitespace-nowrap">
+                  <td className="py-3 px-3.5 font-mono text-xs font-bold text-[#0066CC] whitespace-nowrap">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
                       <span>{b.bookingCode}</span>
                       {(b as any).isOfflineDraft && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                           Offline Draft
                         </span>
                       )}
@@ -159,18 +159,18 @@ export function BookingTable({
                   </td>
 
                   {/* Client Info */}
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-bold text-zinc-800 dark:text-zinc-200 flex items-center justify-center text-xs shrink-0 font-mono">
+                  <td className="py-3 px-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-bold text-zinc-800 dark:text-zinc-200 flex items-center justify-center text-[11px] shrink-0 font-mono">
                         {initial}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-wide truncate">{b.customerName}</span>
+                        <span className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight truncate">{b.customerName}</span>
                         <a
                           href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono hover:underline flex items-center gap-1"
+                          className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono hover:underline flex items-center gap-1"
                         >
                           <MessageCircle className="w-3 h-3" />
                           <span>{b.whatsapp}</span>
@@ -180,20 +180,20 @@ export function BookingTable({
                   </td>
 
                   {/* Service & Package */}
-                  <td className="p-4">
+                  <td className="py-3 px-3.5">
                     <div className="flex flex-col">
-                      <span className="text-zinc-900 dark:text-zinc-100 font-medium">{b.serviceName}</span>
-                      <span className="text-[10px] text-zinc-600 dark:text-zinc-400 font-mono bg-zinc-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800/80 w-fit mt-0.5">
+                      <span className="text-[13px] text-zinc-900 dark:text-zinc-100 font-medium">{b.serviceName}</span>
+                      <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono bg-zinc-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800/80 w-fit mt-0.5">
                         {b.packageName}
                       </span>
                     </div>
                   </td>
 
                   {/* Event Date & Time */}
-                  <td className="p-4 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="text-zinc-900 dark:text-zinc-200 font-semibold">{formatDate(b.bookingDate)}</span>
-                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-1">
+                      <span className="text-[13px] text-zinc-900 dark:text-zinc-200 font-semibold">{formatDate(b.bookingDate)}</span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-1 mt-0.5">
                         <Clock className="w-3 h-3" />
                         {b.startTime ? `${b.startTime} – ${b.endTime} WIB` : '08:00 – 14:00 WIB'}
                       </span>
@@ -201,38 +201,38 @@ export function BookingTable({
                   </td>
 
                   {/* Location */}
-                  <td className="p-4 text-zinc-600 dark:text-zinc-400 max-w-[140px]">
-                    <div className="flex items-center gap-1 truncate" title={b.location}>
+                  <td className="py-3 px-3.5 text-zinc-600 dark:text-zinc-400 max-w-[140px]">
+                    <div className="flex items-center gap-1 truncate text-xs" title={b.location}>
                       <MapPin className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
                       <span className="truncate">{b.location}</span>
                     </div>
                   </td>
 
                   {/* Price */}
-                  <td className="p-4 font-mono text-sm font-semibold text-[#0066CC] whitespace-nowrap">
+                  <td className="py-3 px-3.5 font-mono text-[13px] font-bold text-[#0066CC] whitespace-nowrap">
                     {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
                   </td>
 
                   {/* Status & Payment Status */}
-                  <td className="p-4 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${statusStyle}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${statusStyle}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
                         {b.status}
                       </span>
-                      <span className={`px-2 py-0.2 rounded text-[9px] font-bold uppercase font-mono border ${paymentStyle}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono border ${paymentStyle}`}>
                         {paymentLabel}
                       </span>
                     </div>
                   </td>
 
                   {/* Actions Toolbar */}
-                  <td className="p-4 text-right">
+                  <td className="py-3 px-3.5 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {/* Detail Modal */}
                       <button
                         onClick={() => onDetail(b)}
-                        className="p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all cursor-pointer"
+                        className="p-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all cursor-pointer"
                         title="Lihat Detail Booking"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export function BookingTable({
                         href={generateGoogleCalendarUrl(b)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors"
+                        className="px-2 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors"
                         title="Tambah ke Google Calendar"
                       >
                         <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -253,7 +253,7 @@ export function BookingTable({
                       {/* Invoice Button */}
                       <button
                         onClick={() => onInvoice(b)}
-                        className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[10px] font-mono transition-colors cursor-pointer"
+                        className="px-2 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer"
                         title="Lihat / Cetak Invoice Pembayaran"
                       >
                         <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -264,7 +264,7 @@ export function BookingTable({
                       {b.status === 'pending' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'confirmed')}
-                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
                         >
                           Confirm
                         </button>
@@ -272,7 +272,7 @@ export function BookingTable({
                       {b.status === 'confirmed' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'completed')}
-                          className="px-2.5 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
+                          className="px-2 py-1 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
                         >
                           Complete
                         </button>
@@ -281,7 +281,7 @@ export function BookingTable({
                       {/* Delete Button */}
                       <button
                         onClick={() => onDelete(b.id, b.bookingCode)}
-                        className="p-2 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
                         title="Hapus Booking"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -354,7 +354,7 @@ export function BookingTable({
 
               {/* Client Name & Service Info */}
               <div className="flex flex-col gap-0.5">
-                <h4 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
+                <h4 className="font-bold text-[15px] text-zinc-900 dark:text-zinc-100">
                   {b.customerName}
                 </h4>
                 <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
@@ -381,16 +381,16 @@ export function BookingTable({
 
               {/* Bottom Row: Total Price + Status Badges */}
               <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-                <span className="font-mono font-bold text-sm text-[#0066CC]">
+                <span className="font-mono font-bold text-[13px] text-[#0066CC]">
                   {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
                 </span>
 
                 <div className="flex items-center gap-1.5">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] uppercase font-mono font-semibold ${statusStyle}`}>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono font-semibold ${statusStyle}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
                     {b.status}
                   </span>
-                  <span className={`px-2 py-0.2 rounded text-[8px] font-bold uppercase font-mono border ${paymentStyle}`}>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono border ${paymentStyle}`}>
                     {paymentLabel}
                   </span>
                 </div>
