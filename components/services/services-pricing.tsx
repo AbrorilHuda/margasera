@@ -11,9 +11,14 @@ import { formatCurrency } from '@/lib/utils';
 interface ServicesPricingProps {
   initialServices?: Service[];
   initialPackages?: Package[];
+  hideHeader?: boolean;
 }
 
-export function ServicesPricing({ initialServices = [], initialPackages = [] }: ServicesPricingProps) {
+export function ServicesPricing({
+  initialServices = [],
+  initialPackages = [],
+  hideHeader = false,
+}: ServicesPricingProps) {
   const [services, setServices] = useState<Service[]>(initialServices);
   const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [selectedServiceId, setSelectedServiceId] = useState<string>(
@@ -82,17 +87,19 @@ export function ServicesPricing({ initialServices = [], initialPackages = [] }: 
   return (
     <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
       {/* Header Title */}
-      <div className="text-center max-w-3xl mx-auto mb-16">
-        <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
-          Investment & Packages
-        </span>
-        <h1 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">
-          Layanan & Paket Harga
-        </h1>
-        <p className="text-sm text-zinc-400 font-light leading-relaxed mt-4">
-          Setiap momen abadi pantas didokumentasikan dengan tingkat ketelitian dan estetika terbaik. Pilih kategori layanan dan temukan paket yang paling sesuai dengan kebutuhan sesi foto Anda.
-        </p>
-      </div>
+      {!hideHeader && (
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
+            Investment & Packages
+          </span>
+          <h2 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">
+            Layanan & Paket Harga
+          </h2>
+          <p className="text-sm text-zinc-400 font-light leading-relaxed mt-4">
+            Setiap momen abadi pantas didokumentasikan dengan tingkat ketelitian dan estetika terbaik. Pilih kategori layanan dan temukan paket yang paling sesuai dengan kebutuhan sesi foto Anda di Pamekasan, Madura, dan sekitarnya.
+          </p>
+        </div>
+      )}
 
       {/* Service Category Tabs */}
       <div className="flex items-center justify-center gap-3 flex-wrap mb-16">

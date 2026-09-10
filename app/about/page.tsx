@@ -1,19 +1,67 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Camera, MapPin, MessageCircle, Mail, Phone, Send, Sparkles } from 'lucide-react';
 import { InstagramIcon } from '@/components/ui/icons';
 
-export const metadata = {
-  title: 'Tentang & Kontak',
-  description: 'Cerita filosofi brand, profil fotografer, dan formulir kontak Marga Sera Photography.',
+export const metadata: Metadata = {
+  title: 'Tentang & Kontak Fotografer Pamekasan',
+  description: 'Profil Margasera Photography di Pamekasan, Madura — "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, dan Tasyakuran 40 Hari Bayi.',
+  keywords: [
+    'Tentang Margasera Photography',
+    'Moment Satu Hari Untuk Selamanya',
+    'Fotografer Pamekasan',
+    'Fotografer Madura',
+    'Studio Foto Pamekasan',
+    'Kontak Fotografer Wedding Madura',
+  ],
   alternates: {
     canonical: '/about',
+  },
+  openGraph: {
+    title: 'Tentang & Kontak | Margasera Photography Pamekasan',
+    description: 'Profil Margasera Photography di Pamekasan, Madura — "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, dan Tasyakuran 40 Hari Bayi.',
+    url: '/about',
+    siteName: 'Margasera Photography',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Tentang Margasera Photography Pamekasan Madura',
+      },
+    ],
+    locale: 'id_ID',
+    type: 'website',
   },
 };
 
 export default function AboutPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'Tentang Margasera Photography',
+    description: 'Profil Margasera Photography, creative photography studio di Pamekasan, Madura.',
+    url: 'https://margasera.id/about',
+    mainEntity: {
+      '@type': 'PhotographyBusiness',
+      name: 'Margasera Photography',
+      url: 'https://margasera.id',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Pamekasan',
+        addressRegion: 'Jawa Timur',
+        addressCountry: 'ID',
+      },
+    },
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-8 pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Brand Story Section */}
       <section className="max-w-7xl mx-auto px-6 md:px-12 py-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
@@ -25,24 +73,24 @@ export default function AboutPage() {
               Cerita Di Balik Margasera
             </h1>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Margasera Photography didirikan dengan visi menghadirkan gaya penceritaan visual yang bermakna. Setiap jepretan dirancang untuk mengabadikan esensi, gestur yang tidak disengaja, serta kedalaman emosi dari momen spesial Anda.
+              Margasera Photography adalah creative photography studio yang berbasis di Pamekasan, Madura dengan mengusung filosofi &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;. Kami mendedikasikan karya kami untuk merangkum momen sakral dan berharga melalui pendekatan visual editorial dan sinematik untuk Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, serta Tasyakuran 40 Hari Bayi.
             </p>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Kami percaya bahwa fotografer bukan sekadar memegang kamera, melainkan mengarahkan cahaya, emosi, dan kenangan menjadi karya seni visual yang akan selalu dinikmati lintas generasi.
+              Kami percaya bahwa fotografi bukan sekadar menekan shutter kamera, melainkan merangkum cahaya, emosi tulus, dan kenangan otentik menjadi karya seni visual yang abadi lintas generasi. Margasera melayani kebutuhan fotografi di Pamekasan, Madura (Sumenep, Sampang, Bangkalan), Jawa Timur, serta berbagai destinasi di Indonesia.
             </p>
 
             <div className="p-6 bg-zinc-900 border border-zinc-800 flex items-center gap-4 mt-2">
               <Sparkles className="w-6 h-6 text-[#0066CC] shrink-0" />
               <p className="text-xs text-zinc-300 font-light italic">
-                &ldquo;Kemewahan sebuah dokumentasi tidak terletak pada kerumitannya, melainkan kejujuran emosi di dalamnya.&rdquo;
+                &ldquo;Moment Satu Hari Untuk Selamanya — Kemewahan sebuah dokumentasi terletak pada kejujuran emosi di dalamnya.&rdquo;
               </p>
             </div>
           </div>
 
           <div className="md:col-span-6 relative h-[560px] w-full border border-zinc-800">
             <Image
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1600&auto=format&fit=crop"
-              alt="Marga Sera Studio Lead"
+              src="/about.jpeg"
+              alt="Margasera Photography Studio Lead Pamekasan Madura"
               fill
               className="object-cover img-editorial filter brightness-90"
               sizes="(max-width: 768px) 100vw, 50vw"
@@ -63,13 +111,13 @@ export default function AboutPage() {
               Mari Berdiskusi
             </h2>
             <p className="text-xs text-zinc-400 font-light leading-relaxed">
-              Memiliki pertanyaan khusus mengenai jadwal, lokasi destination wedding, atau kolaborasi visual? Kirimkan pesan Anda melalui formulir di samping.
+              Memiliki pertanyaan khusus mengenai jadwal, lokasi destination wedding, atau kolaborasi visual di Pamekasan, Madura, maupun luar kota? Kirimkan pesan Anda melalui formulir di samping.
             </p>
 
             <div className="flex flex-col gap-4 text-xs text-zinc-300 font-light pt-4 border-t border-zinc-900">
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-[#0066CC] shrink-0" />
-                <span>Pamekasan</span>
+                <span>Pamekasan, Madura, Jawa Timur, Indonesia</span>
               </div>
               <div className="flex items-center gap-3">
                 <InstagramIcon className="w-4 h-4 text-[#0066CC] shrink-0" />

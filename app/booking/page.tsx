@@ -6,9 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Pemesanan Sesi Foto',
-  description: 'Formulir pemesanan sesi foto bertahap untuk wedding, pre-wedding, couple, & portrait Marga Sera.',
+  description: 'Formulir pemesanan online sesi fotografi wedding, pre-wedding story, couple, portrait, dan wisuda Margasera Photography Pamekasan Madura.',
   alternates: {
     canonical: '/booking',
+  },
+  openGraph: {
+    title: 'Pemesanan Sesi Foto | Margasera Photography Pamekasan',
+    description: 'Pesan sesi foto wedding, pre-wedding, couple, portrait, dan wisuda secara online di Margasera Photography.',
+    url: '/booking',
   },
 };
 

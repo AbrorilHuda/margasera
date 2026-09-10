@@ -10,25 +10,42 @@ import { getServices } from '@/lib/actions/services';
 import { GalleryProject, Service } from '@/lib/types';
 import { Lightbox } from './lightbox';
 
-export function FeaturedWorks({ limit }: { limit?: number }) {
+export function FeaturedWorks({
+  limit,
+  initialProjects,
+  initialServices,
+}: {
+  limit?: number;
+  initialProjects?: GalleryProject[];
+  initialServices?: Service[];
+}) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [projects, setProjects] = useState<GalleryProject[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<GalleryProject[]>(initialProjects || []);
+  const [services, setServices] = useState<Service[]>(initialServices || []);
+  const [loading, setLoading] = useState(!initialProjects || initialProjects.length === 0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<GalleryProject | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
+    // Only fetch client-side if initial data was not provided
+    if (initialProjects && initialProjects.length > 0 && initialServices && initialServices.length > 0) {
+      return;
+    }
+
     async function loadData() {
       setLoading(true);
       const [projData, srvData] = await Promise.all([getGalleryProjects(), getServices()]);
-      setProjects(projData);
-      setServices(srvData);
+      if (!initialProjects || initialProjects.length === 0) {
+        setProjects(projData);
+      }
+      if (!initialServices || initialServices.length === 0) {
+        setServices(srvData);
+      }
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [initialProjects, initialServices]);
 
   const categories = [
     { id: 'all', label: 'Semua Karya' },
@@ -112,7 +129,7 @@ export function FeaturedWorks({ limit }: { limit?: number }) {
               {/* Cover Image */}
               <Image
                 src={project.coverImage}
-                alt={project.title}
+                alt={`Margasera Photography - ${project.title} - ${project.categoryLabel} ${project.location}`}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover object-center img-editorial filter brightness-90 group-hover:brightness-100"
@@ -182,7 +199,7 @@ export function FeaturedWorks({ limit }: { limit?: number }) {
             className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-zinc-900 border border-zinc-800 hover:border-[#0066CC] text-zinc-200 hover:text-[#0066CC] text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-[0.25em] uppercase transition-all duration-300 w-full sm:w-auto justify-center"
           >
             <Camera className="w-4 h-4" />
-            <span>Jelajahi Seluruh Galeri Portofolio ({projects.length} Project)</span>
+            <span>Jelajahi Seluruh Galeri Portofolio{projects.length > 0 ? ` (${projects.length} Project)` : ''}</span>
           </Link>
         </div>
       )}

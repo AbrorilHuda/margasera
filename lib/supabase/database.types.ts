@@ -336,6 +336,43 @@ export type Database = {
           updated_at?: string;
         };
       };
+      testimonials: {
+        Row: {
+          id: string;
+          booking_code: string | null;
+          name: string;
+          event_type: string;
+          location: string | null;
+          message: string;
+          rating: number;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_code?: string | null;
+          name: string;
+          event_type: string;
+          location?: string | null;
+          message: string;
+          rating?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_code?: string | null;
+          name?: string;
+          event_type?: string;
+          location?: string | null;
+          message?: string;
+          rating?: number;
+          is_published?: boolean;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

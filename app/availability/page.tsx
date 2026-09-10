@@ -2,10 +2,15 @@ import React from 'react';
 import { AvailabilityCalendar } from '@/components/calendar/availability-calendar';
 
 export const metadata = {
-  title: 'Kalender Ketersediaan Tanggal',
-  description: 'Cek jadwal ketersediaan tanggal fotografer Marga Sera Photography secara real-time.',
+  title: 'Kalender Ketersediaan Tanggal Fotografer',
+  description: 'Cek jadwal ketersediaan tanggal fotografer Margasera Photography secara real-time untuk wedding, pre-wedding, couple, portrait, dan wisuda di Pamekasan & Madura.',
   alternates: {
     canonical: '/availability',
+  },
+  openGraph: {
+    title: 'Kalender Ketersediaan Tanggal | Margasera Photography',
+    description: 'Cek jadwal ketersediaan tanggal fotografer Margasera Photography di Pamekasan & Madura.',
+    url: '/availability',
   },
 };
 

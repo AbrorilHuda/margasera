@@ -33,7 +33,7 @@ export async function Footer() {
               />
             </Link>
             <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-md">
-              Margasera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, &amp; portraiture profesional di Madura dan seluruh Indonesia.
+              Margasera Photography mengabadikan cerita visual sinematik dengan estetika editorial, minimalis, dan penuh emosi. Melayani wedding, pre-wedding, couple, portrait, &amp; wisuda di Pamekasan, Madura, dan seluruh Indonesia.
             </p>
             <div className="flex items-center gap-4 pt-2">
               {s.instagram && (
@@ -108,6 +108,12 @@ export async function Footer() {
               <li>
                 <Link href="/booking" className="hover:text-[#0066CC] transition-colors flex items-center gap-1 group">
                   Pemesanan Sesi / Booking
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#0066CC]" />
+                </Link>
+              </li>
+              <li>
+                <Link href="/testimoni" className="hover:text-[#0066CC] transition-colors flex items-center gap-1 group">
+                  Testimoni &amp; Ulasan Klien
                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#0066CC]" />
                 </Link>
               </li>

@@ -1,11 +1,11 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { ServicesPricing } from '@/components/services/services-pricing';
+import { FAQSection } from '@/components/faq/faq-section';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { formatCurrency } from '@/lib/utils';
 
 export const revalidate = 3600; // revalidate every hour
-
 
 export async function generateMetadata(): Promise<Metadata> {
   const packages = await getPackages();
@@ -15,23 +15,23 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: 'Layanan & Paket Harga',
-    description: `Daftar paket & harga terjangkau dokumentasi fotografi pernikahan (wedding), pre-wedding, couple, graduation & portraiture Margasera Photography Madura dan sekitarnya ${priceText}. Booking tanggal online.`,
+    description: `Daftar paket & harga dokumentasi fotografi profesional Margasera Photography di Pamekasan, Madura${priceText} — "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, serta Tasyakuran 40 Hari Bayi.`,
     keywords: [
-      'Layanan Foto Wedding Madura',
-      'Paket Prewedding Madura',
-      'Harga Fotografer Pernikahan',
-      'Harga Foto Wedding Madura',
-      'Margasera Pricing',
-      'Paket Dokumentasi Foto',
+      'Layanan Fotografer Pamekasan',
+      'Paket Foto Wedding Pamekasan',
+      'Prewedding Madura Harga',
+      'Harga Fotografer Pernikahan Madura',
+      'Foto Wisuda Pamekasan Harga',
+      'Margasera Photography Pricing',
+      'Studio Foto Pamekasan',
       'Fotografi Sinematik Madura',
-      'margasera harga',
     ],
     alternates: {
       canonical: '/services',
     },
     openGraph: {
-      title: 'Layanan & Paket Harga',
-      description: `Daftar paket & harga terjangkau dokumentasi fotografi pernikahan (wedding), pre-wedding, couple, graduation & portraiture Margasera Photography Madura dan sekitarnya ${priceText}.`,
+      title: 'Layanan & Paket Harga Fotografer Pamekasan & Madura | Margasera Photography',
+      description: `Daftar paket & harga dokumentasi fotografi profesional Margasera Photography di Pamekasan, Madura${priceText}.`,
       url: '/services',
       siteName: 'Margasera Photography',
       images: [
@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: '/og-image.png',
           width: 1200,
           height: 630,
-          alt: 'Layanan & Paket Harga Margasera Photography',
+          alt: 'Layanan & Paket Harga Margasera Photography Pamekasan',
         },
       ],
       locale: 'id_ID',
@@ -47,8 +47,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Layanan & Paket Harga',
-      description: `Daftar paket & harga terjangkau dokumentasi fotografi pernikahan (wedding), pre-wedding, couple, graduation & portraiture Margasera Photography Madura dan sekitarnya ${priceText}.`,
+      title: 'Layanan & Paket Harga | Margasera Photography',
+      description: `Daftar paket & harga dokumentasi fotografi di Pamekasan, Madura${priceText}.`,
       images: ['/og-image.png'],
     },
   };
@@ -67,8 +67,8 @@ export default async function ServicesPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: 'Jasa & Paket Fotografi Margasera Photography',
-    description: 'Layanan dan daftar paket harga fotografi sinematik & editorial untuk pernikahan (wedding), pre-wedding, couple, dan portraiture.',
+    name: 'Jasa & Paket Fotografi Margasera Photography Pamekasan Madura',
+    description: 'Layanan dan daftar paket harga fotografi sinematik & editorial untuk pernikahan (wedding), pre-wedding story, couple, portrait, dan graduation di Pamekasan, Madura.',
     brand: {
       '@type': 'Brand',
       name: 'Margasera Photography',
@@ -97,7 +97,20 @@ export default async function ServicesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ServicesPricing initialServices={services} initialPackages={packages} />
+      <div className="text-center max-w-3xl mx-auto px-6 mb-4">
+        <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
+          Investment &amp; Packages
+        </span>
+        <h1 className="font-serif-editorial text-4xl sm:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2">
+          Layanan &amp; Paket Harga
+        </h1>
+        <p className="text-sm text-zinc-400 font-light leading-relaxed mt-4">
+          Dokumentasi fotografi profesional di Pamekasan, Madura dengan pendekatan visual sinematik dan editorial — &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;. Temukan paket terbaik untuk Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, dan Tasyakuran 40 Hari Bayi.
+        </p>
+      </div>
+
+      <ServicesPricing initialServices={services} initialPackages={packages} hideHeader={true} />
+      <FAQSection />
     </div>
   );
 }

@@ -33,17 +33,30 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Margasera Photography - Editorial & Cinematic Visual Stories',
-    template: '%s - Margasera Photography',
+    default: 'Margasera Photography | Fotografer Pamekasan & Madura',
+    template: '%s | Margasera Photography',
   },
-  description: 'Platform portofolio fotografi sinematik & pemesanan tanggal untuk wedding, pre-wedding, couple, graduation & portrait di Madura dan sekitarnya.',
+  description: 'Margasera Photography adalah fotografer profesional di Pamekasan, Madura dengan slogan "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, serta Tasyakuran 40 Hari Bayi.',
   keywords: [
     'Margasera Photography',
-    'Fotografer Wedding Madura',
-    'Prewedding Madura',
-    'Photography Booking Madura',
-    'Fotografer Pernikahan Madura',
-    'Editorial Photography',
+    'Moment Satu Hari Untuk Selamanya',
+    'Margasera',
+    'Margasera Photo',
+    'Margasera Foto',
+    'Margasera Pamekasan',
+    'Margasera Madura',
+    'Margasera Photography Pamekasan',
+    'Margasera Photography Madura',
+    'Fotografer Pamekasan',
+    'Fotografer Madura',
+    'Wedding Photography Pamekasan',
+    'Pre-Wedding Pamekasan',
+    'Engagement Pamekasan',
+    'Fotografer Siraman Pamekasan',
+    'Foto Wisuda Outdoor Madura',
+    'Foto Sidang Skripsi Pamekasan',
+    'Tasyakuran 40 Hari Bayi Madura',
+    'Studio Foto Pamekasan',
   ],
   authors: [{ name: 'Margasera Photography', url: siteUrl }],
   creator: 'Margasera Photography',
@@ -52,8 +65,8 @@ export const metadata: Metadata = {
     canonical: siteUrl,
   },
   openGraph: {
-    title: 'Margasera Photography - Editorial & Cinematic Visual Stories',
-    description: 'Platform portofolio fotografi sinematik & pemesanan tanggal untuk wedding, pre-wedding, couple, & portrait di Madura dan sekitarnya.',
+    title: 'Margasera Photography | Fotografer Pamekasan & Madura',
+    description: 'Fotografer profesional di Pamekasan, Madura — "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, dan Tasyakuran 40 Hari Bayi.',
     url: siteUrl,
     siteName: 'Margasera Photography',
     images: [
@@ -61,7 +74,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Margasera Photography',
+        alt: 'Margasera Photography - Moment Satu Hari Untuk Selamanya',
       },
     ],
     locale: 'id_ID',
@@ -69,8 +82,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Margasera Photography',
-    description: 'Editorial & Cinematic Visual Stories in Madura & Beyond',
+    title: 'Margasera Photography | Fotografer Pamekasan & Madura',
+    description: 'Moment Satu Hari Untuk Selamanya — Fotografer profesional di Pamekasan, Madura.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -93,12 +106,104 @@ export default function RootLayout({
 }) {
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
+    '@type': ['PhotographyBusiness', 'LocalBusiness'],
+    '@id': `${siteUrl}/#organization`,
     name: 'Margasera Photography',
+    alternateName: ['Margasera', 'Margasera Photo', 'Margasera Foto'],
+    slogan: 'Moment Satu Hari Untuk Selamanya',
     url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
     image: `${siteUrl}/og-image.png`,
-    description: 'Platform portofolio fotografi sinematik & pemesanan tanggal untuk wedding, pre-wedding, couple, & portrait di Madura dan sekitarnya.',
-    areaServed: 'Madura & Indonesia',
+    description: 'Creative photography studio profesional di Pamekasan, Madura dengan slogan "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, serta Tasyakuran 40 Hari Bayi.',
+    telephone: '+6285806138955',
+    email: 'hello@margasera.id',
+    priceRange: '$$',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Pamekasan',
+      addressRegion: 'Jawa Timur',
+      addressCountry: 'ID',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: -7.1611,
+      longitude: 113.4799,
+    },
+    areaServed: [
+      { '@type': 'AdministrativeArea', name: 'Pamekasan' },
+      { '@type': 'AdministrativeArea', name: 'Madura' },
+      { '@type': 'AdministrativeArea', name: 'Bangkalan' },
+      { '@type': 'AdministrativeArea', name: 'Sampang' },
+      { '@type': 'AdministrativeArea', name: 'Sumenep' },
+      { '@type': 'AdministrativeArea', name: 'Jawa Timur' },
+      { '@type': 'Country', name: 'Indonesia' },
+    ],
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Layanan Fotografi Margasera Photography',
+      itemListElement: [
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Wedding',
+            description: 'Dokumentasi sinematik momen pernikahan (Akad & Resepsi) dengan sentuhan editorial dan emosi timeless di Pamekasan & Madura.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Pre-Wedding',
+            description: 'Sesi foto pre-wedding intim berkonsep editorial di lokasi outdoor/studio pilihan di Madura dan sekitarnya.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Engagement',
+            description: 'Potret romantis dan momen lamaran / tunangan yang menangkap gestur alami pasangan.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Siraman',
+            description: 'Dokumentasi prosesi adat siraman sakral penuh kekhidmatan keluarga di Pamekasan & Madura.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Wisuda Outdoor',
+            description: 'Dokumentasi kelulusan outdoor estetik bersama keluarga dan kerabat terdekat.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Sidang Skripsi',
+            description: 'Abadikan momen bersejarah keberhasilan kelulusan ujian skripsi bersama sahabat dan keluarga.',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Tasyakuran 40 Hari Bayi',
+            description: 'Dokumentasi kehangatan masa kehamilan dan tasyakuran aqiqah / 40 hari kelahiran buah hati tercinta.',
+          },
+        },
+      ],
+    },
+    sameAs: [
+      'https://instagram.com/margasera.id',
+      'https://www.tiktok.com/@margasera',
+    ],
   };
 
   return (

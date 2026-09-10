@@ -9,11 +9,45 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const resolvedParams = await params;
   const project = await getGalleryProjectBySlug(resolvedParams.slug);
   if (!project) return { title: 'Portofolio - Margasera Photography' };
+
+  const pageTitle = `${project.title} — ${project.categoryLabel}`;
+  const pageDesc = project.description || `Dokumentasi fotografi ${project.categoryLabel} oleh Margasera Photography di ${project.location}.`;
+
   return {
-    title: `${project.title}`,
-    description: project.description,
+    title: pageTitle,
+    description: pageDesc,
+    keywords: [
+      project.title,
+      project.categoryLabel,
+      'Margasera Photography',
+      project.location,
+      'Fotografer Pamekasan',
+      'Fotografer Madura',
+    ],
     alternates: {
       canonical: `/work/${resolvedParams.slug}`,
+    },
+    openGraph: {
+      title: `${project.title} | Margasera Photography`,
+      description: pageDesc,
+      url: `/work/${resolvedParams.slug}`,
+      siteName: 'Margasera Photography',
+      images: [
+        {
+          url: project.coverImage,
+          width: 1200,
+          height: 800,
+          alt: `${project.title} - Margasera Photography ${project.location}`,
+        },
+      ],
+      locale: 'id_ID',
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${project.title} | Margasera Photography`,
+      description: pageDesc,
+      images: [project.coverImage],
     },
   };
 }
@@ -24,8 +58,54 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   if (!project) notFound();
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Beranda',
+            item: 'https://margasera.id',
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Portofolio',
+            item: 'https://margasera.id/work',
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: project.title,
+            item: `https://margasera.id/work/${project.slug}`,
+          },
+        ],
+      },
+      {
+        '@type': 'ImageGallery',
+        name: project.title,
+        description: project.description,
+        image: project.coverImage,
+        contentLocation: project.location,
+        datePublished: project.eventDate,
+        author: {
+          '@type': 'Organization',
+          name: 'Margasera Photography',
+          url: 'https://margasera.id',
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-8 pb-24 px-6 md:px-12 max-w-7xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Back Button */}
       <div className="mb-8">
         <Link
@@ -68,7 +148,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="relative w-full h-[520px] mb-12 border border-zinc-800">
         <Image
           src={project.coverImage}
-          alt={project.title}
+          alt={`Margasera Photography - ${project.title} - ${project.categoryLabel} di ${project.location}`}
           fill
           priority
           className="object-cover"
@@ -90,7 +170,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               >
                 <Image
                   src={img.imageUrl}
-                  alt={img.altText}
+                  alt={`Margasera Photography - ${img.altText || project.title} - Foto ${idx + 1}`}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -107,7 +187,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           Tertarik Menyusun Konsep Sesi Foto Seperti Ini?
         </h3>
         <p className="text-xs text-zinc-400 font-light max-w-lg">
-          Kami siap mengabadikan momen berharga Anda dengan sentuhan visual eksklusif Marga Sera.
+          Kami siap mengabadikan momen berharga Anda di Pamekasan, Madura, dan sekitarnya dengan sentuhan visual eksklusif Margasera Photography.
         </p>
         <Link
           href={`/booking?serviceId=${project.category}`}

@@ -165,6 +165,26 @@ CREATE TABLE IF NOT EXISTS public.studio_settings (
 );
 
 -- ----------------------------------------------------------------
+-- TABLE: testimonials
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.testimonials (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  booking_code        TEXT,
+  name                TEXT NOT NULL,
+  event_type          TEXT NOT NULL,
+  location            TEXT DEFAULT 'Pamekasan, Madura',
+  message             TEXT NOT NULL,
+  rating              INT NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+  is_published        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_testimonials_published ON public.testimonials(is_published, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_testimonials_booking_code ON public.testimonials(booking_code);
+CREATE INDEX IF NOT EXISTS idx_testimonials_event_type ON public.testimonials(event_type);
+
+-- ----------------------------------------------------------------
 -- UPDATED_AT TRIGGER
 -- ----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -179,7 +199,7 @@ DO $$
 DECLARE
   tbl TEXT;
 BEGIN
-  FOREACH tbl IN ARRAY ARRAY['profiles','services','packages','gallery_projects','availability','bookings','studio_settings']
+  FOREACH tbl IN ARRAY ARRAY['profiles','services','packages','gallery_projects','availability','bookings','studio_settings','testimonials']
   LOOP
     EXECUTE format('
       DROP TRIGGER IF EXISTS set_updated_at ON public.%I;
@@ -202,6 +222,7 @@ ALTER TABLE public.gallery_images  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.availability    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.studio_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials    ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
@@ -257,6 +278,14 @@ CREATE POLICY "Admin can manage all bookings" ON public.bookings
 CREATE POLICY "Public can read studio settings" ON public.studio_settings
   FOR SELECT USING (TRUE);
 CREATE POLICY "Admin can manage studio settings" ON public.studio_settings
+  FOR ALL USING (public.is_admin());
+
+-- testimonials
+CREATE POLICY "Public can read published testimonials" ON public.testimonials
+  FOR SELECT USING (is_published = TRUE);
+CREATE POLICY "Public can create testimonial" ON public.testimonials
+  FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "Admin can manage all testimonials" ON public.testimonials
   FOR ALL USING (public.is_admin());
 
 -- ================================================================

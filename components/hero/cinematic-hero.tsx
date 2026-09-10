@@ -11,7 +11,7 @@ export function CinematicHero() {
       <div className="absolute inset-0 z-0 select-none">
         <Image
           src="/bg.jpeg"
-          alt="Marga Sera Photography Hero"
+          alt="Margasera Photography - Fotografer Pamekasan & Madura"
           fill
           priority
           className="object-cover object-center scale-105 opacity-60"
@@ -23,24 +23,37 @@ export function CinematicHero() {
 
       {/* Hero Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center gap-6 pt-12">
-        {/* Main Title */}
+        {/* Main Title (Single H1 for Homepage SEO) */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="font-serif-editorial text-5xl sm:text-7xl lg:text-8xl tracking-[0.15em] font-light uppercase !text-white leading-none drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]"
+          className="font-serif-editorial text-4xl sm:text-6xl lg:text-7xl tracking-[0.12em] font-light uppercase !text-white leading-tight drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]"
         >
-          MargaSera
+          Margasera
+          <span className="block text-xs sm:text-sm md:text-base font-sans font-light tracking-[0.25em] text-zinc-300 uppercase mt-3">
+            Fotografer Pamekasan &amp; Madura
+          </span>
         </motion.h1>
 
-        {/* Tagline */}
+        {/* Brand Slogan */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-base sm:text-xl !text-zinc-200 font-light tracking-widest max-w-2xl font-sans drop-shadow-md"
+          className="font-serif-editorial text-xl sm:text-2xl lg:text-3xl text-amber-300 italic tracking-wide drop-shadow-md"
         >
-          Moment Satu Hari Untuk Selamanya
+          &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;
+        </motion.p>
+
+        {/* Supporting Services Copy */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+          className="text-xs sm:text-sm text-zinc-300 font-light tracking-wider max-w-2xl font-sans drop-shadow-md -mt-2"
+        >
+          Dokumentasi Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, &amp; Tasyakuran Bayi.
         </motion.p>
 
         {/* Action Buttons */}

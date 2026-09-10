@@ -1,9 +1,10 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
 import { deleteCloudinaryImage } from '@/lib/actions/upload';
+import { MOCK_PROJECTS } from '@/lib/mock-data';
 import type { Database } from '@/lib/supabase/database.types';
 import type { GalleryProject, GalleryImage } from '@/lib/types';
 
@@ -26,14 +27,14 @@ function mapProject(p: ProjectRow, images?: GalleryImage[]): GalleryProject {
   };
 }
 
-/** Ambil semua project portofolio dari Supabase */
+/** Ambil semua project portofolio dari Supabase (dengan fallback ke MOCK_PROJECTS) */
 export async function getGalleryProjects(options?: {
   featuredOnly?: boolean;
   category?: string;
   limit?: number;
 }): Promise<GalleryProject[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     let query = (supabase as any)
       .from('gallery_projects')
@@ -51,12 +52,34 @@ export async function getGalleryProjects(options?: {
     }
 
     const { data, error } = await query;
-    if (error || !data) return [];
+    if (error || !data || data.length === 0) {
+      let mockList = MOCK_PROJECTS;
+      if (options?.featuredOnly) {
+        mockList = mockList.filter((p) => p.isFeatured);
+      }
+      if (options?.category && options.category !== 'all') {
+        mockList = mockList.filter((p) => p.category === options.category);
+      }
+      if (options?.limit) {
+        mockList = mockList.slice(0, options.limit);
+      }
+      return mockList;
+    }
 
     return (data as ProjectRow[]).map((p) => mapProject(p));
   } catch (err) {
-    console.error('Error fetching gallery projects from Supabase:', err);
-    return [];
+    console.error('Error fetching gallery projects from Supabase, using mock fallback:', err);
+    let mockList = MOCK_PROJECTS;
+    if (options?.featuredOnly) {
+      mockList = mockList.filter((p) => p.isFeatured);
+    }
+    if (options?.category && options.category !== 'all') {
+      mockList = mockList.filter((p) => p.category === options.category);
+    }
+    if (options?.limit) {
+      mockList = mockList.slice(0, options.limit);
+    }
+    return mockList;
   }
 }
 
@@ -64,34 +87,43 @@ export async function getGalleryProjects(options?: {
 export async function getGalleryProjectBySlug(
   slug: string
 ): Promise<GalleryProject | null> {
-  const supabase = await createClient();
+  try {
+    const supabase = createPublicClient();
 
-  const { data: project, error: projectError } = await (supabase as any)
-    .from('gallery_projects')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+    const { data: project, error: projectError } = await (supabase as any)
+      .from('gallery_projects')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
-  if (projectError || !project) return null;
+    if (projectError || !project) {
+      const mock = MOCK_PROJECTS.find((p) => p.slug === slug);
+      return mock ?? null;
+    }
 
-  const projRow = project as ProjectRow;
+    const projRow = project as ProjectRow;
 
-  const { data: images } = await (supabase as any)
-    .from('gallery_images')
-    .select('*')
-    .eq('project_id', projRow.id)
-    .order('sort_order');
+    const { data: images } = await (supabase as any)
+      .from('gallery_images')
+      .select('*')
+      .eq('project_id', projRow.id)
+      .order('sort_order');
 
-  const mappedImages: GalleryImage[] = ((images as ImageRow[]) ?? []).map((img) => ({
-    id: img.id,
-    projectId: img.project_id,
-    imageUrl: img.image_url,
-    altText: img.alt_text ?? '',
-    sortOrder: img.sort_order,
-    aspectRatio: (img.aspect_ratio as GalleryImage['aspectRatio']) ?? undefined,
-  }));
+    const mappedImages: GalleryImage[] = ((images as ImageRow[]) ?? []).map((img) => ({
+      id: img.id,
+      projectId: img.project_id,
+      imageUrl: img.image_url,
+      altText: img.alt_text ?? '',
+      sortOrder: img.sort_order,
+      aspectRatio: (img.aspect_ratio as GalleryImage['aspectRatio']) ?? undefined,
+    }));
 
-  return mapProject(projRow, mappedImages);
+    return mapProject(projRow, mappedImages);
+  } catch (err) {
+    console.error('Error fetching project by slug, using mock fallback:', err);
+    const mock = MOCK_PROJECTS.find((p) => p.slug === slug);
+    return mock ?? null;
+  }
 }
 
 /** Ambil semua foto galeri (images) untuk project tertentu */
