@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft } from 'lucide-react';
+import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
@@ -11,6 +11,8 @@ interface BookingDetailModalProps {
   onClose: () => void;
   onUpdatePayment: (id: string, status: PaymentStatus) => void;
   onOpenInvoice: (booking: Booking) => void;
+  onUpdateStatus?: (id: string, status: BookingStatus) => void;
+  onShareTestimonial?: (booking: Booking) => void;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -27,7 +29,14 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: 'bg-rose-500',
 };
 
-export function BookingDetailModal({ booking: b, onClose, onUpdatePayment, onOpenInvoice }: BookingDetailModalProps) {
+export function BookingDetailModal({
+  booking: b,
+  onClose,
+  onUpdatePayment,
+  onOpenInvoice,
+  onUpdateStatus,
+  onShareTestimonial,
+}: BookingDetailModalProps) {
   const isDpPaid = b.paymentStatus === 'dp_paid';
   const isPaidFull = b.paymentStatus === 'paid_full';
 
@@ -162,6 +171,46 @@ export function BookingDetailModal({ booking: b, onClose, onUpdatePayment, onOpe
               </p>
             </div>
           )}
+
+          {/* Quick Booking Status Actions */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono uppercase">Status Sesi &amp; Ulasan:</span>
+            {b.status === 'confirmed' && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onUpdateStatus?.(b.id, 'completed');
+                }}
+                className="w-full py-2.5 px-4 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Check className="w-4 h-4" />
+                <span>Tandai Selesai &amp; Buka Link Testimoni</span>
+              </button>
+            )}
+            {b.status === 'completed' && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onShareTestimonial?.(b);
+                }}
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Kirim Link Testimoni ({b.bookingCode})</span>
+              </button>
+            )}
+            {b.status === 'pending' && (
+              <button
+                onClick={() => {
+                  onUpdateStatus?.(b.id, 'confirmed');
+                }}
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Check className="w-4 h-4" />
+                <span>Konfirmasi Booking</span>
+              </button>
+            )}
+          </div>
 
           {/* Update Payment Quick Action */}
           <div className="flex flex-col gap-2 pt-1">

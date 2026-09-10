@@ -18,6 +18,7 @@ import { AddBookingModal } from './_components/AddBookingModal';
 import { BookingDetailModal } from './_components/BookingDetailModal';
 import { InvoiceModal } from './_components/InvoiceModal';
 import { PdfRekapModal } from './_components/PdfRekapModal';
+import { ShareTestimonialModal } from './_components/ShareTestimonialModal';
 import { calculateEndTime } from './_components/BookingHelpers';
 import {
   cacheMasterData,
@@ -78,6 +79,7 @@ export default function BookingsPage() {
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<Booking | null>(null);
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
+  const [completedBookingForShare, setCompletedBookingForShare] = useState<Booking | null>(null);
 
   // Auto-open Add modal if ?action=new
   useEffect(() => {
@@ -234,6 +236,9 @@ export default function BookingsPage() {
   const handleUpdateBookingStatus = async (id: string, newStatus: BookingStatus) => {
     const previousBookings = [...bookings];
     const previousSelected = selectedBookingForDetail ? { ...selectedBookingForDetail } : null;
+    const targetBooking =
+      bookings.find((b) => b.id === id) ||
+      (selectedBookingForDetail?.id === id ? selectedBookingForDetail : null);
 
     // 1. Optimistic local state update
     setBookings((prev) =>
@@ -241,6 +246,11 @@ export default function BookingsPage() {
     );
     if (selectedBookingForDetail?.id === id) {
       setSelectedBookingForDetail((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+
+    // Jika diubah menjadi completed, langsung tampilkan pop up link testimoni
+    if (newStatus === 'completed' && targetBooking) {
+      setCompletedBookingForShare({ ...targetBooking, status: 'completed' });
     }
 
     // 2. Background server action execution
@@ -499,6 +509,7 @@ export default function BookingsPage() {
         onDetail={setSelectedBookingForDetail}
         onInvoice={setSelectedInvoiceBooking}
         onUpdateStatus={handleUpdateBookingStatus}
+        onShareTestimonial={(b) => setCompletedBookingForShare(b)}
         onDelete={handleDeleteBooking}
       />
 
@@ -519,6 +530,8 @@ export default function BookingsPage() {
         <BookingDetailModal
           booking={selectedBookingForDetail}
           onClose={() => setSelectedBookingForDetail(null)}
+          onUpdateStatus={handleUpdateBookingStatus}
+          onShareTestimonial={(b) => setCompletedBookingForShare(b)}
           onUpdatePayment={handleUpdatePaymentStatus}
           onOpenInvoice={(b) => {
             setSelectedBookingForDetail(null);
@@ -547,6 +560,15 @@ export default function BookingsPage() {
           bookingStatusFilter={bookingStatusFilter}
           formatMonthLabel={formatMonthLabel}
           onClose={() => setShowPdfRekapModal(false)}
+        />
+      )}
+
+      {/* Pop-up Link Testimoni untuk Booking Selesai */}
+      {completedBookingForShare && (
+        <ShareTestimonialModal
+          booking={completedBookingForShare}
+          isOpen={Boolean(completedBookingForShare)}
+          onClose={() => setCompletedBookingForShare(null)}
         />
       )}
     </div>

@@ -20,6 +20,7 @@ import {
   Globe,
   ArrowUpRight,
   Loader2,
+  MessageSquareQuote,
 } from 'lucide-react';
 import { signOutAdmin } from '@/lib/actions/admin';
 import { getStudioSettings } from '@/lib/actions/settings';
@@ -37,6 +38,7 @@ import { OfflineWhatsNewModal } from '@/app/admin/_components/OfflineWhatsNewMod
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/dashboard/bookings', label: 'Booking & Orders', icon: Calendar },
+  { href: '/admin/dashboard/testimonials', label: 'Testimonials', icon: MessageSquareQuote },
   { href: '/admin/dashboard/portfolio', label: 'Portfolio', icon: Camera },
   { href: '/admin/dashboard/services', label: 'Services', icon: Layers },
   { href: '/admin/dashboard/pricing', label: 'Packages & Pricing', icon: Tag },
@@ -47,6 +49,7 @@ const NAV_ITEMS = [
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard': 'Dashboard Overview',
   '/admin/dashboard/bookings': 'Booking & Orders',
+  '/admin/dashboard/testimonials': 'Kelola Testimoni Klien',
   '/admin/dashboard/portfolio': 'Portfolio',
   '/admin/dashboard/services': 'Services',
   '/admin/dashboard/pricing': 'Packages & Pricing',

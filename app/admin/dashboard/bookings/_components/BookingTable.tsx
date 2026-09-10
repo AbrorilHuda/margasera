@@ -16,6 +16,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronRight as ArrowRightIcon,
+  Share2,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
@@ -41,6 +42,7 @@ interface BookingTableProps {
   onDetail: (b: Booking) => void;
   onInvoice: (b: Booking) => void;
   onUpdateStatus: (id: string, status: BookingStatus) => void;
+  onShareTestimonial?: (b: Booking) => void;
   onDelete: (id: string, code: string) => void;
 }
 
@@ -90,6 +92,7 @@ export function BookingTable({
   onDetail,
   onInvoice,
   onUpdateStatus,
+  onShareTestimonial,
   onDelete,
 }: BookingTableProps) {
   const hasActiveFilter =
@@ -273,8 +276,19 @@ export function BookingTable({
                         <button
                           onClick={() => onUpdateStatus(b.id, 'completed')}
                           className="px-2 py-1 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
+                          title="Selesaikan Booking & Kirim Link Testimoni"
                         >
                           Complete
+                        </button>
+                      )}
+                      {b.status === 'completed' && onShareTestimonial && (
+                        <button
+                          onClick={() => onShareTestimonial(b)}
+                          className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                          title="Kirim / Salin Tautan Testimoni untuk Klien Ini"
+                        >
+                          <Share2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="hidden xl:inline">Link Ulasan</span>
                         </button>
                       )}
 
@@ -394,6 +408,44 @@ export function BookingTable({
                     {paymentLabel}
                   </span>
                 </div>
+              </div>
+
+              {/* Mobile Quick Actions */}
+              <div
+                className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/60"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {b.status === 'pending' && (
+                  <button
+                    onClick={() => onUpdateStatus(b.id, 'confirmed')}
+                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center shadow-xs cursor-pointer"
+                  >
+                    Confirm
+                  </button>
+                )}
+                {b.status === 'confirmed' && (
+                  <button
+                    onClick={() => onUpdateStatus(b.id, 'completed')}
+                    className="flex-1 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center shadow-xs cursor-pointer"
+                  >
+                    Complete &amp; Link
+                  </button>
+                )}
+                {b.status === 'completed' && onShareTestimonial && (
+                  <button
+                    onClick={() => onShareTestimonial(b)}
+                    className="flex-1 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    <span>Link Testimoni</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => onInvoice(b)}
+                  className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[10px] font-mono rounded-lg cursor-pointer"
+                >
+                  Invoice
+                </button>
               </div>
             </div>
           );
