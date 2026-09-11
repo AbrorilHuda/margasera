@@ -310,6 +310,77 @@ export async function updateBooking(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
+  // Validasi konflik tanggal & jam jika tanggal/jam berubah
+  if (payload.bookingDate || payload.startTime || payload.endTime) {
+    // Ambil data booking saat ini untuk perbandingan
+    const { data: current } = await (supabase as any)
+      .from('bookings')
+      .select('booking_date, start_time, end_time, service_name, package_name, slot_type, status')
+      .eq('id', id)
+      .single();
+
+    if (current) {
+      const checkDate = payload.bookingDate ?? current.booking_date;
+      const checkStart = payload.startTime ?? current.start_time;
+      const checkEnd = payload.endTime ?? current.end_time;
+
+      // 1. Cek tabel availability (blocked / booked override)
+      const { data: dateAvailability } = await (supabase as any)
+        .from('availability')
+        .select('status, notes')
+        .eq('date', checkDate)
+        .maybeSingle();
+
+      if (dateAvailability?.status === 'blocked') {
+        return {
+          success: false,
+          error: `Tanggal ${checkDate} sedang dikunci / libur studio${dateAvailability.notes ? ` (${dateAvailability.notes})` : ''}. Reschedule tidak dapat diproses.`,
+        };
+      }
+      if (dateAvailability?.status === 'booked') {
+        return {
+          success: false,
+          error: `Tanggal ${checkDate} sudah terisi penuh (booked). Reschedule tidak dapat diproses.`,
+        };
+      }
+
+      // 2. Cek booking lain di tanggal yang sama, kecuali booking ini sendiri
+      const { data: existingBookings } = await (supabase as any)
+        .from('bookings')
+        .select('id, booking_code, customer_name, service_name, package_name, start_time, end_time, slot_type, status')
+        .eq('booking_date', checkDate)
+        .neq('status', 'cancelled')
+        .neq('id', id); // exclude booking yang sedang diedit
+
+      if (existingBookings && existingBookings.length > 0) {
+        const newSName = payload.serviceName ?? current.service_name ?? current.package_name ?? '';
+        const isNewWedding = newSName
+          ? isWeddingService(newSName)
+          : Boolean((payload as any).slotType
+              ? String((payload as any).slotType).startsWith('wedding')
+              : current.slot_type && String(current.slot_type).startsWith('wedding'));
+
+        // 3. Validasi bentrok jam (time overlap)
+        for (const b of existingBookings) {
+          const bSName = b.service_name || b.package_name || '';
+          const bIsWedding = bSName
+            ? isWeddingService(bSName)
+            : Boolean(b.slot_type && String(b.slot_type).startsWith('wedding'));
+
+          if (isNewWedding === bIsWedding && isTimeOverlap(checkStart, checkEnd, b.start_time, b.end_time)) {
+            const timeText = b.start_time && b.end_time
+              ? `${b.start_time} – ${b.end_time} WIB`
+              : 'sepanjang hari';
+            return {
+              success: false,
+              error: `Jam sesi (${checkStart || '?'} – ${checkEnd || '?'} WIB) pada tanggal ${checkDate} bentrok dengan booking ${b.booking_code} milik ${b.customer_name} (${timeText}). Pilih jam lain.`,
+            };
+          }
+        }
+      }
+    }
+  }
+
   const updateData: Record<string, any> = {
     updated_at: new Date().toISOString(),
   };

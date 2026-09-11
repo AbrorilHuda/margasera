@@ -192,6 +192,11 @@ export function BookingTable({
                       <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono bg-zinc-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800/80 w-fit mt-0.5">
                         {b.packageName}
                       </span>
+                      {b.notes && (
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic mt-1 truncate max-w-[160px]" title={b.notes}>
+                          📝 {b.notes}
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -404,6 +409,12 @@ export function BookingTable({
                   <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
                     <MapPin className="w-3.5 h-3.5 text-[#0066CC] shrink-0" />
                     <span className="truncate">{b.location}</span>
+                  </div>
+                )}
+                {b.notes && (
+                  <div className="text-[11px] text-zinc-400 dark:text-zinc-500 italic flex items-start gap-1 pt-0.5">
+                    <span className="shrink-0">📝</span>
+                    <span className="line-clamp-2">{b.notes}</span>
                   </div>
                 )}
               </div>

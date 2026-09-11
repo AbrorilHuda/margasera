@@ -14,6 +14,9 @@ export default function PricingPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  // Ref untuk baca selectedServiceId terbaru di dalam refreshData (hindari stale closure)
+  const selectedServiceIdRef = React.useRef(selectedServiceId);
+  useEffect(() => { selectedServiceIdRef.current = selectedServiceId; }, [selectedServiceId]);
 
   const [showAddPackageModal, setShowAddPackageModal] = useState(false);
 
@@ -48,7 +51,7 @@ export default function PricingPage() {
         const cached = getCachedMasterData();
         setServices(cached.services);
         setPackages(cached.packages);
-        if (cached.services.length > 0 && !selectedServiceId) {
+        if (cached.services.length > 0 && !selectedServiceIdRef.current) {
           setSelectedServiceId(cached.services[0].id);
         }
       } else {
@@ -56,7 +59,7 @@ export default function PricingPage() {
         setServices(sList);
         setPackages(pkgList);
         cacheMasterData({ services: sList, packages: pkgList });
-        if (sList.length > 0 && !selectedServiceId) {
+        if (sList.length > 0 && !selectedServiceIdRef.current) {
           setSelectedServiceId(sList[0].id);
         }
       }
@@ -65,13 +68,12 @@ export default function PricingPage() {
       const cached = getCachedMasterData();
       setServices(cached.services);
       setPackages(cached.packages);
-      if (cached.services.length > 0 && !selectedServiceId) {
+      if (cached.services.length > 0 && !selectedServiceIdRef.current) {
         setSelectedServiceId(cached.services[0].id);
       }
     } finally {
       setLoadingData(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
