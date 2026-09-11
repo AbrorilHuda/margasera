@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   ArrowRight,
   PenLine,
-  MapPin,
   Calendar,
   Sparkles,
   RotateCcw,
@@ -164,8 +163,8 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
             </div>
 
             <div className="p-3.5 sm:p-4 bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] transition-all hover:border-zinc-300 dark:hover:border-zinc-700/80">
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono mb-0.5">Pamekasan</span>
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light">&amp; Seluruh Madura</span>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono mb-0.5">Madura</span>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light">&amp; Surabaya</span>
             </div>
           </div>
         </div>
@@ -221,11 +220,10 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
                   <button
                     key={cat}
                     onClick={() => setSelectedFilter(cat)}
-                    className={`px-3.5 py-1.5 text-xs rounded-full transition-all duration-200 cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#0066CC] text-white font-medium shadow-sm shadow-[#0066CC]/25 dark:shadow-[0_0_15px_rgba(0,102,204,0.35)]'
-                        : 'bg-white/90 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 backdrop-blur-sm'
-                    }`}
+                    className={`px-3.5 py-1.5 text-xs rounded-full transition-all duration-200 cursor-pointer ${isSelected
+                      ? 'bg-[#0066CC] text-white font-medium shadow-sm shadow-[#0066CC]/25 dark:shadow-[0_0_15px_rgba(0,102,204,0.35)]'
+                      : 'bg-white/90 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 backdrop-blur-sm'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -283,11 +281,6 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
                   {/* Subtle inner card lighting */}
                   <div className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-br from-[#0066CC]/10 dark:from-[#0066CC]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
                   <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                  
-                  {/* Watermark Quote */}
-                  <div className="absolute top-6 right-8 text-zinc-200/70 dark:text-zinc-800/40 font-serif text-8xl sm:text-9xl select-none pointer-events-none leading-none font-bold italic">
-                    &rdquo;
-                  </div>
 
                   <div className="min-h-[220px] sm:min-h-[200px] flex flex-col justify-between relative z-10">
                     <AnimatePresence mode="wait" custom={direction}>
@@ -349,11 +342,6 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
                               <h4 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-white tracking-wide">
                                 {current.name}
                               </h4>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-light flex items-center gap-1 mt-0.5">
-                                <MapPin className="w-3 h-3 text-zinc-400 dark:text-zinc-500 shrink-0" />
-                                <span>Dokumentasi di</span>
-                                <span className="text-zinc-800 dark:text-zinc-200 font-medium">{current.location}</span>
-                              </p>
                             </div>
                           </div>
 
@@ -387,11 +375,10 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
                         <button
                           key={t.id}
                           onClick={() => setCurrentIndex(idx)}
-                          className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${
-                            currentIndex === idx
-                              ? 'w-7 bg-[#0066CC] dark:bg-blue-400 shadow-xs dark:shadow-[0_0_8px_rgba(96,165,250,0.6)]'
-                              : 'w-2 bg-zinc-200 dark:bg-zinc-700/80 hover:bg-zinc-300 dark:hover:bg-zinc-600'
-                          }`}
+                          className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${currentIndex === idx
+                            ? 'w-7 bg-[#0066CC] dark:bg-blue-400 shadow-xs dark:shadow-[0_0_8px_rgba(96,165,250,0.6)]'
+                            : 'w-2 bg-zinc-200 dark:bg-zinc-700/80 hover:bg-zinc-300 dark:hover:bg-zinc-600'
+                            }`}
                           aria-label={`Slide ulasan ke-${idx + 1}`}
                         />
                       ))}

@@ -7,7 +7,7 @@ import { ServicesPricing } from '@/components/services/services-pricing';
 import { AvailabilityCalendar } from '@/components/calendar/availability-calendar';
 import { ClientTestimonials } from '@/components/testimonials/client-testimonials';
 import { FAQSection } from '@/components/faq/faq-section';
-import { ArrowRight, Camera, Sparkles, Heart, Award } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getPublishedTestimonials } from '@/lib/actions/testimonials';

@@ -3,7 +3,7 @@ export interface Testimonial {
   bookingCode?: string | null;
   name: string;
   eventType: string;
-  location: string;
+  location?: string | null;
   message: string;
   rating: number;
   date: string;

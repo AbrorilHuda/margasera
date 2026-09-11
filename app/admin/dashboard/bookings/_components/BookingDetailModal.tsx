@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2 } from 'lucide-react';
+import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2, CalendarClock } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
@@ -13,6 +13,7 @@ interface BookingDetailModalProps {
   onOpenInvoice: (booking: Booking) => void;
   onUpdateStatus?: (id: string, status: BookingStatus) => void;
   onShareTestimonial?: (booking: Booking) => void;
+  onEdit?: (booking: Booking) => void;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -36,6 +37,7 @@ export function BookingDetailModal({
   onOpenInvoice,
   onUpdateStatus,
   onShareTestimonial,
+  onEdit,
 }: BookingDetailModalProps) {
   const isDpPaid = b.paymentStatus === 'dp_paid';
   const isPaidFull = b.paymentStatus === 'paid_full';
@@ -120,14 +122,30 @@ export function BookingDetailModal({
           </div>
 
           {/* Section: EVENT DATE & SCHEDULE */}
-          <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-1.5">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#0066CC] font-bold">EVENT DATE</span>
+          <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#0066CC] font-bold">EVENT DATE &amp; JADWAL</span>
+              {onEdit && b.status !== 'completed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onEdit(b);
+                  }}
+                  className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 rounded-lg text-[11px] font-mono font-semibold flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                  title="Pindah Tanggal / Edit Jadwal Booking"
+                >
+                  <CalendarClock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Ubah Jadwal</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 text-sm">
                 <Calendar className="w-4 h-4 text-amber-500" />
                 {formatDate(b.bookingDate)}
               </span>
-              <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">
+              <span className="text-xs text-amber-700 dark:text-amber-400 font-mono font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                 {b.startTime || '08:00'} – {b.endTime || '14:00'} WIB
               </span>
             </div>
@@ -219,11 +237,10 @@ export function BookingDetailModal({
               <button
                 disabled={isDpPaid || isPaidFull}
                 onClick={() => onUpdatePayment(b.id, 'dp_paid')}
-                className={`py-2.5 text-xs font-semibold uppercase rounded-xl transition-all text-center flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
-                  isDpPaid || isPaidFull
+                className={`py-2.5 text-xs font-semibold uppercase rounded-xl transition-all text-center flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${isDpPaid || isPaidFull
                     ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-950 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-800'
                     : 'bg-[#0066CC] hover:bg-[#0052A3] text-white shadow-xs'
-                }`}
+                  }`}
               >
                 <span>{isDpPaid ? 'DP Terbayar' : isPaidFull ? 'DP Selesai' : 'Set DP Terbayar'}</span>
                 {(isDpPaid || isPaidFull) && <Check className="w-3.5 h-3.5" />}
@@ -232,11 +249,10 @@ export function BookingDetailModal({
               <button
                 disabled={isPaidFull}
                 onClick={() => onUpdatePayment(b.id, 'paid_full')}
-                className={`py-2.5 text-xs font-semibold uppercase rounded-xl transition-all text-center flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
-                  isPaidFull
+                className={`py-2.5 text-xs font-semibold uppercase rounded-xl transition-all text-center flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${isPaidFull
                     ? 'opacity-50 cursor-not-allowed bg-emerald-100/60 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80'
                     : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
-                }`}
+                  }`}
               >
                 <span>{isPaidFull ? 'Lunas (100%)' : 'Set Lunas (100%)'}</span>
                 {isPaidFull && <Check className="w-3.5 h-3.5" />}

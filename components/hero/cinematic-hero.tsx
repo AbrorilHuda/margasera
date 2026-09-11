@@ -32,7 +32,7 @@ export function CinematicHero() {
         >
           Margasera
           <span className="block text-xs sm:text-sm md:text-base font-sans font-light tracking-[0.25em] text-zinc-300 uppercase mt-3">
-            Fotografer Pamekasan &amp; Madura
+            Fotografer Madura &amp; Surabaya
           </span>
         </motion.h1>
 
@@ -53,7 +53,7 @@ export function CinematicHero() {
           transition={{ duration: 0.8, delay: 0.7 }}
           className="text-xs sm:text-sm text-zinc-300 font-light tracking-wider max-w-2xl font-sans drop-shadow-md -mt-2"
         >
-          Dokumentasi Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, &amp; Tasyakuran Bayi.
+          Margasera Photography adalah fotografer profesional berbasis di Pamekasan, Madura, yang melayani wedding, pre-wedding, engagement, portrait, dan dokumentasi berbagai acara di Madura dan Surabaya.
         </motion.p>
 
         {/* Action Buttons */}

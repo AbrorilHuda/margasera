@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Wifi, WifiOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import {
   getOfflineQueue,
   syncOfflineQueue,
@@ -68,7 +68,7 @@ export function OfflineSyncStatus() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {
-          reg.update().catch(() => {});
+          reg.update().catch(() => { });
         })
         .catch((err) => {
           console.warn('[SW Registration Error]:', err);

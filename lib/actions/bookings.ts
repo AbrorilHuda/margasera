@@ -280,6 +280,69 @@ export async function updatePaymentStatus(
   return { success: true };
 }
 
+export interface UpdateBookingPayload {
+  bookingDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  customerName?: string;
+  whatsapp?: string;
+  email?: string;
+  instagram?: string;
+  notes?: string;
+  status?: BookingStatus;
+  paymentStatus?: PaymentStatus;
+  serviceId?: string;
+  serviceName?: string;
+  packageId?: string;
+  packageName?: string;
+  totalPrice?: number;
+  downPayment?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+}
+
+/** Admin: edit/update booking (misal pindah tanggal acara, jadwal, lokasi, atau info klien) */
+export async function updateBooking(
+  id: string,
+  payload: UpdateBookingPayload
+): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
+  const supabase = createAdminClient();
+
+  const updateData: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (payload.bookingDate !== undefined) updateData.booking_date = payload.bookingDate;
+  if (payload.startTime !== undefined) updateData.start_time = payload.startTime;
+  if (payload.endTime !== undefined) updateData.end_time = payload.endTime;
+  if (payload.location !== undefined) updateData.location = payload.location;
+  if (payload.customerName !== undefined) updateData.customer_name = payload.customerName;
+  if (payload.whatsapp !== undefined) updateData.whatsapp = payload.whatsapp;
+  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.instagram !== undefined) updateData.instagram = payload.instagram;
+  if (payload.notes !== undefined) updateData.notes = payload.notes;
+  if (payload.status !== undefined) updateData.status = payload.status;
+  if (payload.paymentStatus !== undefined) updateData.payment_status = payload.paymentStatus;
+  if (payload.serviceId !== undefined) updateData.service_id = isValidUUID(payload.serviceId) ? payload.serviceId : null;
+  if (payload.serviceName !== undefined) updateData.service_name = payload.serviceName;
+  if (payload.packageId !== undefined) updateData.package_id = isValidUUID(payload.packageId) ? payload.packageId : null;
+  if (payload.packageName !== undefined) updateData.package_name = payload.packageName;
+  if (payload.totalPrice !== undefined) updateData.total_price = payload.totalPrice;
+  if (payload.downPayment !== undefined) updateData.down_payment = payload.downPayment;
+  if (payload.paidAmount !== undefined) updateData.paid_amount = payload.paidAmount;
+  if (payload.remainingAmount !== undefined) updateData.remaining_amount = payload.remainingAmount;
+
+  const { error } = await (supabase as any)
+    .from('bookings')
+    .update(updateData)
+    .eq('id', id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 /** Admin: buat booking manual */
 export async function createManualBooking(
   formData: Omit<Booking, 'id' | 'createdAt'>

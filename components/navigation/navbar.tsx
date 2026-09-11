@@ -87,7 +87,7 @@ export function Navbar() {
         <div className="hidden lg:flex items-center gap-4">
           <Link
             href="/booking"
-            className="group relative inline-flex items-center justify-center px-6 py-2.5 text-xs font-semibold tracking-widest uppercase text-white bg-[#0066CC] hover:bg-[#0052A3] rounded-none overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,102,204,0.5)]"
+            className="group relative inline-flex items-center justify-center px-6 py-2.5 text-xs font-semibold tracking-widest uppercase text-white bg-[#0066CC] hover:bg-[#0052A3] rounded-md overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,102,204,0.5)]"
           >
             <span className="relative z-10 flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5" />

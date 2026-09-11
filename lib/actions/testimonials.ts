@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/actions/admin';
 export interface SubmitTestimonialPayload {
   name: string;
   eventType: string;
-  location: string;
+  location?: string;
   message: string;
   rating: number;
   contact?: string;
@@ -42,7 +42,7 @@ export async function submitClientTestimonial(payload: SubmitTestimonialPayload)
         booking_code: payload.bookingCode?.trim() || null,
         name: payload.name.trim(),
         event_type: payload.eventType,
-        location: payload.location?.trim() || 'Pamekasan, Madura',
+        location: payload.location?.trim() || null,
         message: payload.message.trim(),
         rating: Number(payload.rating) || 5,
         is_published: false,
@@ -83,7 +83,7 @@ export async function getPublishedTestimonials() {
       bookingCode: t.booking_code ? String(t.booking_code) : null,
       name: String(t.name),
       eventType: String(t.event_type),
-      location: String(t.location || 'Pamekasan, Madura'),
+      location: t.location ? String(t.location) : '',
       message: String(t.message),
       rating: Number(t.rating) || 5,
       date: new Date(t.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
@@ -115,7 +115,7 @@ export async function getAllTestimonialsAdmin(): Promise<AdminTestimonialItem[]>
       bookingCode: t.booking_code ? String(t.booking_code) : null,
       name: String(t.name),
       eventType: String(t.event_type),
-      location: String(t.location || 'Pamekasan, Madura'),
+      location: t.location ? String(t.location) : '',
       message: String(t.message),
       rating: Number(t.rating) || 5,
       isPublished: Boolean(t.is_published),

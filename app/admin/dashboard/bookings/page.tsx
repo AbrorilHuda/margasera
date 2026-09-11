@@ -16,6 +16,7 @@ import { BookingFilters } from './_components/BookingFilters';
 import { BookingTable } from './_components/BookingTable';
 import { AddBookingModal } from './_components/AddBookingModal';
 import { BookingDetailModal } from './_components/BookingDetailModal';
+import { EditBookingModal } from './_components/EditBookingModal';
 import { InvoiceModal } from './_components/InvoiceModal';
 import { PdfRekapModal } from './_components/PdfRekapModal';
 import { ShareTestimonialModal } from './_components/ShareTestimonialModal';
@@ -78,6 +79,7 @@ export default function BookingsPage() {
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<Booking | null>(null);
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
   const [completedBookingForShare, setCompletedBookingForShare] = useState<Booking | null>(null);
 
@@ -511,6 +513,7 @@ export default function BookingsPage() {
         onUpdateStatus={handleUpdateBookingStatus}
         onShareTestimonial={(b) => setCompletedBookingForShare(b)}
         onDelete={handleDeleteBooking}
+        onEdit={(b) => setEditingBooking(b)}
       />
 
       {/* MODALS */}
@@ -526,6 +529,21 @@ export default function BookingsPage() {
         />
       )}
 
+      {/* Modal Edit / Pindah Tanggal Booking */}
+      {editingBooking && (
+        <EditBookingModal
+          booking={editingBooking}
+          services={services}
+          packages={packages}
+          isOpen
+          onClose={() => setEditingBooking(null)}
+          onSuccess={async () => {
+            setEditingBooking(null);
+            await refreshData(false);
+          }}
+        />
+      )}
+
       {selectedBookingForDetail && (
         <BookingDetailModal
           booking={selectedBookingForDetail}
@@ -533,6 +551,10 @@ export default function BookingsPage() {
           onUpdateStatus={handleUpdateBookingStatus}
           onShareTestimonial={(b) => setCompletedBookingForShare(b)}
           onUpdatePayment={handleUpdatePaymentStatus}
+          onEdit={(b) => {
+            setSelectedBookingForDetail(null);
+            setEditingBooking(b);
+          }}
           onOpenInvoice={(b) => {
             setSelectedBookingForDetail(null);
             setSelectedInvoiceBooking(b);

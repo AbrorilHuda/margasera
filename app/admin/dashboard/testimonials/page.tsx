@@ -431,11 +431,15 @@ export default function AdminTestimonialsPage() {
 
                       {/* Location, Date, & Star Rating */}
                       <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-zinc-400" />
-                          <span>{item.location || 'Pamekasan, Madura'}</span>
-                        </span>
-                        <span>•</span>
+                        {item.location && (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-zinc-400" />
+                              <span>{item.location}</span>
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-zinc-400" />
                           <span>{dateStr}</span>

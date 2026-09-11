@@ -17,6 +17,7 @@ import {
   ChevronsRight,
   ChevronRight as ArrowRightIcon,
   Share2,
+  CalendarClock,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
@@ -44,6 +45,7 @@ interface BookingTableProps {
   onUpdateStatus: (id: string, status: BookingStatus) => void;
   onShareTestimonial?: (b: Booking) => void;
   onDelete: (id: string, code: string) => void;
+  onEdit?: (b: Booking) => void;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -94,6 +96,7 @@ export function BookingTable({
   onUpdateStatus,
   onShareTestimonial,
   onDelete,
+  onEdit,
 }: BookingTableProps) {
   const hasActiveFilter =
     bookingStatusFilter !== 'all' ||
@@ -262,6 +265,18 @@ export function BookingTable({
                         <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span className="hidden xl:inline">Invoice</span>
                       </button>
+
+                      {/* Edit / Reschedule Button */}
+                      {onEdit && b.status !== 'completed' && (
+                        <button
+                          onClick={() => onEdit(b)}
+                          className="px-2 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer"
+                          title="Edit Booking / Pindah Tanggal Acara"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span className="hidden xl:inline">Pindah Tgl</span>
+                        </button>
+                      )}
 
                       {/* Quick Confirm */}
                       {b.status === 'pending' && (
@@ -446,6 +461,16 @@ export function BookingTable({
                 >
                   Invoice
                 </button>
+                {onEdit && b.status !== 'completed' && (
+                  <button
+                    onClick={() => onEdit(b)}
+                    className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400 text-[10px] font-mono rounded-lg flex items-center gap-1 cursor-pointer"
+                    title="Pindah Tanggal / Edit Jadwal"
+                  >
+                    <CalendarClock className="w-3 h-3" />
+                    <span>Pindah Tgl</span>
+                  </button>
+                )}
               </div>
             </div>
           );

@@ -50,7 +50,7 @@ export function TestimonialForm() {
   const [formData, setFormData] = useState({
     name: '',
     eventType: 'Wedding',
-    location: 'Pamekasan, Madura',
+    location: '',
     date: '',
     rating: 5,
     message: '',
@@ -104,7 +104,7 @@ export function TestimonialForm() {
           ...prev,
           name: b.customerName || prev.name,
           eventType: matchedService,
-          location: b.location || prev.location,
+          location: b.location ? b.location : prev.location,
           date: b.bookingDate || prev.date,
         }));
       } else {
@@ -150,7 +150,7 @@ export function TestimonialForm() {
       const res = await submitClientTestimonial({
         name: formData.name,
         eventType: formData.eventType,
-        location: formData.location,
+        location: formData.location ? formData.location.trim() : undefined,
         message: formData.message,
         rating: formData.rating,
         bookingCode: verifiedBooking?.bookingCode || (bookingCodeInput ? bookingCodeInput.trim() : undefined),
@@ -368,15 +368,22 @@ export function TestimonialForm() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="location" className="text-xs font-semibold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">
-                  Lokasi Acara / Sesi Foto
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="location" className="text-xs font-semibold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">
+                    Lokasi Acara / Sesi Foto <span className="text-[11px] font-normal text-zinc-400 dark:text-zinc-500 lowercase">(opsional)</span>
+                  </label>
+                  {verifiedBooking && formData.location && (
+                    <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                      Otomatis dari booking
+                    </span>
+                  )}
+                </div>
                 <input
                   id="location"
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Contoh: Pamekasan, Madura / Sumenep"
+                  placeholder="Contoh: Pamekasan, Madura (opsional)"
                   className="w-full px-4 py-3.5 bg-zinc-50/80 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:border-[#0066CC] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#0066CC]/20 dark:focus:ring-blue-500/25 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-sans"
                 />
               </div>
