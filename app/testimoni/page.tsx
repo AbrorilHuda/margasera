@@ -1,30 +1,33 @@
-import React, { Suspense } from 'react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { TestimonialForm } from '@/components/testimonials/testimonial-form';
-import { ChevronRight, MessageSquareHeart, Loader2 } from 'lucide-react';
+import React, { Suspense } from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { TestimonialForm } from "@/components/testimonials/testimonial-form";
+import { ChevronRight, MessageSquareHeart, Loader2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: 'Isi Ulasan & Testimoni Klien',
-  description: 'Formulir ulasan dan cerita pengalaman klien bersama Margasera Photography di Pamekasan & Madura — "Moment Satu Hari Untuk Selamanya". Bagikan kesan bahagia Anda.',
+  title: "Isi Ulasan & Testimoni Klien",
+  description:
+    'Formulir ulasan dan cerita pengalaman klien bersama Margasera Photography di Pamekasan & Madura — "Moment Satu Hari Untuk Selamanya". Bagikan kesan bahagia Anda.',
   alternates: {
-    canonical: '/testimoni',
+    canonical: "/testimoni",
   },
   openGraph: {
-    title: 'Isi Ulasan & Testimoni Klien | Margasera Photography',
-    description: 'Bagikan ulasan dan pengalaman Anda bersama Margasera Photography di Pamekasan & Madura — "Moment Satu Hari Untuk Selamanya".',
-    url: '/testimoni',
-    siteName: 'Margasera Photography',
+    title: "Isi Ulasan & Testimoni Klien - Margasera Photography",
+    description:
+      'Bagikan ulasan dan pengalaman Anda bersama Margasera Photography di Pamekasan & Madura — "Moment Satu Hari Untuk Selamanya".',
+    url: "/testimoni",
+    siteName: "Margasera Photography",
   },
 };
 
 export default function TestimoniPage() {
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: 'Formulir Ulasan & Testimoni Klien Margasera Photography',
-    description: 'Halaman pengisian ulasan dan testimoni pengalaman klien Margasera Photography di Pamekasan, Madura.',
-    url: 'https://margasera.id/testimoni',
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Formulir Ulasan & Testimoni Klien Margasera Photography",
+    description:
+      "Halaman pengisian ulasan dan testimoni pengalaman klien Margasera Photography di Pamekasan, Madura.",
+    url: "https://margasera.id/testimoni",
   };
 
   return (
@@ -35,7 +38,10 @@ export default function TestimoniPage() {
       />
 
       {/* Ambient Atmospheric Glows for Dark Mode */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        aria-hidden="true"
+      >
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#0066CC]/15 dark:bg-[#0066CC]/20 blur-[130px] rounded-full" />
         <div className="absolute top-1/3 -left-32 w-80 h-80 bg-amber-500/5 dark:bg-amber-500/10 blur-[130px] rounded-full" />
         <div className="absolute top-2/3 -right-32 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 blur-[130px] rounded-full" />
@@ -44,11 +50,16 @@ export default function TestimoniPage() {
       {/* Breadcrumbs */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-8 relative z-10">
         <nav className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-zinc-900/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 dark:text-zinc-400 font-light shadow-2xs">
-          <Link href="/" className="hover:text-[#0066CC] dark:hover:text-blue-400 transition-colors">
+          <Link
+            href="/"
+            className="hover:text-[#0066CC] dark:hover:text-blue-400 transition-colors"
+          >
             Beranda
           </Link>
           <ChevronRight className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
-          <span className="text-zinc-900 dark:text-zinc-200 font-medium">Isi Testimoni</span>
+          <span className="text-zinc-900 dark:text-zinc-200 font-medium">
+            Isi Testimoni
+          </span>
         </nav>
       </div>
 
@@ -68,7 +79,10 @@ export default function TestimoniPage() {
         </p>
 
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300/85 font-light leading-relaxed mt-4 max-w-xl mx-auto">
-          Terima kasih telah mempercayakan dokumentasi momen berharga Anda kepada Margasera Photography di Pamekasan &amp; Madura. Jadilah yang pertama kali membagikan cerita, kesan, dan pengalaman bahagia Anda bersama kami!
+          Terima kasih telah mempercayakan dokumentasi momen berharga Anda
+          kepada Margasera Photography di Pamekasan &amp; Madura. Jadilah yang
+          pertama kali membagikan cerita, kesan, dan pengalaman bahagia Anda
+          bersama kami!
         </p>
       </div>
 
@@ -78,7 +92,9 @@ export default function TestimoniPage() {
           fallback={
             <div className="p-10 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-md border border-zinc-200/90 dark:border-zinc-800/90 rounded-3xl text-center flex flex-col items-center justify-center gap-3 shadow-sm">
               <Loader2 className="w-6 h-6 animate-spin text-[#0066CC] dark:text-blue-400" />
-              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">Memuat formulir testimoni...</span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+                Memuat formulir testimoni...
+              </span>
             </div>
           }
         >

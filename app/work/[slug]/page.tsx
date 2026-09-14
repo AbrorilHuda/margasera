@@ -1,17 +1,23 @@
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { getGalleryProjectBySlug } from '@/lib/actions/gallery';
-import { MapPin, Calendar, ArrowLeft, Camera } from 'lucide-react';
-import { notFound } from 'next/navigation';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { getGalleryProjectBySlug } from "@/lib/actions/gallery";
+import { MapPin, Calendar, ArrowLeft, Camera } from "lucide-react";
+import { notFound } from "next/navigation";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const resolvedParams = await params;
   const project = await getGalleryProjectBySlug(resolvedParams.slug);
-  if (!project) return { title: 'Portofolio - Margasera Photography' };
+  if (!project) return { title: "Portofolio - Margasera Photography" };
 
-  const pageTitle = `${project.title} — ${project.categoryLabel}`;
-  const pageDesc = project.description || `Dokumentasi fotografi ${project.categoryLabel} oleh Margasera Photography di ${project.location}.`;
+  const pageTitle = `${project.title} - ${project.categoryLabel}`;
+  const pageDesc =
+    project.description ||
+    `Dokumentasi fotografi ${project.categoryLabel} oleh Margasera Photography di ${project.location}.`;
 
   return {
     title: pageTitle,
@@ -19,19 +25,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     keywords: [
       project.title,
       project.categoryLabel,
-      'Margasera Photography',
+      "Margasera Photography",
       project.location,
-      'Fotografer Pamekasan',
-      'Fotografer Madura',
+      "Fotografer Pamekasan",
+      "Fotografer Madura",
     ],
     alternates: {
       canonical: `/work/${resolvedParams.slug}`,
     },
     openGraph: {
-      title: `${project.title} | Margasera Photography`,
+      title: `${project.title} - Margasera Photography`,
       description: pageDesc,
       url: `/work/${resolvedParams.slug}`,
-      siteName: 'Margasera Photography',
+      siteName: "Margasera Photography",
       images: [
         {
           url: project.coverImage,
@@ -40,11 +46,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
           alt: `${project.title} - Margasera Photography ${project.location}`,
         },
       ],
-      locale: 'id_ID',
-      type: 'article',
+      locale: "id_ID",
+      type: "article",
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title: `${project.title} | Margasera Photography`,
       description: pageDesc,
       images: [project.coverImage],
@@ -52,32 +58,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const resolvedParams = await params;
   const project = await getGalleryProjectBySlug(resolvedParams.slug);
 
   if (!project) notFound();
 
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@graph': [
+    "@context": "https://schema.org",
+    "@graph": [
       {
-        '@type': 'BreadcrumbList',
+        "@type": "BreadcrumbList",
         itemListElement: [
           {
-            '@type': 'ListItem',
+            "@type": "ListItem",
             position: 1,
-            name: 'Beranda',
-            item: 'https://margasera.id',
+            name: "Beranda",
+            item: "https://margasera.id",
           },
           {
-            '@type': 'ListItem',
+            "@type": "ListItem",
             position: 2,
-            name: 'Portofolio',
-            item: 'https://margasera.id/work',
+            name: "Portofolio",
+            item: "https://margasera.id/work",
           },
           {
-            '@type': 'ListItem',
+            "@type": "ListItem",
             position: 3,
             name: project.title,
             item: `https://margasera.id/work/${project.slug}`,
@@ -85,16 +95,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         ],
       },
       {
-        '@type': 'ImageGallery',
+        "@type": "ImageGallery",
         name: project.title,
         description: project.description,
         image: project.coverImage,
         contentLocation: project.location,
         datePublished: project.eventDate,
         author: {
-          '@type': 'Organization',
-          name: 'Margasera Photography',
-          url: 'https://margasera.id',
+          "@type": "Organization",
+          name: "Margasera Photography",
+          url: "https://margasera.id",
         },
       },
     ],
@@ -158,15 +168,20 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       {/* Editorial Photo Stream Grid (Filter out duplicate cover image) */}
       {(() => {
-        const albumImages = (project.images || []).filter((img) => img.imageUrl !== project.coverImage);
+        const albumImages = (project.images || []).filter(
+          (img) => img.imageUrl !== project.coverImage,
+        );
         if (albumImages.length === 0) return null;
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {albumImages.map((img, idx) => (
               <div
                 key={img.id || idx}
-                className={`relative border border-zinc-800 bg-zinc-900 ${img.aspectRatio === 'landscape' ? 'md:col-span-2 h-[500px]' : 'h-[600px]'
-                  }`}
+                className={`relative border border-zinc-800 bg-zinc-900 ${
+                  img.aspectRatio === "landscape"
+                    ? "md:col-span-2 h-[500px]"
+                    : "h-[600px]"
+                }`}
               >
                 <Image
                   src={img.imageUrl}
@@ -187,7 +202,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           Tertarik Menyusun Konsep Sesi Foto Seperti Ini?
         </h3>
         <p className="text-xs text-zinc-400 font-light max-w-lg">
-          Kami siap mengabadikan momen berharga Anda di Pamekasan, Madura, dan sekitarnya dengan sentuhan visual eksklusif Margasera Photography.
+          Kami siap mengabadikan momen berharga Anda di Pamekasan, Madura, dan
+          sekitarnya dengan sentuhan visual eksklusif Margasera Photography.
         </p>
         <Link
           href={`/booking?serviceId=${project.category}`}

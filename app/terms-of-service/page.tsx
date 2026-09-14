@@ -1,6 +1,6 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
   FileText,
   CalendarCheck,
@@ -10,28 +10,28 @@ import {
   Camera,
   AlertCircle,
   ArrowLeft,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const metadata: Metadata = {
-  title: 'Syarat & Ketentuan Layanan (Terms of Service)',
+  title: "Syarat & Ketentuan Layanan (Terms of Service)",
   description:
     'Syarat dan ketentuan pemesanan layanan dokumentasi fotografi Margasera Photography di Pamekasan & Madura — "Moment Satu Hari Untuk Selamanya".',
   alternates: {
-    canonical: '/terms-of-service',
+    canonical: "/terms-of-service",
   },
   openGraph: {
-    title: 'Syarat & Ketentuan Layanan | Margasera Photography',
+    title: "Syarat & Ketentuan Layanan - Margasera Photography",
     description:
-      'Syarat, prosedur booking, jadwal, serta hak cipta dokumentasi fotografi di Margasera Photography Pamekasan Madura.',
-    url: '/terms-of-service',
-    siteName: 'Margasera Photography',
-    locale: 'id_ID',
-    type: 'website',
+      "Syarat, prosedur booking, jadwal, serta hak cipta dokumentasi fotografi di Margasera Photography Pamekasan Madura.",
+    url: "/terms-of-service",
+    siteName: "Margasera Photography",
+    locale: "id_ID",
+    type: "website",
   },
 };
 
 export default function TermsOfServicePage() {
-  const lastUpdated = '10 September 2026';
+  const lastUpdated = "10 September 2026";
 
   return (
     <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors py-16 sm:py-24 px-4 sm:px-6 md:px-12 overflow-hidden">
@@ -71,8 +71,13 @@ export default function TermsOfServicePage() {
           </p>
 
           <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
-            Terakhir diperbarui: <span className="font-mono text-zinc-800 dark:text-zinc-200">{lastUpdated}</span>.
-            Dengan melakukan pemesanan (booking) ataupun menggunakan jasa Margasera Photography, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh ketentuan layanan di bawah ini.
+            Terakhir diperbarui:{" "}
+            <span className="font-mono text-zinc-800 dark:text-zinc-200">
+              {lastUpdated}
+            </span>
+            . Dengan melakukan pemesanan (booking) ataupun menggunakan jasa
+            Margasera Photography, Anda menyatakan telah membaca, memahami, dan
+            menyetujui seluruh ketentuan layanan di bawah ini.
           </p>
         </div>
 
@@ -89,12 +94,26 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Setiap pemesanan sesi dokumentasi resmi di Margasera Photography tunduk pada ketentuan reservasi berikut:
+              Setiap pemesanan sesi dokumentasi resmi di Margasera Photography
+              tunduk pada ketentuan reservasi berikut:
             </p>
             <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs sm:text-sm">
-              <li>Jadwal tanggal acara dinyatakan terkunci resmi (*locked booking*) setelah klien melakukan pembayaran Uang Muka (DP) sesuai nominal paket yang dipilih.</li>
-              <li>Sebelum pembayaran DP dilakukan, tanggal yang Anda inginkan tetap berstatus terbuka dan dapat dipesan oleh calon klien lain sewaktu-waktu.</li>
-              <li>Setelah DP diverifikasi, sistem akan menerbitkan <strong>Kode Booking Resmi</strong> (contoh: <code>MS-260815-123</code>) yang dapat digunakan untuk memeriksa status secara online dan verifikasi ulasan.</li>
+              <li>
+                Jadwal tanggal acara dinyatakan terkunci resmi (*locked
+                booking*) setelah klien melakukan pembayaran Uang Muka (DP)
+                sesuai nominal paket yang dipilih.
+              </li>
+              <li>
+                Sebelum pembayaran DP dilakukan, tanggal yang Anda inginkan
+                tetap berstatus terbuka dan dapat dipesan oleh calon klien lain
+                sewaktu-waktu.
+              </li>
+              <li>
+                Setelah DP diverifikasi, sistem akan menerbitkan{" "}
+                <strong>Kode Booking Resmi</strong> (contoh:{" "}
+                <code>MS-260815-123</code>) yang dapat digunakan untuk memeriksa
+                status secara online dan verifikasi ulasan.
+              </li>
             </ul>
           </div>
 
@@ -109,7 +128,10 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Pelunasan sisa biaya dokumentasi dapat diselesaikan maksimal pada hari H pelaksanaan acara pemotretan atau sebelum penyerahan seluruh file master akhir (high-resolution). Invoice digital resmi akan dikirimkan sebagai bukti pembayaran sah.
+              Pelunasan sisa biaya dokumentasi dapat diselesaikan maksimal pada
+              hari H pelaksanaan acara pemotretan atau sebelum penyerahan
+              seluruh file master akhir (high-resolution). Invoice digital resmi
+              akan dikirimkan sebagai bukti pembayaran sah.
             </p>
           </div>
 
@@ -124,16 +146,30 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Kami memahami adanya kemungkinan perubahan rencana dalam sebuah perayaan. Kebijakan pergantian jadwal diatur sebagai berikut:
+              Kami memahami adanya kemungkinan perubahan rencana dalam sebuah
+              perayaan. Kebijakan pergantian jadwal diatur sebagai berikut:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
               <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60 flex flex-col gap-1.5">
-                <span className="font-semibold text-zinc-900 dark:text-white">Perubahan Jadwal (Reschedule):</span>
-                <span>Pemberitahuan perubahan tanggal minimal <strong>14 hari kerja</strong> sebelum hari H tanpa denda, selama jadwal baru fotografer Margasera masih tersedia.</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">
+                  Perubahan Jadwal (Reschedule):
+                </span>
+                <span>
+                  Pemberitahuan perubahan tanggal minimal{" "}
+                  <strong>14 hari kerja</strong> sebelum hari H tanpa denda,
+                  selama jadwal baru fotografer Margasera masih tersedia.
+                </span>
               </div>
               <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60 flex flex-col gap-1.5">
-                <span className="font-semibold text-zinc-900 dark:text-white">Pembatalan (Cancellation):</span>
-                <span>Uang muka (DP) yang telah disetorkan bersifat <em>non-refundable</em> (tidak dapat dikembalikan), karena tanggal tersebut telah dialokasikan khusus dan menolak penawaran lain.</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">
+                  Pembatalan (Cancellation):
+                </span>
+                <span>
+                  Uang muka (DP) yang telah disetorkan bersifat{" "}
+                  <em>non-refundable</em> (tidak dapat dikembalikan), karena
+                  tanggal tersebut telah dialokasikan khusus dan menolak
+                  penawaran lain.
+                </span>
               </div>
             </div>
           </div>
@@ -149,12 +185,25 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Setiap foto yang dihasilkan melewati proses kurasi dan <em>color grading</em> estetik editorial khas Margasera Studio:
+              Setiap foto yang dihasilkan melewati proses kurasi dan{" "}
+              <em>color grading</em> estetik editorial khas Margasera Studio:
             </p>
             <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs sm:text-sm">
-              <li><strong>Preview Cepat:</strong> Foto cuplikan terbaik (preview) dikirimkan dalam 2–4 hari setelah acara untuk kebutuhan unggahan media sosial klien.</li>
-              <li><strong>File Lengkap:</strong> Seluruh foto hasil editing warna beresolusi tinggi diserahkan melalui Google Drive dalam waktu 7–14 hari kerja.</li>
-              <li><strong>Masa Penyimpanan:</strong> Link unduhan dijamin aktif minimal 3 (tiga) bulan. Klien disarankan mengunduh dan mencadangkan file ke media penyimpanan pribadi.</li>
+              <li>
+                <strong>Preview Cepat:</strong> Foto cuplikan terbaik (preview)
+                dikirimkan dalam 2–4 hari setelah acara untuk kebutuhan unggahan
+                media sosial klien.
+              </li>
+              <li>
+                <strong>File Lengkap:</strong> Seluruh foto hasil editing warna
+                beresolusi tinggi diserahkan melalui Google Drive dalam waktu
+                7–14 hari kerja.
+              </li>
+              <li>
+                <strong>Masa Penyimpanan:</strong> Link unduhan dijamin aktif
+                minimal 3 (tiga) bulan. Klien disarankan mengunduh dan
+                mencadangkan file ke media penyimpanan pribadi.
+              </li>
             </ul>
           </div>
 
@@ -169,7 +218,12 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Klien diberikan hak pakai non-komersial seumur hidup untuk mencetak, membagikan, dan mengunggah foto ke media sosial pribadi. Hak cipta pencipta tetap dimiliki oleh Margasera Photography. Margasera berhak menampilkan hasil karya pada portofolio, pameran seni, website, dan media sosial resmi, kecuali ada perjanjian tertulis sebelumnya mengenai sesi privat.
+              Klien diberikan hak pakai non-komersial seumur hidup untuk
+              mencetak, membagikan, dan mengunggah foto ke media sosial pribadi.
+              Hak cipta pencipta tetap dimiliki oleh Margasera Photography.
+              Margasera berhak menampilkan hasil karya pada portofolio, pameran
+              seni, website, dan media sosial resmi, kecuali ada perjanjian
+              tertulis sebelumnya mengenai sesi privat.
             </p>
           </div>
 
@@ -184,7 +238,12 @@ export default function TermsOfServicePage() {
               </h2>
             </div>
             <p>
-              Margasera selalu menyiapkan perangkat kamera profesional ganda (backup camera &amp; dual card slot recording) untuk mencegah risiko kegagalan teknis. Namun demikian, dalam keadaan di luar kendali manusia (*force majeure*) seperti bencana alam, kerusuhan, kecelakaan, atau pembatasan darurat pemerintah, tanggung jawab maksimal dibatasi sebatas pengembalian dana yang telah disetorkan.
+              Margasera selalu menyiapkan perangkat kamera profesional ganda
+              (backup camera &amp; dual card slot recording) untuk mencegah
+              risiko kegagalan teknis. Namun demikian, dalam keadaan di luar
+              kendali manusia (*force majeure*) seperti bencana alam, kerusuhan,
+              kecelakaan, atau pembatasan darurat pemerintah, tanggung jawab
+              maksimal dibatasi sebatas pengembalian dana yang telah disetorkan.
             </p>
           </div>
 
@@ -195,7 +254,8 @@ export default function TermsOfServicePage() {
                 Punya Pertanyaan Mengenai Ketentuan Layanan?
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light mt-1">
-                Tim Margasera siap menjelaskan setiap detail kebutuhan dokumentasi hari istimewa Anda.
+                Tim Margasera siap menjelaskan setiap detail kebutuhan
+                dokumentasi hari istimewa Anda.
               </p>
             </div>
             <Link

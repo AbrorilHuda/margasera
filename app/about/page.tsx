@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     canonical: '/about',
   },
   openGraph: {
-    title: 'Tentang & Kontak | Margasera Photography Pamekasan',
+    title: 'Tentang & Kontak - Margasera Photography',
     description: 'Profil Margasera Photography di Pamekasan, Madura — "Moment Satu Hari Untuk Selamanya". Melayani Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, dan Tasyakuran 40 Hari Bayi.',
     url: '/about',
     siteName: 'Margasera Photography',

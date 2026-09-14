@@ -1,6 +1,6 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
   ShieldCheck,
   Lock,
@@ -11,28 +11,28 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const metadata: Metadata = {
-  title: 'Kebijakan Privasi (Privacy Policy)',
+  title: "Kebijakan Privasi (Privacy Policy)",
   description:
-    'Kebijakan privasi Margasera Photography. Pelajari bagaimana kami melindungi data pribadi, dokumentasi foto, dan informasi klien dengan standar keamanan dan etika profesional.',
+    "Kebijakan privasi Margasera Photography. Pelajari bagaimana kami melindungi data pribadi, dokumentasi foto, dan informasi klien dengan standar keamanan dan etika profesional.",
   alternates: {
-    canonical: '/privacy-policy',
+    canonical: "/privacy-policy",
   },
   openGraph: {
-    title: 'Kebijakan Privasi | Margasera Photography',
+    title: "Kebijakan Privasi - Margasera Photography",
     description:
-      'Kebijakan privasi dan perlindungan data dokumentasi visual klien di Margasera Photography, Pamekasan - Madura.',
-    url: '/privacy-policy',
-    siteName: 'Margasera Photography',
-    locale: 'id_ID',
-    type: 'website',
+      "Kebijakan privasi dan perlindungan data dokumentasi visual klien di Margasera Photography, Pamekasan - Madura.",
+    url: "/privacy-policy",
+    siteName: "Margasera Photography",
+    locale: "id_ID",
+    type: "website",
   },
 };
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = '10 September 2026';
+  const lastUpdated = "10 September 2026";
 
   return (
     <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors py-16 sm:py-24 px-4 sm:px-6 md:px-12 overflow-hidden">
@@ -72,8 +72,13 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
-            Terakhir diperbarui: <span className="font-mono text-zinc-800 dark:text-zinc-200">{lastUpdated}</span>.
-            Margasera Photography menghormati dan berkomitmen penuh untuk menjaga kerahasiaan data pribadi serta karya dokumentasi setiap klien kami di Pamekasan, Madura, dan sekitarnya.
+            Terakhir diperbarui:{" "}
+            <span className="font-mono text-zinc-800 dark:text-zinc-200">
+              {lastUpdated}
+            </span>
+            . Margasera Photography menghormati dan berkomitmen penuh untuk
+            menjaga kerahasiaan data pribadi serta karya dokumentasi setiap
+            klien kami di Pamekasan, Madura, dan sekitarnya.
           </p>
         </div>
 
@@ -90,24 +95,39 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p>
-              Saat Anda melakukan pemesanan sesi, konsultasi, ataupun mengirimkan ulasan melalui platform Margasera Photography, kami mengumpulkan beberapa data yang Anda berikan secara sukarela, antara lain:
+              Saat Anda melakukan pemesanan sesi, konsultasi, ataupun
+              mengirimkan ulasan melalui platform Margasera Photography, kami
+              mengumpulkan beberapa data yang Anda berikan secara sukarela,
+              antara lain:
             </p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">
               <li className="flex items-start gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Identitas:</strong> Nama lengkap dan nama pasangan/keluarga.</span>
+                <span>
+                  <strong>Identitas:</strong> Nama lengkap dan nama
+                  pasangan/keluarga.
+                </span>
               </li>
               <li className="flex items-start gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Kontak:</strong> Nomor telepon / WhatsApp aktif dan email.</span>
+                <span>
+                  <strong>Kontak:</strong> Nomor telepon / WhatsApp aktif dan
+                  email.
+                </span>
               </li>
               <li className="flex items-start gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Detail Acara:</strong> Tanggal acara, lokasi pemotretan, &amp; paket layanan.</span>
+                <span>
+                  <strong>Detail Acara:</strong> Tanggal acara, lokasi
+                  pemotretan, &amp; paket layanan.
+                </span>
               </li>
               <li className="flex items-start gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Ulasan &amp; Testimoni:</strong> Cerita pengalaman, rating kepuasan, dan foto opsional.</span>
+                <span>
+                  <strong>Ulasan &amp; Testimoni:</strong> Cerita pengalaman,
+                  rating kepuasan, dan foto opsional.
+                </span>
               </li>
             </ul>
           </div>
@@ -122,13 +142,31 @@ export default function PrivacyPolicyPage() {
                 2. Penggunaan Informasi Klien
               </h2>
             </div>
-            <p>Informasi yang terkumpul digunakan semata-mata untuk kepentingan operasional dokumentasi visual, mencakup:</p>
+            <p>
+              Informasi yang terkumpul digunakan semata-mata untuk kepentingan
+              operasional dokumentasi visual, mencakup:
+            </p>
             <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs sm:text-sm">
-              <li>Memproses reservasi tanggal, koordinasi kru, dan konfirmasi jadwal sesi pemotretan.</li>
-              <li>Penyusunan invoice resmi, kwitansi pembayaran, serta catatan deposit (DP) dan pelunasan.</li>
-              <li>Pengiriman file preview foto dan penyerahan link Google Drive / galeri final beresolusi tinggi.</li>
-              <li>Verifikasi ulasan testimoni klien resmi agar ulasan yang tampil di website adalah 100% otentik.</li>
-              <li>Layanan pelanggan, konsultasi konsep busana/lokasi, dan tindak lanjut pasca-acara.</li>
+              <li>
+                Memproses reservasi tanggal, koordinasi kru, dan konfirmasi
+                jadwal sesi pemotretan.
+              </li>
+              <li>
+                Penyusunan invoice resmi, kwitansi pembayaran, serta catatan
+                deposit (DP) dan pelunasan.
+              </li>
+              <li>
+                Pengiriman file preview foto dan penyerahan link Google Drive /
+                galeri final beresolusi tinggi.
+              </li>
+              <li>
+                Verifikasi ulasan testimoni klien resmi agar ulasan yang tampil
+                di website adalah 100% otentik.
+              </li>
+              <li>
+                Layanan pelanggan, konsultasi konsep busana/lokasi, dan tindak
+                lanjut pasca-acara.
+              </li>
             </ul>
           </div>
 
@@ -143,10 +181,16 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p>
-              Sebagai studio kreatif, Margasera Photography memegang hak cipta artistik atas seluruh karya foto dan video yang dihasilkan sesuai hukum hak cipta yang berlaku di Indonesia.
+              Sebagai studio kreatif, Margasera Photography memegang hak cipta
+              artistik atas seluruh karya foto dan video yang dihasilkan sesuai
+              hukum hak cipta yang berlaku di Indonesia.
             </p>
             <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
-              <strong>Privasi Klien Prioritas Utama:</strong> Jika Anda menghendaki sesi dokumentasi Anda bersifat privat (tidak ditampilkan pada portofolio website atau media sosial Instagram/TikTok kami), Anda berhak memberitahukan tim kami sebelum atau saat sesi pemesanan disepakati tanpa biaya tambahan.
+              <strong>Privasi Klien Prioritas Utama:</strong> Jika Anda
+              menghendaki sesi dokumentasi Anda bersifat privat (tidak
+              ditampilkan pada portofolio website atau media sosial
+              Instagram/TikTok kami), Anda berhak memberitahukan tim kami
+              sebelum atau saat sesi pemesanan disepakati tanpa biaya tambahan.
             </div>
           </div>
 
@@ -161,7 +205,11 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p>
-              Kami menerapkan standar enkripsi SSL/TLS, otentikasi database terisolasi melalui Supabase, serta protokol akses terbatas bagi tim internal. Kami tidak pernah dan tidak akan menjual, menyewakan, atau membagikan data kontak Anda kepada pihak ketiga manapun untuk tujuan pemasaran komersial.
+              Kami menerapkan standar enkripsi SSL/TLS, otentikasi database
+              terisolasi melalui Supabase, serta protokol akses terbatas bagi
+              tim internal. Kami tidak pernah dan tidak akan menjual,
+              menyewakan, atau membagikan data kontak Anda kepada pihak ketiga
+              manapun untuk tujuan pemasaran komersial.
             </p>
           </div>
 
@@ -176,7 +224,10 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p>
-              Setiap klien memiliki hak penuh untuk meminta pembaruan data kontak, meminta arsip file foto ulang jika terjadi kehilangan pada batas waktu garansi, ataupun meminta penurunan foto dari showcase publik.
+              Setiap klien memiliki hak penuh untuk meminta pembaruan data
+              kontak, meminta arsip file foto ulang jika terjadi kehilangan pada
+              batas waktu garansi, ataupun meminta penurunan foto dari showcase
+              publik.
             </p>
             <div className="pt-2">
               <Link

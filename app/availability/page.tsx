@@ -1,16 +1,18 @@
-import React from 'react';
-import { AvailabilityCalendar } from '@/components/calendar/availability-calendar';
+import React from "react";
+import { AvailabilityCalendar } from "@/components/calendar/availability-calendar";
 
 export const metadata = {
-  title: 'Kalender Ketersediaan Tanggal Fotografer',
-  description: 'Cek jadwal ketersediaan tanggal fotografer Margasera Photography secara real-time untuk wedding, pre-wedding, couple, portrait, dan wisuda di Pamekasan & Madura.',
+  title: "Kalender Ketersediaan Tanggal Fotografer",
+  description:
+    "Cek jadwal ketersediaan tanggal fotografer Margasera Photography secara real-time untuk wedding, pre-wedding, couple, portrait, dan wisuda di Pamekasan & Madura.",
   alternates: {
-    canonical: '/availability',
+    canonical: "/availability",
   },
   openGraph: {
-    title: 'Kalender Ketersediaan Tanggal | Margasera Photography',
-    description: 'Cek jadwal ketersediaan tanggal fotografer Margasera Photography di Pamekasan & Madura.',
-    url: '/availability',
+    title: "Kalender Ketersediaan Tanggal - Margasera Photography",
+    description:
+      "Cek jadwal ketersediaan tanggal fotografer Margasera Photography di Pamekasan & Madura.",
+    url: "/availability",
   },
 };
 
@@ -25,7 +27,8 @@ export default function AvailabilityPage() {
           Kalender Ketersediaan
         </h1>
         <p className="text-sm text-zinc-400 font-light leading-relaxed mt-3">
-          Tentukan tanggal impian Anda dan pastikan slot ketersediaan sebelum melakukan booking resmi.
+          Tentukan tanggal impian Anda dan pastikan slot ketersediaan sebelum
+          melakukan booking resmi.
         </p>
       </div>
 
