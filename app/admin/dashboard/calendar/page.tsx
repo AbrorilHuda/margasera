@@ -608,7 +608,7 @@ export default function CalendarPage() {
       {/* ===== MODAL: SET/EDIT AVAILABILITY ===== */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 shadow-2xl">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 md:p-8 flex flex-col gap-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#0066CC]/15 text-[#0066CC] flex items-center justify-center font-bold">

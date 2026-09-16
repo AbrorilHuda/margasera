@@ -19,7 +19,7 @@ import { getAllBookings } from '@/lib/actions/bookings';
 import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
 
@@ -87,8 +87,10 @@ export default function AdminOverviewPage() {
     loadData();
   }, [loadData]);
 
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-  const confirmedCount = bookings.filter((b) => b.status === 'confirmed').length;
+  const realizedRevenue = bookings.reduce((sum, b) => sum + getBookingPaidAmount(b), 0);
+  const pendingReceivables = bookings.reduce((sum, b) => sum + getBookingRemainingAmount(b), 0);
+  const confirmedCount = bookings.filter((b) => b.status === 'confirmed' || b.status === 'completed').length;
+  const pendingCount = bookings.filter((b) => b.status === 'pending').length;
 
   if (loading) {
     return (
@@ -118,18 +120,26 @@ export default function AdminOverviewPage() {
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
               <span className="text-[9px] sm:text-[10px] font-mono tracking-wider text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">
-                Total Revenue
+                Kas Masuk (Riil)
               </span>
               <div className="w-7 h-7 shrink-0 rounded-lg bg-[#0066CC]/10 border border-[#0066CC]/30 flex items-center justify-center text-[#0066CC]">
                 <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
             <span className="font-sans text-lg sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
-              {formatCurrency(totalRevenue)}
+              {formatCurrency(realizedRevenue)}
             </span>
-            <span className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 truncate">
-              <TrendingUp className="w-3 h-3 shrink-0" />
-              {confirmedCount} Confirmed
+            <span className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1 truncate">
+              {pendingReceivables > 0 ? (
+                <span className="text-amber-600 dark:text-amber-400 font-medium truncate" title="Sisa tagihan yang belum dilunasi">
+                  +{formatCurrency(pendingReceivables)} piutang
+                </span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 truncate">
+                  <TrendingUp className="w-3 h-3 shrink-0" />
+                  {confirmedCount} Acara Aktif
+                </span>
+              )}
             </span>
           </div>
 
@@ -147,8 +157,10 @@ export default function AdminOverviewPage() {
             <span className="font-sans text-lg sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
               {bookings.length} Pesanan
             </span>
-            <span className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-light truncate">
-              Online &amp; Offline
+            <span className={`text-[9px] sm:text-[10px] font-medium truncate ${
+              pendingCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500 dark:text-zinc-400 font-light'
+            }`}>
+              {pendingCount > 0 ? `${pendingCount} Menunggu DP` : 'Semua Terkonfirmasi'}
             </span>
           </div>
 
@@ -291,20 +303,43 @@ export default function AdminOverviewPage() {
                   <td className="p-4 font-semibold text-zinc-900 dark:text-zinc-100">{b.customerName}</td>
                   <td className="p-4 text-zinc-700 dark:text-zinc-300">{b.serviceName}</td>
                   <td className="p-4 text-zinc-500 dark:text-zinc-400 font-mono">{formatDate(b.bookingDate)}</td>
-                  <td className="p-4 font-mono text-sm font-semibold text-[#0066CC]">
-                    {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
+                      </span>
+                      <span className={`text-[10px] font-mono font-medium ${
+                        b.paymentStatus === 'paid_full'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : b.paymentStatus === 'dp_paid'
+                            ? 'text-[#0066CC]'
+                            : 'text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {b.paymentStatus === 'paid_full'
+                          ? 'Lunas'
+                          : b.paymentStatus === 'dp_paid'
+                            ? `DP: ${formatCurrency(getBookingPaidAmount(b))}`
+                            : 'Belum Bayar'}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-4">
                     <span
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider font-semibold ${
-                        b.status === 'confirmed'
+                        b.status === 'confirmed' || b.status === 'completed'
                           ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30'
-                          : 'bg-blue-50 dark:bg-[#0066CC]/10 text-blue-700 dark:text-[#0066CC] border border-blue-300 dark:border-[#0066CC]/30'
+                          : b.status === 'cancelled'
+                            ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30'
+                            : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          b.status === 'confirmed' ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-[#0066CC]'
+                          b.status === 'confirmed' || b.status === 'completed'
+                            ? 'bg-emerald-500 dark:bg-emerald-400'
+                            : b.status === 'cancelled'
+                              ? 'bg-rose-500'
+                              : 'bg-amber-500'
                         }`}
                       />
                       {b.status}
@@ -355,19 +390,40 @@ export default function AdminOverviewPage() {
                   📅 {formatDate(b.bookingDate)}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-semibold text-[#0066CC] text-xs">
-                    {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-mono font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
+                      {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
+                    </span>
+                    <span className={`text-[9px] font-mono ${
+                      b.paymentStatus === 'paid_full'
+                        ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                        : b.paymentStatus === 'dp_paid'
+                          ? 'text-[#0066CC] font-medium'
+                          : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {b.paymentStatus === 'paid_full'
+                        ? 'Lunas'
+                        : b.paymentStatus === 'dp_paid'
+                          ? 'DP Terbayar'
+                          : 'Belum Bayar'}
+                    </span>
+                  </div>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] uppercase font-mono font-semibold ${
-                      b.status === 'confirmed'
+                      b.status === 'confirmed' || b.status === 'completed'
                         ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30'
-                        : 'bg-blue-50 dark:bg-[#0066CC]/10 text-blue-700 dark:text-[#0066CC] border border-blue-300 dark:border-[#0066CC]/30'
+                        : b.status === 'cancelled'
+                          ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30'
+                          : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30'
                     }`}
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
-                        b.status === 'confirmed' ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-[#0066CC]'
+                        b.status === 'confirmed' || b.status === 'completed'
+                          ? 'bg-emerald-500 dark:bg-emerald-400'
+                          : b.status === 'cancelled'
+                            ? 'bg-rose-500'
+                            : 'bg-amber-500'
                       }`}
                     />
                     {b.status}

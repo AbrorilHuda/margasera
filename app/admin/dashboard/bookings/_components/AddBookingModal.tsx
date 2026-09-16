@@ -339,17 +339,19 @@ export function AddBookingModal({ services: propServices, packages: propPackages
               className={`${inputClass} font-sans resize-none`} />
           </div>
 
-          <button type="submit" disabled={isSubmitting}
-            className="mt-2 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menyimpan Booking...</span>
-              </>
-            ) : (
-              <span>Simpan Booking Manual</span>
-            )}
-          </button>
+          <div className="pt-3 pb-8 sm:pb-3">
+            <button type="submit" disabled={isSubmitting}
+              className="w-full py-3.5 bg-[#0066CC] hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Menyimpan Booking...</span>
+                </>
+              ) : (
+                <span>Simpan Booking Manual</span>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

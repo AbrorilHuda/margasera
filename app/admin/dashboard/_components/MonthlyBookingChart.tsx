@@ -7,7 +7,7 @@ import {
   Flame,
   Award,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getBookingPaidAmount } from '@/lib/utils';
 import type { Booking } from '@/lib/types';
 
 interface MonthlyBookingChartProps {
@@ -26,27 +26,24 @@ const MONTH_SHORT = [
 
 export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
   const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
-  // Dapatkan daftar tahun unik dari data booking
+  // Ambil daftar tahun yang tersedia dari data booking
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     years.add(currentYear);
-
     bookings.forEach((b) => {
       const dateStr = b.bookingDate || b.createdAt;
       if (dateStr) {
         const y = parseInt(dateStr.substring(0, 4), 10);
-        if (!isNaN(y) && y >= 2000 && y <= 2100) {
+        if (!isNaN(y) && y > 2000 && y < 2100) {
           years.add(y);
         }
       }
     });
-
     return Array.from(years).sort((a, b) => b - a);
   }, [bookings, currentYear]);
 
-  // State tahun yang dipilih
-  const [selectedYear, setSelectedYear] = useState<number>(availableYears[0] || currentYear);
   const [activeHoverMonth, setActiveHoverMonth] = useState<number | null>(null);
 
   // Kalkulasi data bulanan untuk tahun terpilih
@@ -66,6 +63,9 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
     let totalRevenue = 0;
 
     bookings.forEach((b) => {
+      // Abaikan booking yang dibatalkan
+      if (b.status === 'cancelled') return;
+
       const dateStr = b.bookingDate || b.createdAt;
       if (!dateStr) return;
 
@@ -74,10 +74,12 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
 
       const m = parseInt(dateStr.substring(5, 7), 10) - 1;
       if (m >= 0 && m < 12) {
+        const paid = getBookingPaidAmount(b);
+
         months[m].count += 1;
-        months[m].revenue += b.totalPrice || 0;
+        months[m].revenue += paid;
         totalBookings += 1;
-        totalRevenue += b.totalPrice || 0;
+        totalRevenue += paid;
 
         if (b.status === 'confirmed') months[m].confirmedCount += 1;
         else if (b.status === 'completed') months[m].completedCount += 1;
@@ -168,7 +170,7 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1">
                   <Flame className="w-3 h-3 text-amber-600 dark:text-amber-400 fill-amber-500" />
-                  Bulan Paling Ramai {selectedYear}
+                  Bulan pendapatan terbanyak di {selectedYear}
                 </span>
               </div>
               <h4 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
@@ -180,13 +182,13 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 pt-3 md:pt-0 md:pl-6">
+            <div className="flex items-center gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 pt-3 md:pt-0 md:pl-6">
             <div className="flex flex-col">
               <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">Total Order</span>
               <strong className="text-xl font-extrabold font-mono text-[#0066CC]">{peakMonth.count} Event</strong>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">Omset Bulan Ini</span>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">Kas Masuk Bulan Ini</span>
               <strong className="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(peakMonth.revenue)}
               </strong>
@@ -230,7 +232,7 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
                         {m.count} Pesanan
                       </div>
                       <div className="text-[10px] font-mono text-emerald-400 dark:text-emerald-700 font-semibold">
-                        {formatCurrency(m.revenue)}
+                        Kas: {formatCurrency(m.revenue)}
                       </div>
                       {isPeak && (
                         <span className="mt-0.5 text-[8px] font-mono font-bold bg-amber-400 text-black px-1.5 py-0.2 rounded-full uppercase">
@@ -320,7 +322,7 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
 
         <div className="flex flex-col">
           <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-            Total Omset {selectedYear}
+            Total Kas Masuk {selectedYear}
           </span>
           <strong className="text-base sm:text-lg font-extrabold font-mono text-[#0066CC] mt-0.5">
             {formatCurrency(totalYearRevenue)}

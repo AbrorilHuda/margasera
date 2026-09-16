@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2, CalendarClock } from 'lucide-react';
+import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2, CalendarClock, Trash2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
@@ -14,6 +13,7 @@ interface BookingDetailModalProps {
   onUpdateStatus?: (id: string, status: BookingStatus) => void;
   onShareTestimonial?: (booking: Booking) => void;
   onEdit?: (booking: Booking) => void;
+  onDelete?: (id: string, code: string) => void;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -38,6 +38,7 @@ export function BookingDetailModal({
   onUpdateStatus,
   onShareTestimonial,
   onEdit,
+  onDelete,
 }: BookingDetailModalProps) {
   const isDpPaid = b.paymentStatus === 'dp_paid';
   const isPaidFull = b.paymentStatus === 'paid_full';
@@ -259,15 +260,34 @@ export function BookingDetailModal({
               </button>
             </div>
           </div>
+
+          {/* Danger Zone: Hapus Booking */}
+          {onDelete && (
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono uppercase font-semibold">
+                Zona Bahaya:
+              </span>
+              <button
+                onClick={() => {
+                  onClose();
+                  onDelete(b.id, b.bookingCode);
+                }}
+                className="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                <span>Hapus Booking Ini</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Sticky Bottom Actions */}
-        <div className="p-4 sm:p-6 bg-zinc-50 dark:bg-zinc-900/90 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3 shrink-0 pb-safe">
+        {/* Sticky Bottom Actions with Safe-Area Padding */}
+        <div className="p-4 sm:p-5 bg-zinc-50 dark:bg-zinc-900/95 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-2.5 shrink-0 pb-safe">
           <a
             href={generateGoogleCalendarUrl(b)}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-xl flex items-center justify-center active:scale-95 transition-colors"
+            className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-xl flex items-center justify-center active:scale-95 transition-colors shrink-0"
             title="Tambah ke Google Calendar"
           >
             <Calendar className="w-4 h-4" />
@@ -290,6 +310,19 @@ export function BookingDetailModal({
             <FileText className="w-4 h-4" />
             <span>Invoice</span>
           </button>
+
+          {onDelete && (
+            <button
+              onClick={() => {
+                onClose();
+                onDelete(b.id, b.bookingCode);
+              }}
+              className="p-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center active:scale-95 transition-colors cursor-pointer shrink-0"
+              title="Hapus Booking Ini"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

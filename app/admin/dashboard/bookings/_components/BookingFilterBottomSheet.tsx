@@ -173,7 +173,7 @@ export function BookingFilterBottomSheet({
         </div>
 
         {/* Primary Action Button — PRD Section 12 [ Apply Filters ] */}
-        <div className="pt-2">
+        <div className="pt-2 pb-6 sm:pb-2">
           <button
             onClick={onClose}
             className="w-full py-3.5 rounded-xl bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-[0.98] cursor-pointer"

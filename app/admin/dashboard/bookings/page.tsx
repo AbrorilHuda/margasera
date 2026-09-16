@@ -28,7 +28,7 @@ import {
   convertOfflineQueueToBookings,
   OFFLINE_QUEUE_EVENT,
 } from '@/lib/offline-queue';
-import { formatCompactIDR, formatCurrency } from '@/lib/utils';
+import { formatCompactIDR, formatCurrency, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
 export default function BookingsPage() {
@@ -212,13 +212,21 @@ export default function BookingsPage() {
   const endIndex = Math.min(startIndex + pageSize, totalFiltered);
   const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
 
-  const totalRevenue = useMemo(
-    () => filteredBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0),
+  const realizedRevenue = useMemo(
+    () => filteredBookings.reduce((sum, b) => sum + getBookingPaidAmount(b), 0),
+    [filteredBookings]
+  );
+
+  const pendingReceivables = useMemo(
+    () => filteredBookings.reduce((sum, b) => sum + getBookingRemainingAmount(b), 0),
     [filteredBookings]
   );
 
   const pendingCount = useMemo(() => bookings.filter((b) => b.status === 'pending').length, [bookings]);
-  const confirmedCount = useMemo(() => bookings.filter((b) => b.status === 'confirmed').length, [bookings]);
+  const confirmedCount = useMemo(
+    () => bookings.filter((b) => b.status === 'confirmed' || b.status === 'completed').length,
+    [bookings]
+  );
 
   // Helpers
   const formatMonthLabel = (ym: string) => {
@@ -415,18 +423,21 @@ export default function BookingsPage() {
             label: 'Pending Review',
             value: `${pendingCount}`,
             unit: 'Booking',
-            sub: 'Menunggu konfirmasi',
+            sub: 'Menunggu konfirmasi / DP',
             color: '#f59e0b',
             icon: Clock,
           },
           {
-            label: 'Est. Total Revenue',
-            value: formatCompactIDR(totalRevenue).value,
-            unit: formatCompactIDR(totalRevenue).unit,
-            sub: `${filteredBookings.length} booking aktif`,
+            label: 'Kas Masuk (Riil)',
+            value: formatCompactIDR(realizedRevenue).value,
+            unit: formatCompactIDR(realizedRevenue).unit,
+            sub:
+              pendingReceivables > 0
+                ? `+${formatCompactIDR(pendingReceivables).full} piutang`
+                : `${filteredBookings.length} booking aktif`,
             color: '#0066CC',
             icon: Wallet,
-            tooltip: `Total Estimasi Pendapatan: ${formatCurrency(totalRevenue)}`,
+            tooltip: `Kas Masuk: ${formatCurrency(realizedRevenue)} | Sisa Piutang: ${formatCurrency(pendingReceivables)}`,
           },
         ].map(({ label, value, unit, sub, color, icon: Icon, tooltip }) => (
           <div key={label} title={tooltip} className="p-4 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs backdrop-blur-md">
@@ -559,6 +570,7 @@ export default function BookingsPage() {
             setSelectedBookingForDetail(null);
             setSelectedInvoiceBooking(b);
           }}
+          onDelete={handleDeleteBooking}
         />
       )}
 
@@ -576,7 +588,8 @@ export default function BookingsPage() {
           filteredBookings={filteredBookings}
           services={services}
           studioSettings={studioSettings}
-          totalRevenue={totalRevenue}
+          totalRevenue={realizedRevenue}
+          pendingReceivables={pendingReceivables}
           monthFilter={monthFilter}
           serviceFilter={serviceFilter}
           bookingStatusFilter={bookingStatusFilter}

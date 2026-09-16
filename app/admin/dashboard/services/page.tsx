@@ -201,7 +201,7 @@ export default function ServicesPage() {
       {/* ===== MODAL: ADD / EDIT SERVICE ===== */}
       {showAddServiceModal && (
         <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-6 sm:p-8 flex flex-col gap-6 shadow-2xl relative">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-6 sm:p-8 flex flex-col gap-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
               <h3 className="font-sans text-xl font-bold text-zinc-900 dark:text-zinc-100">
                 {editingService ? 'Edit Kategori Layanan' : 'Tambah Kategori Layanan Baru'}

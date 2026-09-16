@@ -403,7 +403,7 @@ export function BookingTable({
               <div className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400 font-mono pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>📅 {formatDate(b.bookingDate)} {b.startTime ? `(${b.startTime} – ${b.endTime} WIB)` : ''}</span>
+                  <span>{formatDate(b.bookingDate)} {b.startTime ? `(${b.startTime} – ${b.endTime} WIB)` : ''}</span>
                 </div>
                 {b.location && (
                   <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
@@ -482,6 +482,13 @@ export function BookingTable({
                     <span>Pindah Tgl</span>
                   </button>
                 )}
+                <button
+                  onClick={() => onDelete(b.id, b.bookingCode)}
+                  className="p-1.5 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/50 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer shrink-0 ml-auto"
+                  title="Hapus Booking"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           );
@@ -553,8 +560,8 @@ export function BookingTable({
                   key={p}
                   onClick={() => onPageChange(p)}
                   className={`w-7 h-7 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${currentPage === p
-                      ? 'bg-[#0066CC] text-white shadow-xs'
-                      : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                    ? 'bg-[#0066CC] text-white shadow-xs'
+                    : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                 >
                   {p}

@@ -206,7 +206,7 @@ export function BookingFilters({
             onClick={() => setIsMoreActionsOpen(false)}
             className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity"
           />
-          <div className="relative z-10 w-full bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 rounded-t-3xl shadow-2xl p-5 pb-safe flex flex-col gap-3 animate-in slide-in-from-bottom duration-200">
+          <div className="relative z-10 w-full bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 rounded-t-3xl shadow-2xl p-5 pb-8 pb-safe flex flex-col gap-3 animate-in slide-in-from-bottom duration-200">
             <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto -mt-1 shrink-0" />
             <div className="text-center font-mono text-[10px] text-zinc-400 uppercase tracking-widest pb-1 border-b border-zinc-200 dark:border-zinc-800">
               More Actions

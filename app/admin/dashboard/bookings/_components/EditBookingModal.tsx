@@ -582,7 +582,7 @@ export function EditBookingModal({
         </form>
 
         {/* Sticky Glass Footer */}
-        <div className="p-4 sm:p-5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-end gap-3 shrink-0 relative z-10 pb-safe">
+        <div className="p-4 sm:p-5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-end gap-3 shrink-0 relative z-10 pb-6 sm:pb-5 pb-safe">
           <button
             type="button"
             disabled={isSubmitting}

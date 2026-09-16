@@ -270,7 +270,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         </header>
 
         {/* Page Content with safe area padding for bottom bar */}
-        <main className="p-4 sm:p-8 md:p-10 pb-28 md:pb-10 flex-1 max-w-7xl w-full mx-auto">
+        <main className="p-4 sm:p-8 md:p-10 pb-36 md:pb-10 flex-1 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

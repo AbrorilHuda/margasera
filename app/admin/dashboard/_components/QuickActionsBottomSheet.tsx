@@ -74,7 +74,7 @@ export function QuickActionsBottomSheet({ isOpen, onClose }: QuickActionsBottomS
       />
 
       {/* iOS Bottom Sheet Modal */}
-      <div className="relative z-10 w-full bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 rounded-t-3xl shadow-2xl p-6 pb-8 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto">
+      <div className="relative z-10 w-full bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 rounded-t-3xl shadow-2xl p-6 pb-10 sm:pb-8 pb-safe flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto">
         {/* iOS Drag Handle */}
         <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto -mt-1 shrink-0" />
 

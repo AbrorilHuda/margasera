@@ -84,3 +84,55 @@ export function getTodayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Menghitung dana yang sudah riil masuk/diterima dari sebuah booking.
+ * Mengabaikan pesanan yang berstatus cancelled atau belum membayar (unpaid).
+ */
+export function getBookingPaidAmount(b: {
+  status?: string;
+  paymentStatus?: string;
+  paidAmount?: number;
+  downPayment?: number;
+  totalPrice?: number;
+}): number {
+  if (b.status === 'cancelled') return 0;
+
+  // Jika paidAmount sudah tercatat secara eksplisit
+  if (typeof b.paidAmount === 'number' && b.paidAmount > 0) {
+    return b.paidAmount;
+  }
+
+  // Fallback berdasarkan status pembayaran
+  if (b.paymentStatus === 'paid_full') {
+    return b.totalPrice || 0;
+  }
+  if (b.paymentStatus === 'dp_paid') {
+    return b.downPayment || (b.totalPrice ? Math.ceil(b.totalPrice * 0.2) : 0);
+  }
+
+  return 0;
+}
+
+/**
+ * Menghitung sisa piutang / pembayaran yang belum lunas untuk booking valid (confirmed/completed).
+ */
+export function getBookingRemainingAmount(b: {
+  status?: string;
+  paymentStatus?: string;
+  remainingAmount?: number;
+  paidAmount?: number;
+  downPayment?: number;
+  totalPrice?: number;
+}): number {
+  if (b.status === 'cancelled' || b.status === 'pending') return 0;
+  if (b.paymentStatus === 'paid_full') return 0;
+
+  if (typeof b.remainingAmount === 'number' && b.remainingAmount >= 0) {
+    return b.remainingAmount;
+  }
+
+  const paid = getBookingPaidAmount(b);
+  const total = b.totalPrice || 0;
+  return Math.max(0, total - paid);
+}
+

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { X, FileText, Printer } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import { printDocument } from '@/lib/print';
 import type { Booking, Service, StudioSettings } from '@/lib/types';
 
@@ -12,6 +12,7 @@ interface PdfRekapModalProps {
   services: Service[];
   studioSettings: StudioSettings;
   totalRevenue: number;
+  pendingReceivables?: number;
   monthFilter: string;
   serviceFilter: string;
   bookingStatusFilter: string;
@@ -45,14 +46,17 @@ export function PdfRekapModal({
   services,
   studioSettings,
   totalRevenue,
+  pendingReceivables,
   monthFilter,
   serviceFilter,
   bookingStatusFilter,
   formatMonthLabel,
   onClose,
 }: PdfRekapModalProps) {
-  const confirmedCount = filteredBookings.filter((b) => b.status === 'confirmed').length;
+  const confirmedCount = filteredBookings.filter((b) => b.status === 'confirmed' || b.status === 'completed').length;
   const pendingCount = filteredBookings.filter((b) => b.status === 'pending').length;
+  const totalReceivables =
+    pendingReceivables ?? filteredBookings.reduce((sum, b) => sum + getBookingRemainingAmount(b), 0);
 
   const periodLabel = monthFilter !== 'all' ? formatMonthLabel(monthFilter) : 'Semua Periode / Bulan Ini';
   const serviceLabel = serviceFilter !== 'all' ? services.find((s) => s.id === serviceFilter)?.name : null;
@@ -134,10 +138,10 @@ export function PdfRekapModal({
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-xs print-grid-4">
             {[
-              { label: 'Total Booking Masuk:', value: `${filteredBookings.length} Pesanan`, color: 'text-zinc-900' },
-              { label: 'Confirmed:', value: `${confirmedCount} Event`, color: 'text-emerald-700' },
-              { label: 'Pending / Terbuka:', value: `${pendingCount} Booking`, color: 'text-amber-700' },
-              { label: 'Total Est. Pendapatan:', value: formatCurrency(totalRevenue), color: 'text-[#0066CC]' },
+              { label: 'Total Booking:', value: `${filteredBookings.length} Pesanan`, color: 'text-zinc-900' },
+              { label: 'Confirmed / Selesai:', value: `${confirmedCount} Event`, color: 'text-emerald-700' },
+              { label: 'Kas Masuk (Terbayar):', value: formatCurrency(totalRevenue), color: 'text-[#0066CC]' },
+              { label: 'Sisa Piutang:', value: formatCurrency(totalReceivables), color: 'text-amber-700' },
             ].map(({ label, value, color }, i) => (
               <div key={i} className={`flex flex-col gap-0.5 ${i < 3 ? 'border-r border-zinc-200 pr-2' : ''}`}>
                 <span className={`text-[10px] font-mono uppercase font-semibold ${color === 'text-zinc-900' ? 'text-zinc-500' : color}`}>{label}</span>
@@ -197,8 +201,15 @@ export function PdfRekapModal({
                           </span>
                         </div>
                       </td>
-                      <td className="p-2.5 text-right font-mono font-extrabold text-zinc-900">
-                        {formatCurrency(b.totalPrice || 0)}
+                      <td className="p-2.5 text-right font-mono">
+                        <div className="flex flex-col items-end">
+                          <strong className="font-extrabold text-zinc-900">
+                            {formatCurrency(b.totalPrice || 0)}
+                          </strong>
+                          <span className="text-[9px] text-emerald-700 font-medium">
+                            Masuk: {formatCurrency(getBookingPaidAmount(b))}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -218,7 +229,8 @@ export function PdfRekapModal({
             <div className="flex flex-col gap-1">
               <strong className="text-zinc-800 font-semibold uppercase font-mono text-[10px]">Catatan Laporan:</strong>
               <span>• Laporan rekapitulasi ini di-generate secara otomatis dari sistem admin Margasera.</span>
-              <span>• Total nilai pendapatan dihitung berdasarkan estimasi nilai paket dari data booking aktif.</span>
+              <span>• Total kas masuk dihitung dari pembayaran yang telah terverifikasi (DP & Pelunasan) untuk booking aktif.</span>
+              <span>• Sisa piutang merupakan saldo pelunasan yang belum dibayarkan oleh client.</span>
             </div>
             <div className="text-right flex flex-col items-end gap-1 print-text-right print-items-end">
               <span className="text-[10px] font-mono text-zinc-400">Penanggung Jawab:</span>
@@ -239,7 +251,7 @@ export function PdfRekapModal({
         </div>
 
         {/* Sticky Bottom Actions */}
-        <div className="no-print p-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10">
+        <div className="no-print p-4 sm:p-5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10 pb-safe">
           <button
             onClick={onClose}
             className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"

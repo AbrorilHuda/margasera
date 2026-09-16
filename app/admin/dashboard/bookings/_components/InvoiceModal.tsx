@@ -278,7 +278,7 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
         </div>
 
         {/* Sticky Bottom Actions */}
-        <div className="no-print p-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 pb-safe">
+        <div className="no-print p-4 sm:p-5 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 pb-6 sm:pb-5 pb-safe">
           <button
             onClick={onClose}
             className="w-full sm:w-auto px-4 py-2.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
