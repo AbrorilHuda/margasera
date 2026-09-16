@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Calendar, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '../ui/theme-toggle';
 
 export function Navbar() {
@@ -46,7 +47,7 @@ export function Navbar() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || mobileMenuOpen
-        ? 'bg-zinc-950 backdrop-blur-md pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:py-4 border-b border-zinc-800/60 shadow-2xl'
+        ? 'bg-zinc-950/85 backdrop-blur-md pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:py-4 border-b border-zinc-800/60 shadow-2xl'
         : 'bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-6 sm:py-6'
         }`}
     >
@@ -91,7 +92,7 @@ export function Navbar() {
           >
             <span className="relative z-10 flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5" />
-              Book Session
+              Booking Sesi
             </span>
           </Link>
           <ThemeToggle />
@@ -110,41 +111,49 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation (Solid bg-zinc-950, No transparency bleed) */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] bg-zinc-950 z-40 flex flex-col justify-between px-8 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] border-t border-zinc-800 overflow-y-auto min-h-[calc(100dvh-(env(safe-area-inset-top,0px)+4.5rem))]">
-          <div className="flex flex-col gap-5 pt-2">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-base tracking-widest uppercase flex items-center justify-between py-3 border-b border-zinc-900 ${isActive ? 'text-[#0066CC] font-semibold' : 'text-zinc-300'
-                    }`}
-                >
-                  {link.label}
-                  <ChevronRight className="w-4 h-4 text-zinc-600" />
-                </Link>
-              );
-            })}
-          </div>
+      {/* Mobile Drawer Navigation (Smooth Fade & Slide) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="lg:hidden fixed inset-0 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] bg-zinc-950/95 backdrop-blur-xl z-40 flex flex-col justify-between px-8 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] border-t border-zinc-800/80 overflow-y-auto min-h-[calc(100dvh-(env(safe-area-inset-top,0px)+4.5rem))]"
+          >
+            <div className="flex flex-col gap-5 pt-2">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`text-base tracking-widest uppercase flex items-center justify-between py-3 border-b border-zinc-900 ${isActive ? 'text-[#0066CC] font-semibold' : 'text-zinc-300'
+                      }`}
+                  >
+                    {link.label}
+                    <ChevronRight className="w-4 h-4 text-zinc-600" />
+                  </Link>
+                );
+              })}
+            </div>
 
-          <div className="pt-8 pb-6 flex flex-col gap-4">
-            <Link
-              href="/booking"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-widest uppercase shadow-lg rounded-xl"
-            >
-              Pesan Sesi Foto Sekarang
-            </Link>
-            <p className="text-center text-xs text-zinc-500 tracking-wider font-mono">
-              @margasera.id • Pamekasan, Madura
-            </p>
-          </div>
-        </div>
-      )}
+            <div className="pt-8 pb-6 flex flex-col gap-4">
+              <Link
+                href="/booking"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-4 bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold text-xs tracking-widest uppercase shadow-lg rounded-xl transition-all"
+              >
+                Booking Sesi Sekarang
+              </Link>
+              <p className="text-center text-xs text-zinc-500 tracking-wider font-mono">
+                @margasera.id • Pamekasan, Madura
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -97,7 +97,7 @@ export function FeaturedWorks({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs tracking-wider sm:tracking-widest uppercase transition-all duration-300 rounded-lg sm:rounded-none ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs tracking-wider sm:tracking-widest uppercase transition-all duration-300 rounded-lg ${
                 selectedCategory === cat.id
                   ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_15px_rgba(0,102,204,0.35)]'
                   : 'bg-zinc-900/90 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
@@ -132,14 +132,14 @@ export function FeaturedWorks({
                 alt={`Margasera Photography - ${project.title} - ${project.categoryLabel} ${project.location}`}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover object-center img-editorial filter brightness-90 group-hover:brightness-100"
+                className="object-cover object-center img-editorial filter brightness-95 group-hover:brightness-105"
               />
 
               {/* Gradient Vignette & Content */}
-              <div className="img-card-overlay absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-black/30 opacity-95 transition-opacity duration-500 flex flex-col justify-between p-4 sm:p-8">
+              <div className="img-card-overlay absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent opacity-90 group-hover:opacity-95 transition-opacity duration-500 flex flex-col justify-between p-4 sm:p-8">
                 {/* Category Tag */}
                 <div className="flex items-center justify-between">
-                  <span className="px-2.5 sm:px-3 py-1 bg-black/80 backdrop-blur-md text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.25em] uppercase !text-[#0066CC] border border-[#0066CC]/50 font-semibold shadow-sm">
+                  <span className="px-2.5 sm:px-3 py-1 bg-black/80 backdrop-blur-md text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.25em] uppercase !text-amber-300 border border-amber-400/40 rounded-md font-semibold shadow-sm">
                     {project.categoryLabel}
                   </span>
                   <button
@@ -147,7 +147,7 @@ export function FeaturedWorks({
                       e.stopPropagation();
                       openLightboxForProject(project, 0);
                     }}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/70 backdrop-blur-md border border-zinc-700 flex items-center justify-center !text-zinc-200 group-hover:!text-[#0066CC] group-hover:border-[#0066CC] transition-colors shadow-md"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/70 backdrop-blur-md border border-zinc-700 flex items-center justify-center !text-zinc-200 group-hover:!text-amber-300 group-hover:border-amber-400/60 transition-colors shadow-md"
                     aria-label="Buka Fullscreen Lightbox"
                   >
                     <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -158,28 +158,28 @@ export function FeaturedWorks({
                 <div className="flex flex-col gap-1.5 sm:gap-2 transform translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-transform duration-500">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs !text-zinc-200 font-light drop-shadow-sm">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 !text-[#0066CC]" />
+                      <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 !text-amber-400" />
                       {project.location}
                     </span>
                     <span className="hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 !text-[#0066CC]" />
+                      <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 !text-amber-400" />
                       {project.eventDate}
                     </span>
                   </div>
 
-                  <h3 className="font-serif-editorial text-lg sm:text-2xl md:text-3xl !text-white font-light group-hover:!text-[#0066CC] transition-colors leading-snug drop-shadow-md">
+                  <h3 className="font-serif-editorial text-lg sm:text-2xl md:text-3xl !text-white font-light group-hover:!text-amber-300 transition-colors leading-snug drop-shadow-md">
                     {project.title}
                   </h3>
 
-                  <p className="text-[11px] sm:text-xs !text-zinc-300 line-clamp-2 font-light max-w-xl leading-relaxed drop-shadow-sm">
+                  <p className="text-[11px] sm:text-xs !text-zinc-300 hidden sm:line-clamp-2 font-light max-w-xl leading-relaxed drop-shadow-sm">
                     {project.description}
                   </p>
 
                   <Link
                     href={`/work/${project.slug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="pt-1 sm:pt-2 inline-flex items-center gap-2 text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-widest uppercase !text-[#0066CC] hover:!text-amber-300 transition-colors drop-shadow-sm w-max"
+                    className="pt-1 sm:pt-2 inline-flex items-center gap-2 text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-widest uppercase !text-[#0066CC] hover:!text-[#3399FF] transition-colors drop-shadow-sm w-max"
                   >
                     <span>Lihat Detail Project</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-2 transition-transform" />
@@ -196,7 +196,7 @@ export function FeaturedWorks({
         <div className="mt-12 sm:mt-16 text-center">
           <Link
             href="/work"
-            className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-zinc-900 border border-zinc-800 hover:border-[#0066CC] text-zinc-200 hover:text-[#0066CC] text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-[0.25em] uppercase transition-all duration-300 w-full sm:w-auto justify-center"
+            className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-zinc-900 border border-zinc-800 hover:border-[#0066CC] text-zinc-200 hover:text-[#0066CC] text-[11px] sm:text-xs font-semibold tracking-wider sm:tracking-[0.25em] uppercase transition-all duration-300 w-full sm:w-auto justify-center rounded-lg shadow-md"
           >
             <Camera className="w-4 h-4" />
             <span>Jelajahi Seluruh Galeri Portofolio{projects.length > 0 ? ` (${projects.length} Project)` : ''}</span>

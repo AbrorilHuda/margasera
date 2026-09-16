@@ -16,7 +16,7 @@ export default async function BookingStatusPage() {
   const studioSettings = await fetchStudioSettings();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-8 pb-20">
+    <div className="min-h-screen bg-zinc-50/70 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-8 pb-20 transition-colors duration-300">
       <Suspense fallback={<div className="text-center py-20 text-xs text-zinc-500">Memuat Pemantau Status...</div>}>
         <StatusChecker studioSettings={studioSettings} />
       </Suspense>

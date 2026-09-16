@@ -6,23 +6,28 @@ import { Camera, Calendar, ArrowDown } from 'lucide-react';
 
 export function CinematicHero() {
   return (
-    <section className="relative w-full h-[92vh] min-h-[680px] flex items-center justify-center overflow-hidden bg-black hero-banner">
-      {/* Background Image with Dark Vignette Overlay */}
-      <div className="absolute inset-0 z-0 select-none">
-        <Image
-          src="/bg.jpeg"
-          alt="Margasera Photography - Fotografer Pamekasan & Madura"
-          fill
-          priority
-          className="object-cover object-center scale-105 opacity-60"
-        />
-        {/* Radial Dark Gradient Overlay for Maximum Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/80" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/20 via-black/60 to-black/90" />
+    <section className="relative w-full min-h-[100dvh] flex items-center justify-center overflow-hidden bg-black hero-banner pt-24 pb-20">
+      {/* Background Image with Subtle Ken Burns Zoom & Balanced Gradient */}
+      <div className="absolute inset-0 z-0 select-none overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.06] }}
+          transition={{ duration: 16, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+          className="relative w-full h-full"
+        >
+          <Image
+            src="/bg.jpeg"
+            alt="Margasera Photography - Fotografer Pamekasan & Madura"
+            fill
+            priority
+            className="object-cover object-center opacity-75"
+          />
+        </motion.div>
+        {/* Balanced Cinematic Gradient: Top for navbar legibility, clear center for photo showcase, bottom for seamless page blend */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/35 to-black/90" />
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center gap-6 pt-12">
+      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center flex flex-col items-center gap-6">
         {/* Main Title (Single H1 for Homepage SEO) */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -46,14 +51,14 @@ export function CinematicHero() {
           &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;
         </motion.p>
 
-        {/* Supporting Services Copy */}
+        {/* Supporting Services Copy - Ringkas & Elegan */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-          className="text-xs sm:text-sm text-zinc-300 font-light tracking-wider max-w-2xl font-sans drop-shadow-md -mt-2"
+          className="text-xs sm:text-sm text-zinc-200 font-light tracking-wider max-w-xl font-sans drop-shadow-md leading-relaxed"
         >
-          Margasera Photography adalah fotografer profesional berbasis di Pamekasan, Madura, yang melayani wedding, pre-wedding, engagement, portrait, dan dokumentasi berbagai acara di Madura dan Surabaya.
+          Mengabadikan momen berharga pernikahan, pre-wedding, dan dokumentasi istimewa Anda di Madura &amp; Surabaya dengan karya visual abadi.
         </motion.p>
 
         {/* Action Buttons */}
@@ -61,11 +66,11 @@ export function CinematicHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex flex-col sm:flex-row items-center gap-4 mt-6"
+          className="flex flex-col sm:flex-row items-center gap-4 mt-4"
         >
           <Link
             href="/booking"
-            className="group relative px-8 py-4 bg-[#0066CC] hover:bg-[#0052A3] !text-white text-xs font-semibold tracking-[0.25em] uppercase shadow-[0_0_30px_rgba(0,102,204,0.5)] hover:shadow-[0_0_40px_rgba(0,102,204,0.8)] transition-all duration-300 flex items-center gap-3 rounded-none"
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#0066CC] hover:bg-[#0052A3] !text-white text-xs font-semibold tracking-[0.2em] uppercase rounded-lg shadow-[0_0_25px_rgba(0,102,204,0.4)] hover:shadow-[0_0_35px_rgba(0,102,204,0.7)] transition-all duration-300 flex items-center justify-center gap-2.5"
           >
             <Calendar className="w-4 h-4 !text-white" />
             <span className="!text-white font-semibold">Pesan Sesi Foto</span>
@@ -73,10 +78,10 @@ export function CinematicHero() {
 
           <Link
             href="/work"
-            className="group px-8 py-4 bg-black/40 hover:bg-black/70 border border-white/40 hover:border-white !text-white text-xs font-light tracking-[0.25em] uppercase transition-all duration-300 backdrop-blur-md flex items-center gap-3 rounded-none shadow-lg"
+            className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 border border-white/25 hover:border-white/50 !text-white text-xs font-medium tracking-[0.2em] uppercase rounded-lg backdrop-blur-md transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg"
           >
             <Camera className="w-4 h-4 !text-white" />
-            <span className="!text-white font-light">Lihat Karya</span>
+            <span className="!text-white">Lihat Karya</span>
           </Link>
         </motion.div>
       </div>
@@ -86,9 +91,9 @@ export function CinematicHero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-zinc-300 text-[10px] tracking-[0.3em] uppercase font-mono"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-zinc-400 text-[10px] tracking-[0.3em] uppercase font-mono"
       >
-        <span className="!text-white">Gulir Ke Bawah</span>
+        <span className="text-zinc-300 text-[10px]">Gulir Ke Bawah</span>
         <ArrowDown className="w-4 h-4 animate-bounce text-[#0066CC]" />
       </motion.div>
     </section>

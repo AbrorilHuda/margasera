@@ -30,7 +30,7 @@ export default async function Home() {
       {/* 2. Profil Singkat & Filosofi Brand (Entity Narrative Pamekasan Madura) */}
       <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-b border-zinc-900">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-          <div className="md:col-span-6 relative h-[480px] w-full overflow-hidden group border border-zinc-800">
+          <div className="md:col-span-6 relative h-[340px] sm:h-[420px] md:h-[480px] w-full overflow-hidden group border border-zinc-800">
             <Image
               src="/about.jpeg"
               alt="Margasera Photography Studio Pamekasan Madura"
@@ -47,7 +47,7 @@ export default async function Home() {
           </div>
 
           <div className="md:col-span-6 flex flex-col gap-6">
-            <span className="text-xs font-semibold tracking-[0.3em] uppercase text-amber-400">
+            <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
               Fotografer Pamekasan &amp; Madura
             </span>
             <h2 className="font-serif-editorial text-4xl sm:text-5xl text-zinc-100 font-light tracking-wide uppercase leading-tight">
@@ -57,7 +57,7 @@ export default async function Home() {
               Margasera Photography adalah creative photography studio yang berbasis di Pamekasan, Madura dengan filosofi &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;. Kami mendedikasikan diri untuk mengabadikan momen berharga Anda melalui karya visual berstandar editorial dan sinematik.
             </p>
             <p className="text-sm text-zinc-400 font-light leading-relaxed">
-              Layanan utama kami meliputi Wedding, Pre-Wedding, Engagement, Siraman, Wisuda Outdoor, Sidang Skripsi, serta Tasyakuran 40 Hari Bayi di Pamekasan, Madura (Sumenep, Sampang, Bangkalan), Jawa Timur, hingga seluruh Indonesia.
+              Mulai dari sakralnya ikrar pernikahan, kehangatan engagement, hingga kebanggaan momen wisuda, kami hadir di seluruh penjuru Madura (Pamekasan, Sumenep, Sampang, Bangkalan) dan Jawa Timur untuk memastikan setiap detik berharga terekam dengan jujur, sinematik, dan tak lekang oleh waktu.
             </p>
 
             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-900">
@@ -66,18 +66,18 @@ export default async function Home() {
                 <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Pasangan &amp; Klien Ditangani</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="font-serif-editorial text-3xl text-amber-400 font-bold">100%</span>
-                <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Kepuasan Visual</span>
+                <span className="font-serif-editorial text-3xl text-amber-400 font-bold">5+ Tahun</span>
+                <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Dedikasi Karya Visual</span>
               </div>
             </div>
 
             <div className="pt-4">
               <Link
                 href="/about"
-                className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.25em] uppercase text-amber-400 hover:text-amber-300 transition-colors"
+                className="group inline-flex items-center gap-2 text-xs font-semibold tracking-[0.25em] uppercase text-[#0066CC] hover:text-[#3399FF] transition-colors"
               >
                 <span>Baca Cerita Brand Selengkapnya</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" />
               </Link>
             </div>
           </div>

@@ -65,7 +65,7 @@ export function ServicesPricing({
   if (loading) {
     return (
       <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto text-center flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-8 h-8 text-[#0066CC] animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
         <span className="text-xs text-zinc-400 font-mono uppercase tracking-widest">Memuat Paket Layanan...</span>
       </section>
     );
@@ -88,7 +88,7 @@ export function ServicesPricing({
     <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
       {/* Header Title */}
       {!hideHeader && (
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
           <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#0066CC]">
             Investment & Packages
           </span>
@@ -101,14 +101,14 @@ export function ServicesPricing({
         </div>
       )}
 
-      {/* Service Category Tabs */}
-      <div className="flex items-center justify-center gap-3 flex-wrap mb-16">
+      {/* Service Category Tabs (Centered Flex Wrap) */}
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-12 sm:mb-16 max-w-4xl mx-auto">
         {services.map((srv) => (
           <button
             key={srv.id}
             onClick={() => setSelectedServiceId(srv.id)}
-            className={`px-6 py-3 text-xs tracking-widest uppercase transition-all duration-300 ${selectedServiceId === srv.id
-              ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.3)]'
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs tracking-wider sm:tracking-widest uppercase transition-all duration-300 rounded-xl ${selectedServiceId === srv.id
+              ? 'bg-[#0066CC] text-white font-semibold shadow-[0_0_20px_rgba(0,102,204,0.35)]'
               : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
               }`}
           >
@@ -127,14 +127,14 @@ export function ServicesPricing({
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: idx * 0.15 }}
             className={`relative flex flex-col justify-between p-8 rounded-2xl border transition-all duration-500 ${pkg.isPopular
-              ? 'popular-card border-[#0066CC] shadow-[0_0_30px_rgba(0,102,204,0.25)] bg-gradient-to-b from-[#0066CC]/20 via-zinc-950 to-zinc-950'
+              ? 'popular-card border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.18)] bg-gradient-to-b from-amber-400/10 via-zinc-950 to-zinc-950'
               : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
               }`}
           >
             {/* Popular Badge */}
             {pkg.isPopular && (
-              <div className="popular-badge absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-[#0066CC] text-white text-[10px] font-bold tracking-[0.25em] uppercase shadow-lg shadow-[#0066CC]/30 flex items-center gap-1.5 rounded-full z-10">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+              <div className="popular-badge absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-amber-400 text-zinc-950 text-[10px] font-bold tracking-[0.25em] uppercase shadow-lg shadow-amber-400/20 flex items-center gap-1.5 rounded-full z-10">
+                <Sparkles className="w-3.5 h-3.5 text-zinc-950" />
                 <span>Paling Direkomendasikan</span>
               </div>
             )}
@@ -149,7 +149,7 @@ export function ServicesPricing({
                   {pkg.description}
                 </p>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-serif-editorial text-[#0066CC] font-semibold">
+                  <span className={`text-3xl sm:text-4xl font-serif-editorial font-semibold ${pkg.isPopular ? 'text-amber-300' : 'text-zinc-100'}`}>
                     {formatCurrency(pkg.price)}
                   </span>
                 </div>
@@ -158,15 +158,15 @@ export function ServicesPricing({
               {/* Package Meta Quick Info */}
               <div className="py-6 flex flex-col gap-3 text-xs text-zinc-300 font-light border-b border-zinc-900">
                 <div className="flex items-center gap-3">
-                  <Clock className="w-4 h-4 text-[#0066CC] shrink-0" />
+                  <Clock className="w-4 h-4 text-amber-400/90 shrink-0" />
                   <span>Durasi Sesi: <strong>{pkg.duration}</strong></span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 text-[#0066CC] shrink-0" />
+                  <Users className="w-4 h-4 text-amber-400/90 shrink-0" />
                   <span>Tim Dokumentasi: <strong>{pkg.photographerCount} Orang Tim</strong></span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <ImageIcon className="w-4 h-4 text-[#0066CC] shrink-0" />
+                  <ImageIcon className="w-4 h-4 text-amber-400/90 shrink-0" />
                   <span>Output Foto: <strong>{pkg.editedPhotos}</strong></span>
                 </div>
               </div>
@@ -179,8 +179,8 @@ export function ServicesPricing({
                 <ul className="flex flex-col gap-2.5">
                   {pkg.features.map((ft, fIdx) => (
                     <li key={fIdx} className="flex items-start gap-3 text-xs text-zinc-300 font-light">
-                      <div className="w-4 h-4 rounded-full bg-[#0066CC]/15 border border-[#0066CC]/40 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 text-[#0066CC]" />
+                      <div className="w-4 h-4 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-2.5 h-2.5 text-amber-400" />
                       </div>
                       <span>{ft}</span>
                     </li>
@@ -194,7 +194,7 @@ export function ServicesPricing({
               <Link
                 href={`/booking?packageId=${pkg.id}&serviceId=${pkg.serviceId}`}
                 className={`w-full py-4 text-center text-xs font-semibold tracking-[0.25em] uppercase flex items-center justify-center gap-2 rounded-xl transition-all duration-300 ${pkg.isPopular
-                  ? 'bg-[#0066CC] text-white hover:bg-[#0052A3] shadow-md shadow-[#0066CC]/20'
+                  ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white font-bold shadow-md shadow-[#0066CC]/30'
                   : 'bg-zinc-900 border border-zinc-800 text-zinc-200 hover:border-[#0066CC] hover:text-[#0066CC]'
                   }`}
               >
@@ -207,7 +207,7 @@ export function ServicesPricing({
       </div>
 
       {/* Custom Request Info Box */}
-      <div className="mt-16 p-8 bg-zinc-900/60 border border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="mt-16 p-8 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-col gap-2 text-center md:text-left">
           <h4 className="font-serif-editorial text-2xl text-zinc-100">
             Butuh Konsep / Paket Kustom Khusus?
@@ -218,7 +218,7 @@ export function ServicesPricing({
         </div>
         <Link
           href="/booking?custom=true"
-          className="px-6 py-3.5 bg-zinc-800 hover:bg-[#0066CC] hover:text-white border border-zinc-700 text-xs font-semibold tracking-widest uppercase transition-all whitespace-nowrap"
+          className="px-6 py-3.5 bg-zinc-800 hover:bg-[#0066CC] hover:text-white border border-zinc-700 hover:border-[#0066CC] text-xs font-semibold tracking-widest uppercase transition-all whitespace-nowrap rounded-xl shadow-md"
         >
           Minta Penawaran Kustom
         </Link>
