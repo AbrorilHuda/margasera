@@ -20,6 +20,7 @@ import { EditBookingModal } from './_components/EditBookingModal';
 import { InvoiceModal } from './_components/InvoiceModal';
 import { PdfRekapModal } from './_components/PdfRekapModal';
 import { ShareTestimonialModal } from './_components/ShareTestimonialModal';
+import { GalleryAdminModal } from './_components/GalleryAdminModal';
 import { calculateEndTime } from './_components/BookingHelpers';
 import {
   cacheMasterData,
@@ -78,6 +79,7 @@ export default function BookingsPage() {
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
   const [completedBookingForShare, setCompletedBookingForShare] = useState<Booking | null>(null);
+  const [selectedGalleryBooking, setSelectedGalleryBooking] = useState<Booking | null>(null);
 
   // Auto-open Add modal if ?action=new
   useEffect(() => {
@@ -510,6 +512,7 @@ export default function BookingsPage() {
         onPageSizeChange={(size) => setPageSize(size)}
         onDetail={setSelectedBookingForDetail}
         onInvoice={setSelectedInvoiceBooking}
+        onOpenGallery={setSelectedGalleryBooking}
         onUpdateStatus={handleUpdateBookingStatus}
         onShareTestimonial={(b) => setCompletedBookingForShare(b)}
         onDelete={handleDeleteBooking}
@@ -551,6 +554,10 @@ export default function BookingsPage() {
           onUpdateStatus={handleUpdateBookingStatus}
           onShareTestimonial={(b) => setCompletedBookingForShare(b)}
           onUpdatePayment={handleUpdatePaymentStatus}
+          onOpenGallery={(b) => {
+            setSelectedBookingForDetail(null);
+            setSelectedGalleryBooking(b);
+          }}
           onEdit={(b) => {
             setSelectedBookingForDetail(null);
             setEditingBooking(b);
@@ -593,6 +600,17 @@ export default function BookingsPage() {
           booking={completedBookingForShare}
           isOpen={Boolean(completedBookingForShare)}
           onClose={() => setCompletedBookingForShare(null)}
+        />
+      )}
+
+      {/* Modal Kelola Galeri Seleksi Klien */}
+      {selectedGalleryBooking && (
+        <GalleryAdminModal
+          booking={selectedGalleryBooking}
+          onClose={() => setSelectedGalleryBooking(null)}
+          onSuccess={async () => {
+            await refreshData(false);
+          }}
         />
       )}
     </div>

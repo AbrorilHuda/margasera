@@ -18,6 +18,7 @@ import {
   ChevronRight as ArrowRightIcon,
   Share2,
   CalendarClock,
+  Images,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
@@ -42,6 +43,7 @@ interface BookingTableProps {
   onPageSizeChange: (size: number) => void;
   onDetail: (b: Booking) => void;
   onInvoice: (b: Booking) => void;
+  onOpenGallery?: (b: Booking) => void;
   onUpdateStatus: (id: string, status: BookingStatus) => void;
   onShareTestimonial?: (b: Booking) => void;
   onDelete: (id: string, code: string) => void;
@@ -93,6 +95,7 @@ export function BookingTable({
   onPageSizeChange,
   onDetail,
   onInvoice,
+  onOpenGallery,
   onUpdateStatus,
   onShareTestimonial,
   onDelete,
@@ -282,6 +285,22 @@ export function BookingTable({
                         <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span className="hidden xl:inline">Invoice</span>
                       </button>
+
+                      {/* Galeri Seleksi Button */}
+                      {onOpenGallery && (
+                        <button
+                          onClick={() => onOpenGallery(b)}
+                          className={`px-2 py-1 border rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer ${
+                            b.driveFolderUrl
+                              ? 'bg-blue-50 dark:bg-blue-500/15 border-blue-300 dark:border-blue-500/40 text-[#0066CC] dark:text-[#3399FF]'
+                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC]'
+                          }`}
+                          title="Kelola Galeri Seleksi Foto Klien"
+                        >
+                          <Images className="w-3.5 h-3.5 text-[#0066CC]" />
+                          <span className="hidden xl:inline">Galeri</span>
+                        </button>
+                      )}
 
                       {/* Edit / Reschedule Button */}
                       {onEdit && b.status !== 'completed' && (
@@ -496,6 +515,16 @@ export function BookingTable({
                 >
                   Invoice
                 </button>
+                {onOpenGallery && (
+                  <button
+                    onClick={() => onOpenGallery(b)}
+                    className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#0066CC] dark:text-[#3399FF] text-[10px] font-mono rounded-lg flex items-center gap-1 cursor-pointer"
+                    title="Kelola Galeri Seleksi Klien"
+                  >
+                    <Images className="w-3 h-3 text-[#0066CC]" />
+                    <span>Galeri</span>
+                  </button>
+                )}
                 {onEdit && b.status !== 'completed' && (
                   <button
                     onClick={() => onEdit(b)}

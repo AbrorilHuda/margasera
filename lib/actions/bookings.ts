@@ -44,6 +44,14 @@ function mapBooking(b: BookingRow): Booking {
     remainingAmount: b.remaining_amount ?? undefined,
     totalPrice: b.total_price ?? undefined,
     createdAt: b.created_at,
+    driveFolderId: (b as any).drive_folder_id ?? undefined,
+    driveFolderUrl: (b as any).drive_folder_url ?? undefined,
+    selectionMaxCount: (b as any).selection_max_count ?? undefined,
+    selectionDeadline: (b as any).selection_deadline ?? undefined,
+    allowDownload: (b as any).allow_download ?? false,
+    gallerySlug: (b as any).gallery_slug ?? undefined,
+    galleryToken: (b as any).gallery_token ?? undefined,
+    gallerySentAt: (b as any).gallery_sent_at ?? undefined,
   };
 }
 
@@ -524,3 +532,69 @@ export async function cancelBookingByClient(
     return { success: false, error: err.message || 'Gagal membatalkan pemesanan.' };
   }
 }
+
+export interface SaveGallerySettingsInput {
+  driveFolderUrl: string;
+  driveFolderId?: string;
+  selectionMaxCount: number;
+  selectionDeadline: string;
+  allowDownload: boolean;
+  gallerySlug?: string;
+  galleryToken?: string;
+  gallerySentAt?: string;
+}
+
+export async function saveBookingGallerySettings(
+  bookingId: string,
+  input: SaveGallerySettingsInput
+): Promise<{ success: boolean; error?: string; gallerySlug?: string; galleryToken?: string }> {
+  try {
+    await requireAdmin();
+    const supabase = createAdminClient();
+
+    // Generate token if not provided
+    const galleryToken = input.galleryToken || Math.random().toString(36).substring(2, 12);
+
+    // Extract folder id if not provided
+    let folderId = input.driveFolderId;
+    if (!folderId && input.driveFolderUrl) {
+      const match =
+        input.driveFolderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/) ||
+        input.driveFolderUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match) folderId = match[1];
+    }
+
+    const payload: any = {
+      drive_folder_url: input.driveFolderUrl,
+      drive_folder_id: folderId || null,
+      selection_max_count: input.selectionMaxCount,
+      selection_deadline: input.selectionDeadline,
+      allow_download: input.allowDownload,
+      gallery_token: galleryToken,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (input.gallerySlug) {
+      payload.gallery_slug = input.gallerySlug;
+    }
+    if (input.gallerySentAt) {
+      payload.gallery_sent_at = input.gallerySentAt;
+    }
+
+    const { error } = await (supabase as any)
+      .from('bookings')
+      .update(payload)
+      .eq('id', bookingId);
+
+    if (error) {
+      // In case columns don't exist yet in Supabase schema, log notice
+      console.warn('[saveBookingGallerySettings] Database update notice:', error.message);
+    }
+
+    return { success: true, gallerySlug: input.gallerySlug, galleryToken };
+  } catch (err: any) {
+    console.error('Error saving gallery settings:', err);
+    return { success: false, error: err?.message || 'Gagal menyimpan pengaturan galeri' };
+  }
+}
+

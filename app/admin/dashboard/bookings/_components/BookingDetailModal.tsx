@@ -1,6 +1,6 @@
 'use client';
 
-import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2, CalendarClock, Trash2 } from 'lucide-react';
+import { X, MessageCircle, FileText, Check, Calendar, MapPin, ArrowLeft, Share2, CalendarClock, Trash2, Images } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
@@ -10,6 +10,7 @@ interface BookingDetailModalProps {
   onClose: () => void;
   onUpdatePayment: (id: string, status: PaymentStatus) => void;
   onOpenInvoice: (booking: Booking) => void;
+  onOpenGallery?: (booking: Booking) => void;
   onUpdateStatus?: (id: string, status: BookingStatus) => void;
   onShareTestimonial?: (booking: Booking) => void;
   onEdit?: (booking: Booking) => void;
@@ -35,6 +36,7 @@ export function BookingDetailModal({
   onClose,
   onUpdatePayment,
   onOpenInvoice,
+  onOpenGallery,
   onUpdateStatus,
   onShareTestimonial,
   onEdit,
@@ -190,6 +192,37 @@ export function BookingDetailModal({
               </p>
             </div>
           )}
+
+          {/* Section: GALERI SELEKSI KLIEN */}
+          <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/40 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#0066CC] font-bold flex items-center gap-1.5">
+                <Images className="w-3.5 h-3.5 text-[#0066CC]" />
+                <span>GALERI SELEKSI FOTO</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[#0066CC] dark:text-[#3399FF] font-semibold">
+                {b.driveFolderUrl ? 'Link Terhubung' : 'Belum Dibuat'}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+              {b.driveFolderUrl
+                ? `Folder Google Drive terhubung. Batas: ${b.selectionMaxCount || 15} foto.`
+                : 'Hubungkan folder Google Drive untuk membuat link seleksi foto klien.'}
+            </p>
+            {onOpenGallery && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenGallery(b);
+                }}
+                className="w-full py-2.5 px-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-xs"
+              >
+                <Images className="w-4 h-4" />
+                <span>Kelola Galeri Seleksi</span>
+              </button>
+            )}
+          </div>
 
           {/* Quick Booking Status Actions */}
           <div className="flex flex-col gap-2 pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">

@@ -127,4 +127,42 @@ export interface Booking {
   remainingAmount?: number;
   totalPrice?: number;
   createdAt: string;
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  selectionMaxCount?: number;
+  selectionDeadline?: string;
+  allowDownload?: boolean;
+  gallerySlug?: string;
+  galleryToken?: string;
+  gallerySentAt?: string;
+  selectedPhotosCount?: number;
+}
+
+export interface ClientGallerySession {
+  id: string;
+  slug: string;
+  token?: string;
+  clientName: string;
+  eventTitle: string;
+  eventDate: string;
+  location?: string;
+  coverImage?: string;
+  maxSelectCount: number;
+  deadline: string; // ISO date string
+  allowDownload: boolean;
+  status: 'active' | 'submitted' | 'expired';
+  selectedPhotoIds?: string[];
+  submittedAt?: string;
+  notes?: string;
+  whatsappContact?: string;
+}
+
+export interface ClientGalleryPhoto {
+  id: string;
+  fileName: string;
+  url: string;
+  thumbnailUrl: string;
+  width?: number;
+  height?: number;
+  aspectRatio?: 'portrait' | 'landscape' | 'square';
 }

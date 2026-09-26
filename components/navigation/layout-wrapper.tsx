@@ -13,10 +13,11 @@ export function LayoutWrapper({
 }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
+  const isGallery = pathname?.startsWith('/g/');
 
-  if (isAdmin) {
+  if (isAdmin || isGallery) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#0066CC] selection:text-white">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#0066CC] selection:text-white transition-colors duration-300">
         {children}
       </div>
     );
