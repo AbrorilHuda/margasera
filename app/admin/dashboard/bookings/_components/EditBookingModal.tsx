@@ -16,6 +16,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { updateBooking } from '@/lib/actions/bookings';
+import { saveLocalBooking, addToSyncQueue } from '@/lib/offline';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { calculateEndTime } from './BookingHelpers';
 import { useToast } from '@/components/ui/toast-context';
@@ -205,34 +206,102 @@ export function EditBookingModal({
       const selectedSrv = services.find((s) => s.id === serviceId);
       const selectedPkg = packages.find((p) => p.id === packageId);
 
-      const res = await updateBooking(booking.id, {
+      const finalLocation = location.trim() || booking.location || 'Madura';
+
+      const payload = {
         bookingDate,
         startTime,
         endTime,
-        location: location.trim() || undefined,
+        location: finalLocation,
         customerName: customerName.trim(),
         whatsapp: whatsapp.trim(),
         instagram: instagram.trim() || undefined,
-        serviceId: serviceId || undefined,
+        serviceId: serviceId || booking.serviceId,
         serviceName: selectedSrv?.name || booking.serviceName,
-        packageId: packageId || undefined,
+        packageId: packageId || booking.packageId,
         packageName: selectedPkg?.name || booking.packageName,
         status,
         notes: notes.trim() || undefined,
-      });
+        baseUpdatedAt: (booking as any).updated_at || (booking as any).localUpdatedAt || booking.createdAt || new Date().toISOString(),
+      };
 
-      if (res.success) {
-        if (isDateChanged) {
-          toast.success(
-            `Jadwal booking ${booking.bookingCode} berhasil dipindahkan ke tanggal ${formatDate(bookingDate)}!`
-          );
-        } else {
-          toast.success(`Data booking ${booking.bookingCode} berhasil diperbarui!`);
-        }
+      // A. Jika perangkat sedang dalam mode offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        await saveLocalBooking({
+          ...booking,
+          ...payload,
+          syncStatus: 'pending',
+          localUpdatedAt: new Date().toISOString(),
+        });
+        await addToSyncQueue('booking', booking.id, 'update', payload as Record<string, unknown>);
+        toast.info(
+          `Perubahan booking ${booking.bookingCode} berhasil disimpan di perangkat dan akan disinkronkan ketika koneksi tersedia.`
+        );
         onSuccess();
         onClose();
-      } else {
-        toast.error(res.error || 'Gagal memperbarui booking.');
+        return;
+      }
+
+      // B. Jika online, kirim ke server Supabase
+      try {
+        const res = await updateBooking(booking.id, payload);
+
+        if (res.success) {
+          // Perbarui juga data di IndexedDB lokal
+          await saveLocalBooking({
+            ...booking,
+            ...payload,
+            syncStatus: 'synced',
+            localUpdatedAt: new Date().toISOString(),
+          });
+
+          if (isDateChanged) {
+            toast.success(
+              `Jadwal booking ${booking.bookingCode} berhasil dipindahkan ke tanggal ${formatDate(bookingDate)}!`
+            );
+          } else {
+            toast.success(`Data booking ${booking.bookingCode} berhasil diperbarui!`);
+          }
+          onSuccess();
+          onClose();
+        } else {
+          const isNetErr =
+            res.error?.toLowerCase().includes('fetch') ||
+            res.error?.toLowerCase().includes('network') ||
+            res.error?.toLowerCase().includes('failed') ||
+            res.error?.toLowerCase().includes('offline');
+
+          if (isNetErr) {
+            await saveLocalBooking({
+              ...booking,
+              ...payload,
+              syncStatus: 'pending',
+              localUpdatedAt: new Date().toISOString(),
+            });
+            await addToSyncQueue('booking', booking.id, 'update', payload as Record<string, unknown>);
+            toast.warning(
+              `Sinyal tidak stabil. Perubahan ${booking.bookingCode} diamankan di perangkat dan akan disinkronkan saat online.`
+            );
+            onSuccess();
+            onClose();
+          } else {
+            toast.error(res.error || 'Gagal memperbarui booking.');
+          }
+        }
+      } catch {
+        // Fallback offline jika request throw exception
+        await saveLocalBooking({
+          ...booking,
+          ...payload,
+          syncStatus: 'pending',
+          localUpdatedAt: new Date().toISOString(),
+        });
+        await addToSyncQueue('booking', booking.id, 'update', payload as Record<string, unknown>);
+        toast.warning(
+          `Sinyal terputus. Perubahan ${booking.bookingCode} diamankan di perangkat dan akan disinkronkan saat online.`
+        );
+        onSuccess();
+        onClose();
       }
     } catch (err) {
       console.error('Error updating booking:', err);

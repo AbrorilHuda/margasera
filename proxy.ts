@@ -65,6 +65,13 @@ export async function proxy(request: NextRequest) {
   const allCookies = request.cookies.getAll();
   const hasValidAuthToken = isSupabaseTokenValid(allCookies);
 
+  // Jika mengakses /admin tepat, arahkan ke dashboard jika login, atau ke login jika belum
+  if (pathname === '/admin') {
+    const targetUrl = request.nextUrl.clone();
+    targetUrl.pathname = hasValidAuthToken ? '/admin/dashboard' : '/admin/login';
+    return NextResponse.redirect(targetUrl);
+  }
+
   // Jika tidak memiliki cookie auth sama sekali dan bukan di halaman login -> redirect ke login
   if (!hasValidAuthToken && pathname !== '/admin/login') {
     const loginUrl = request.nextUrl.clone();

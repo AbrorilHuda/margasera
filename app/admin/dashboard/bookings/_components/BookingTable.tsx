@@ -161,6 +161,18 @@ export function BookingTable({
                           Offline Draft
                         </span>
                       )}
+                      {(b as any).syncStatus === 'failed' && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                            (b as any).lastError?.includes('KONFLIK')
+                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                          }`}
+                          title={(b as any).lastError || 'Gagal sinkron'}
+                        >
+                          {(b as any).lastError?.includes('KONFLIK') ? '⚠ Konflik Server' : 'Sync Gagal'}
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -380,6 +392,18 @@ export function BookingTable({
                   {(b as any).isOfflineDraft && (
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                       Offline
+                    </span>
+                  )}
+                  {(b as any).syncStatus === 'failed' && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
+                        (b as any).lastError?.includes('KONFLIK')
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                      }`}
+                      title={(b as any).lastError || 'Gagal sinkron'}
+                    >
+                      {(b as any).lastError?.includes('KONFLIK') ? '⚠ Konflik Server' : 'Sync Gagal'}
                     </span>
                   )}
                 </div>

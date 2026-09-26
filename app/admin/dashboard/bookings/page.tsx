@@ -24,10 +24,9 @@ import { calculateEndTime } from './_components/BookingHelpers';
 import {
   cacheMasterData,
   getCachedMasterData,
-  getOfflineQueue,
-  convertOfflineQueueToBookings,
   OFFLINE_QUEUE_EVENT,
 } from '@/lib/offline-queue';
+import { getAllLocalBookings, getMasterDataLocal } from '@/lib/offline';
 import { formatCompactIDR, formatCurrency, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
@@ -41,9 +40,6 @@ export default function BookingsPage() {
     const updateOnlineStatus = () => {
       const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
       setIsOffline(offline);
-      if (offline) {
-        toast.info('Mode Offline: Menampilkan 5 data booking terbaru dari penyimpanan lokal.');
-      }
     };
     updateOnlineStatus();
     window.addEventListener('online', updateOnlineStatus);
@@ -52,7 +48,7 @@ export default function BookingsPage() {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
     };
-  }, [toast]);
+  }, []);
 
   // Data
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -93,67 +89,72 @@ export default function BookingsPage() {
     }
   }, []);
 
-  // Data Fetching 
+  // Data Fetching: Stale-While-Revalidate via IndexedDB
   const refreshData = useCallback(async (showSkeleton = false) => {
-    if (showSkeleton) setLoadingData(true);
+    // 1. Tampilkan data dari IndexedDB secara instan jika tersedia
     try {
-      let bList: Booking[] = [];
-      let sList: Service[] = [];
-      let pkgList: Package[] = [];
-      let sSettings: StudioSettings | null = null;
+      const localBookings = await getAllLocalBookings();
+      const [localSrv, localPkg, localSettings] = await Promise.all([
+        getMasterDataLocal<Service[]>('services'),
+        getMasterDataLocal<Package[]>('packages'),
+        getMasterDataLocal<StudioSettings>('settings'),
+      ]);
 
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        // Mode Offline: Baca dari cache lokal
-        const cached = getCachedMasterData();
-        bList = cached.bookings;
-        sList = cached.services;
-        pkgList = cached.packages;
-        sSettings = cached.studioSettings;
-      } else {
-        try {
-          const [resBookings, resServices, resPackages, resSettings] = await Promise.all([
-            getAllBookings(),
-            getServices(),
-            getPackages(),
-            getStudioSettings(),
-          ]);
-          bList = resBookings;
-          sList = resServices;
-          pkgList = resPackages;
-          sSettings = resSettings;
-
-          // Simpan ke cache lokal untuk keperluan offline
-          cacheMasterData({
-            services: sList,
-            packages: pkgList,
-            bookings: bList,
-            studioSettings: sSettings || undefined,
-          });
-        } catch (fetchErr) {
-          console.warn('[BookingsPage] Fetch gagal, beralih ke cache lokal:', fetchErr);
-          const cached = getCachedMasterData();
-          bList = cached.bookings;
-          sList = cached.services;
-          pkgList = cached.packages;
-          sSettings = cached.studioSettings;
-        }
+      if (localBookings.length > 0) {
+        setBookings(localBookings);
+        if (localSrv && localSrv.length > 0) setServices(localSrv);
+        if (localPkg && localPkg.length > 0) setPackages(localPkg);
+        if (localSettings) setStudioSettings(localSettings);
+        setLoadingData(false);
+      } else if (showSkeleton) {
+        setLoadingData(true);
       }
-
-      // Gabungkan dengan antrean booking offline (jika ada) di baris paling atas
-      const offlineQueue = getOfflineQueue();
-      const offlineBookings = convertOfflineQueueToBookings(offlineQueue);
-      const existingIds = new Set(bList.map((b) => b.id));
-      const activeOfflineItems = offlineBookings.filter((ob) => !existingIds.has(ob.id));
-
-      setBookings([...activeOfflineItems, ...bList]);
-      if (sList.length > 0) setServices(sList);
-      if (pkgList.length > 0) setPackages(pkgList);
-      if (sSettings) setStudioSettings(sSettings);
-    } catch (err) {
-      console.error('Failed to load bookings data', err);
-    } finally {
-      if (showSkeleton) setLoadingData(false);
+    } catch {
+      const cached = getCachedMasterData();
+      if (cached.bookings.length > 0) {
+        setBookings(cached.bookings);
+        if (cached.services.length > 0) setServices(cached.services);
+        if (cached.packages.length > 0) setPackages(cached.packages);
+        if (cached.studioSettings) setStudioSettings(cached.studioSettings);
+        setLoadingData(false);
+      } else if (showSkeleton) {
+        setLoadingData(true);
+      }
     }
+
+    // 2. Jika online, perbarui data asli dari Supabase di background
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const [resBookings, resServices, resPackages, resSettings] = await Promise.all([
+          getAllBookings(),
+          getServices(),
+          getPackages(),
+          getStudioSettings(),
+        ]);
+
+        // Simpan ke IndexedDB & cache lokal
+        cacheMasterData({
+          services: resServices,
+          packages: resPackages,
+          bookings: resBookings,
+          studioSettings: resSettings || undefined,
+        });
+
+        // Ambil draft offline yang belum tersinkron agar tetap tampil paling atas
+        const localItems = await getAllLocalBookings();
+        const pendingDrafts = localItems.filter((b) => b.syncStatus === 'pending');
+        const existingIds = new Set(resBookings.map((b) => b.id));
+        const activeDrafts = pendingDrafts.filter((d) => !existingIds.has(d.id));
+
+        setBookings([...activeDrafts, ...resBookings]);
+        if (resServices.length > 0) setServices(resServices);
+        if (resPackages.length > 0) setPackages(resPackages);
+        if (resSettings) setStudioSettings(resSettings);
+      } catch (fetchErr) {
+        console.warn('[BookingsPage] Fetch gagal, mempertahankan data lokal IndexedDB:', fetchErr);
+      }
+    }
+    setLoadingData(false);
   }, []);
 
   useEffect(() => {
@@ -310,14 +311,14 @@ export default function BookingsPage() {
       prev.map((b) =>
         b.id === id
           ? {
-              ...b,
-              paymentStatus: newPaymentStatus,
-              paidAmount: paidAmt !== undefined ? paidAmt : b.paidAmount,
-              remainingAmount:
-                b.totalPrice !== undefined && paidAmt !== undefined
-                  ? Math.max(0, b.totalPrice - paidAmt)
-                  : b.remainingAmount,
-            }
+            ...b,
+            paymentStatus: newPaymentStatus,
+            paidAmount: paidAmt !== undefined ? paidAmt : b.paidAmount,
+            remainingAmount:
+              b.totalPrice !== undefined && paidAmt !== undefined
+                ? Math.max(0, b.totalPrice - paidAmt)
+                : b.remainingAmount,
+          }
           : b
       )
     );
@@ -325,14 +326,14 @@ export default function BookingsPage() {
       setSelectedBookingForDetail((prev) =>
         prev
           ? {
-              ...prev,
-              paymentStatus: newPaymentStatus,
-              paidAmount: paidAmt !== undefined ? paidAmt : prev.paidAmount,
-              remainingAmount:
-                prev.totalPrice !== undefined && paidAmt !== undefined
-                  ? Math.max(0, prev.totalPrice - paidAmt)
-                  : prev.remainingAmount,
-            }
+            ...prev,
+            paymentStatus: newPaymentStatus,
+            paidAmount: paidAmt !== undefined ? paidAmt : prev.paidAmount,
+            remainingAmount:
+              prev.totalPrice !== undefined && paidAmt !== undefined
+                ? Math.max(0, prev.totalPrice - paidAmt)
+                : prev.remainingAmount,
+          }
           : null
       );
     }
@@ -400,6 +401,16 @@ export default function BookingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Offline Mode Banner */}
+      {isOffline && (
+        <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-medium shadow-xs backdrop-blur-xs">
+          <WifiOff className="w-4 h-4 shrink-0 text-amber-500 animate-pulse" />
+          <span>
+            <strong>Mode Offline Aktif</strong> — Menampilkan {bookings.length} pesanan dari database lokal IndexedDB. Anda tetap dapat membaca data dan membuat pesanan offline baru.
+          </span>
+        </div>
+      )}
+
       {/* STAT CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
@@ -455,28 +466,6 @@ export default function BookingsPage() {
           </div>
         ))}
       </div>
-
-      {/* Offline Mode Alert Banner */}
-      {isOffline && (
-        <div className="p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-800 dark:text-amber-300 text-xs shadow-xs animate-in fade-in duration-300">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-              <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
-                Mode Offline Aktif
-              </span>
-              <span className="text-[11px] text-amber-700/90 dark:text-amber-300/80 font-light truncate sm:whitespace-normal">
-                Menampilkan 5 data booking terbaru dari memori perangkat. Hubungkan ke internet untuk memuat seluruh riwayat pesanan.
-              </span>
-            </div>
-          </div>
-          <span className="shrink-0 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-            5 Booking Offline
-          </span>
-        </div>
-      )}
 
       {/* FILTERS */}
       <BookingFilters

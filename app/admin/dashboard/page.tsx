@@ -14,11 +14,13 @@ import {
   Clock,
   ChevronRight,
   ArrowRight,
+  WifiOff,
 } from 'lucide-react';
 import { getAllBookings } from '@/lib/actions/bookings';
 import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
+import { getAllLocalBookings, getMasterDataLocal } from '@/lib/offline';
 import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
@@ -29,58 +31,76 @@ export default function AdminOverviewPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleStatus = () => {
+      setIsOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+    };
+    handleStatus();
+    window.addEventListener('online', handleStatus);
+    window.addEventListener('offline', handleStatus);
+    return () => {
+      window.removeEventListener('online', handleStatus);
+      window.removeEventListener('offline', handleStatus);
+    };
+  }, []);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    // 1. Tampilkan data dari IndexedDB secara instan jika ada
     try {
-      let bList: Booking[] = [];
-      let pList: GalleryProject[] = [];
-      let sList: Service[] = [];
-      let pkgList: Package[] = [];
+      const localBookings = await getAllLocalBookings();
+      const [localSrv, localPkg] = await Promise.all([
+        getMasterDataLocal<Service[]>('services'),
+        getMasterDataLocal<Package[]>('packages'),
+      ]);
 
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        // Mode offline: baca langsung dari cache lokal
-        const cached = getCachedMasterData();
-        bList = cached.bookings;
-        sList = cached.services;
-        pkgList = cached.packages;
-      } else {
-        try {
-          const res = await Promise.all([
-            getAllBookings(),
-            getGalleryProjects(),
-            getServices(),
-            getPackages(),
-          ]);
-          bList = res[0];
-          pList = res[1];
-          sList = res[2];
-          pkgList = res[3];
-
-          // Simpan data asli ke cache lokal
-          cacheMasterData({
-            bookings: bList,
-            services: sList,
-            packages: pkgList,
-          });
-        } catch (fetchErr) {
-          console.warn('[Overview] Gagal mengambil data online, menggunakan cache lokal:', fetchErr);
-          const cached = getCachedMasterData();
-          bList = cached.bookings;
-          sList = cached.services;
-          pkgList = cached.packages;
-        }
+      if (localBookings.length > 0) {
+        setBookings(localBookings);
+        if (localSrv && localSrv.length > 0) setServices(localSrv);
+        if (localPkg && localPkg.length > 0) setPackages(localPkg);
+        setLoading(false);
       }
-
-      setBookings(bList);
-      setProjects(pList);
-      setServices(sList);
-      setPackages(pkgList);
-    } catch (err) {
-      console.error('Failed to load overview data', err);
-    } finally {
-      setLoading(false);
+    } catch {
+      const cached = getCachedMasterData();
+      if (cached.bookings.length > 0) {
+        setBookings(cached.bookings);
+        if (cached.services.length > 0) setServices(cached.services);
+        if (cached.packages.length > 0) setPackages(cached.packages);
+        setLoading(false);
+      }
     }
+
+    // 2. Jika online, perbarui data asli dari Supabase di background
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const res = await Promise.all([
+          getAllBookings(),
+          getGalleryProjects(),
+          getServices(),
+          getPackages(),
+        ]);
+        const bList = res[0];
+        const pList = res[1];
+        const sList = res[2];
+        const pkgList = res[3];
+
+        // Simpan snapshot ke IndexedDB
+        cacheMasterData({
+          bookings: bList,
+          services: sList,
+          packages: pkgList,
+        });
+
+        setBookings(bList);
+        setProjects(pList);
+        setServices(sList);
+        setPackages(pkgList);
+      } catch (fetchErr) {
+        console.warn('[Overview] Gagal mengambil data online, mempertahankan data lokal IndexedDB:', fetchErr);
+      }
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -109,6 +129,16 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
+      {/* Offline Mode Banner */}
+      {isOffline && (
+        <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-medium shadow-xs backdrop-blur-xs">
+          <WifiOff className="w-4 h-4 shrink-0 text-amber-500 animate-pulse" />
+          <span>
+            <strong>Mode Offline Aktif</strong> — Menampilkan ringkasan dari database lokal IndexedDB ({bookings.length} pesanan). Data akan diperbarui otomatis saat online.
+          </span>
+        </div>
+      )}
+
       {/* ===== PERFORMANCE OVERVIEW / METRIC CARDS ===== */}
       <div className="flex flex-col gap-2">
         <span className="text-[10px] font-mono tracking-[0.25em] text-[#0066CC] uppercase font-semibold">

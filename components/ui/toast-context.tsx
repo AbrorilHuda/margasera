@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, AlertCircle, XCircle, Info, X, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -52,38 +52,49 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 4500);
   }, [removeToast]);
 
-  const toast = {
-    success: (message: string, title?: string) => addToast('success', message, title ?? 'Berhasil'),
-    error: (message: string, title?: string) => addToast('error', message, title ?? 'Terjadi Kesalahan'),
-    warning: (message: string, title?: string) => addToast('warning', message, title ?? 'Peringatan'),
-    info: (message: string, title?: string) => addToast('info', message, title ?? 'Informasi'),
-  };
+  const toast = useMemo(
+    () => ({
+      success: (message: string, title?: string) => addToast('success', message, title ?? 'Berhasil'),
+      error: (message: string, title?: string) => addToast('error', message, title ?? 'Terjadi Kesalahan'),
+      warning: (message: string, title?: string) => addToast('warning', message, title ?? 'Peringatan'),
+      info: (message: string, title?: string) => addToast('info', message, title ?? 'Informasi'),
+    }),
+    [addToast]
+  );
 
-  const confirmModal = (options: ConfirmOptions) => {
+  const confirmModal = useCallback((options: ConfirmOptions) => {
     setConfirmState(options);
-  };
+  }, []);
 
-  const confirmAsync = (
-    title: string,
-    message: string,
-    options?: { confirmText?: string; cancelText?: string; variant?: 'danger' | 'primary' }
-  ): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setConfirmState({
-        title,
-        message,
-        confirmText: options?.confirmText,
-        cancelText: options?.cancelText,
-        variant: options?.variant,
-        onConfirm: () => {
-          resolve(true);
-        },
+  const confirmAsync = useCallback(
+    (
+      title: string,
+      message: string,
+      options?: { confirmText?: string; cancelText?: string; variant?: 'danger' | 'primary' }
+    ): Promise<boolean> => {
+      return new Promise((resolve) => {
+        setConfirmState({
+          title,
+          message,
+          confirmText: options?.confirmText,
+          cancelText: options?.cancelText,
+          variant: options?.variant,
+          onConfirm: () => {
+            resolve(true);
+          },
+        });
       });
-    });
-  };
+    },
+    []
+  );
+
+  const contextValue = useMemo(
+    () => ({ toast, confirmModal, confirmAsync }),
+    [toast, confirmModal, confirmAsync]
+  );
 
   return (
-    <ToastContext.Provider value={{ toast, confirmModal, confirmAsync }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
 
       {/* FLOATING TOAST STACK (TOP-RIGHT CORNER) */}

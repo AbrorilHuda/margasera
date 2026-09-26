@@ -158,7 +158,7 @@ export function AddBookingModal({ services: propServices, packages: propPackages
       // A. Jika perangkat sedang dalam mode offline
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         const item = saveToOfflineQueue(payload);
-        toast.success(`Tersimpan Offline! Kode: ${item.data.bookingCode}. Data akan disinkronkan saat terhubung kembali.`);
+        toast.info(`Booking berhasil disimpan di perangkat (${item.data.bookingCode}) dan akan disinkronkan ketika koneksi tersedia.`);
         onSuccess();
         return;
       }
@@ -167,15 +167,29 @@ export function AddBookingModal({ services: propServices, packages: propPackages
       try {
         const res = await createManualBooking(payload);
         if (res.success) {
-          toast.success(`Booking manual berhasil ditambahkan dengan Kode: ${bookingCode}.`);
+          toast.success(`Booking manual berhasil dibuat di server dengan Kode: ${bookingCode}.`);
           onSuccess();
         } else {
-          toast.error(`Gagal menyimpan booking: ${res.error}`);
+          // Jika terjadi kendala jaringan/koneksi saat pengiriman, amankan ke antrean offline
+          const isNetErr =
+            res.error?.toLowerCase().includes('fetch') ||
+            res.error?.toLowerCase().includes('network') ||
+            res.error?.toLowerCase().includes('failed') ||
+            res.error?.toLowerCase().includes('connect') ||
+            res.error?.toLowerCase().includes('offline');
+
+          if (isNetErr) {
+            const item = saveToOfflineQueue(payload);
+            toast.warning(`Sinyal tidak stabil. Booking diamankan di perangkat (${item.data.bookingCode}) dan akan disinkronkan saat online.`);
+            onSuccess();
+          } else {
+            toast.error(`Gagal menyimpan booking: ${res.error}`);
+          }
         }
       } catch {
         // Fallback otomatis ke antrean offline jika koneksi mendadak putus/timeout
         const item = saveToOfflineQueue(payload);
-        toast.warning(`Sinyal terputus. Booking diamankan di antrean offline (${item.data.bookingCode}).`);
+        toast.warning(`Sinyal terputus. Booking berhasil diamankan di perangkat (${item.data.bookingCode}) dan akan disinkronkan saat online.`);
         onSuccess();
       }
     } catch (err) {
@@ -347,6 +361,11 @@ export function AddBookingModal({ services: propServices, packages: propPackages
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Menyimpan Booking...</span>
                 </>
+              ) : isCurrentlyOffline ? (
+                <span className="flex items-center gap-2">
+                  <WifiOff className="w-4 h-4" />
+                  <span>Simpan ke Perangkat (Mode Offline)</span>
+                </span>
               ) : (
                 <span>Simpan Booking Manual</span>
               )}

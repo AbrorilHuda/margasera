@@ -1,0 +1,170 @@
+// Margasera Admin Service Worker (Backup before iOS ERR_FAILED fix)
+const CACHE_NAME = 'margasera-admin-v4';
+
+const STATIC_PRECACHE_URLS = [
+  '/admin-manifest.json',
+  '/logo.png',
+  '/icon-192.png',
+  '/icon-512.png',
+];
+
+function isAuthRedirect(response) {
+  if (!response) return true;
+  if (response.redirected) return true;
+  if (response.url && response.url.includes('/admin/login')) return true;
+  return false;
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        STATIC_PRECACHE_URLS.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res && res.status === 200 && !isAuthRedirect(res)) {
+              await cache.put(url, res);
+            }
+          } catch (err) {
+            console.warn('[SW Precache] Skip caching:', url, err);
+          }
+        })
+      );
+    }).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => {
+            console.log('[SW Activate] Deleting old cache:', name);
+            return caches.delete(name);
+          })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(async (response) => {
+          if (isAuthRedirect(response) && url.pathname.startsWith('/admin') && url.pathname !== '/admin/login') {
+            const cache = await caches.open(CACHE_NAME);
+            const cached =
+              (await cache.match(request, { ignoreSearch: true })) ||
+              (await cache.match(url.pathname, { ignoreSearch: true })) ||
+              (await cache.match('/admin/dashboard/bookings', { ignoreSearch: true })) ||
+              (await cache.match('/admin/dashboard', { ignoreSearch: true }));
+
+            if (cached && !isAuthRedirect(cached)) {
+              return cached;
+            }
+          }
+
+          if (response && response.status === 200 && !isAuthRedirect(response)) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone.clone());
+              cache.put(url.pathname, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          let cachedResponse = await cache.match(request, { ignoreSearch: true });
+          if (cachedResponse && !isAuthRedirect(cachedResponse)) return cachedResponse;
+          cachedResponse = await cache.match(url.pathname, { ignoreSearch: true });
+          if (cachedResponse && !isAuthRedirect(cachedResponse)) return cachedResponse;
+
+          if (url.pathname.startsWith('/admin')) {
+            const bookingsFallback = await cache.match('/admin/dashboard/bookings', { ignoreSearch: true });
+            if (bookingsFallback && !isAuthRedirect(bookingsFallback)) return bookingsFallback;
+            const dashboardFallback = await cache.match('/admin/dashboard', { ignoreSearch: true });
+            if (dashboardFallback && !isAuthRedirect(dashboardFallback)) return dashboardFallback;
+          }
+
+          return new Response('Offline', { status: 503 });
+        })
+    );
+    return;
+  }
+
+  const isRscRequest = url.searchParams.has('_rsc') || request.headers.get('RSC') === '1';
+  if (isRscRequest) {
+    event.respondWith(
+      fetch(request)
+        .then(async (response) => {
+          if (isAuthRedirect(response)) {
+            const cache = await caches.open(CACHE_NAME);
+            let cached = await cache.match(request, { ignoreSearch: true });
+            if (cached && !isAuthRedirect(cached)) return cached;
+            return new Response('Offline RSC Unavailable', { status: 503 });
+          }
+          if (response && response.status === 200 && !isAuthRedirect(response)) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clone.clone());
+              cache.put(url.pathname + '?_rsc=cached', clone);
+            });
+          }
+          return response;
+        })
+        .catch(async () => {
+          return new Response('Offline RSC Unavailable', { status: 503 });
+        })
+    );
+    return;
+  }
+
+  if (
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'image' ||
+    request.destination === 'font' ||
+    url.pathname.startsWith('/_next/static/')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          fetch(request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(request, networkResponse);
+                });
+              }
+            })
+            .catch(() => {});
+          return cachedResponse;
+        }
+
+        return fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            return new Response('', { status: 408 });
+          });
+      })
+    );
+    return;
+  }
+});

@@ -85,10 +85,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           console.warn('[AdminLayout] Sinkronisasi master data offline gagal:', err);
         });
 
-      // Simpan halaman dashboard & booking berotentikasi ke cache Service Worker saat online
-      ['/admin/dashboard', '/admin/dashboard/bookings'].forEach((pageUrl) => {
-        fetch(pageUrl, { credentials: 'same-origin' }).catch(() => {});
-      });
+
     } else {
       getStudioSettings().then(setStudioSettings).catch(console.error);
     }

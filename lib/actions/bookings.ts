@@ -300,17 +300,41 @@ export interface UpdateBookingPayload {
   downPayment?: number;
   paidAmount?: number;
   remainingAmount?: number;
+  baseUpdatedAt?: string;
 }
 
 /** Admin: edit/update booking (misal pindah tanggal acara, jadwal, lokasi, atau info klien) */
 export async function updateBooking(
   id: string,
   payload: UpdateBookingPayload
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; conflict?: boolean }> {
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
-  // Validasi konflik tanggal & jam jika tanggal/jam berubah
+  // 1. Conflict Detection: Bandingkan serverUpdatedAt dengan baseUpdatedAt lokal
+  if (payload.baseUpdatedAt) {
+    const { data: serverRecord } = await (supabase as any)
+      .from('bookings')
+      .select('updated_at, customer_name, booking_code')
+      .eq('id', id)
+      .single();
+
+    if (serverRecord && serverRecord.updated_at) {
+      const serverTime = new Date(serverRecord.updated_at).getTime();
+      const localBaseTime = new Date(payload.baseUpdatedAt).getTime();
+
+      // Jika server telah diperbarui setelah base snapshot lokal (toleransi 1000ms)
+      if (serverTime - localBaseTime > 1000) {
+        return {
+          success: false,
+          conflict: true,
+          error: `Data pemesanan "${serverRecord.booking_code}" telah berubah di server (${new Date(serverRecord.updated_at).toLocaleTimeString('id-ID')}). Perubahan lokal ditangguhkan agar tidak menimpa data server.`,
+        };
+      }
+    }
+  }
+
+  // 2. Validasi bentrok tanggal & jam jika tanggal/jam berubah
   if (payload.bookingDate || payload.startTime || payload.endTime) {
     // Ambil data booking saat ini untuk perbandingan
     const { data: current } = await (supabase as any)
