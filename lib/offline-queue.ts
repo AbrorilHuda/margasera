@@ -202,34 +202,3 @@ export function getCachedMasterData(): {
     return { services: [], packages: [], bookings: [], studioSettings: null };
   }
 }
-
-/** Konversi antrean offline menjadi objek Booking agar bisa ditampilkan langsung di tabel */
-export function convertOfflineQueueToBookings(queue: OfflineBookingItem[]): (Booking & { isOfflineDraft: boolean })[] {
-  return queue.map((item) => ({
-    id: item.tempId,
-    bookingCode: item.data.bookingCode,
-    customerName: item.data.customerName,
-    whatsapp: item.data.whatsapp,
-    email: item.data.email,
-    instagram: item.data.instagram,
-    serviceId: item.data.serviceId,
-    serviceName: item.data.serviceName,
-    packageId: item.data.packageId,
-    packageName: item.data.packageName,
-    bookingDate: item.data.bookingDate,
-    startTime: item.data.startTime,
-    endTime: item.data.endTime,
-    slotType: item.data.slotType,
-    location: item.data.location,
-    eventType: item.data.eventType,
-    notes: item.data.notes,
-    status: item.data.status,
-    paymentStatus: item.data.paymentStatus,
-    downPayment: item.data.downPayment,
-    paidAmount: item.data.paidAmount,
-    remainingAmount: item.data.remainingAmount,
-    totalPrice: item.data.totalPrice,
-    createdAt: item.createdAt,
-    isOfflineDraft: true,
-  }));
-}

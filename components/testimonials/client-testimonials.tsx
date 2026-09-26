@@ -14,7 +14,7 @@ import {
   Sparkles,
   RotateCcw,
 } from 'lucide-react';
-import { CLIENT_TESTIMONIALS, Testimonial } from '@/lib/data/testimonials';
+import type { Testimonial } from '@/lib/data/testimonials';
 
 const SERVICE_FILTERS = [
   'Semua Momen',

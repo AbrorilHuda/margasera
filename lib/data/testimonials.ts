@@ -9,5 +9,3 @@ export interface Testimonial {
   date: string;
   source: 'Google Review' | 'Client Review';
 }
-
-export const CLIENT_TESTIMONIALS: Testimonial[] = [];

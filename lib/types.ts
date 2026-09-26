@@ -12,12 +12,6 @@ export type AvailabilityStatus = 'available' | 'almost_full' | 'booked' | 'block
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 export type PaymentStatus = 'unpaid' | 'dp_paid' | 'paid_full';
 
-export interface BankAccount {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-}
-
 export interface StudioSettings {
   id?: string;
   studioName: string;
@@ -39,11 +33,6 @@ export interface Service {
   slug: string;
   description: string;
   isActive: boolean;
-}
-
-export interface PackageFeature {
-  id: string;
-  text: string;
 }
 
 export interface Package {

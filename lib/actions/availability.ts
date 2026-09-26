@@ -142,27 +142,6 @@ export async function getAvailability(yearMonth?: string): Promise<Availability[
   return Array.from(mapMap.values());
 }
 
-/** Ambil availability untuk range bulan dari Supabase */
-export async function getAvailabilityRange(
-  startDate: string,
-  endDate: string
-): Promise<Availability[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await (supabase as any)
-    .from('availability')
-    .select('*')
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .order('date');
-
-  if (error || !data) {
-    if (error) console.error('Error fetching availability range from Supabase:', error.message);
-    return [];
-  }
-  return (data as AvailabilityRow[]).map(mapAvailability);
-}
-
 /** Admin: update/upsert status tanggal ke Supabase */
 export async function updateAvailabilityStatus(
   date: string,
