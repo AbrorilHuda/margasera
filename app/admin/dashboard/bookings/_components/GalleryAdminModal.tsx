@@ -139,7 +139,7 @@ export function GalleryAdminModal({
       `Halo kak ${b.customerName}, terima kasih banyak telah mempercayakan momen bahagianya bersama Margasera Photography!\n\n` +
       `Foto sesi "${b.serviceName || 'Foto'}" Anda sudah selesai diunggah. Silakan pilih foto terbaik favorit Anda untuk diproses ke tahap editing & cetak album melalui tautan personal berikut:\n\n` +
       `🔗 ${galleryUrl}\n\n` +
-      `📌 Ketentuan Seleksi:\n` +
+      `📌 Ketentuan Memilih Foto:\n` +
       `• Kuota Foto: Maksimal ${maxCount} foto\n` +
       `• Batas Waktu: ${getFormattedDeadlineDate(deadline)} WIB\n\n` +
       `Jika ada kendala saat membuka link, silakan langsung balas chat ini ya kak. Terima kasih! 🙏\n\n` +
@@ -316,8 +316,8 @@ export function GalleryAdminModal({
             type="button"
             onClick={() => setActiveTab('settings')}
             className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'settings'
-                ? 'border-[#0066CC] text-[#0066CC] font-semibold'
-                : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              ? 'border-[#0066CC] text-[#0066CC] font-semibold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
           >
             <FolderOpen className="w-3.5 h-3.5" />
@@ -328,8 +328,8 @@ export function GalleryAdminModal({
             type="button"
             onClick={() => setActiveTab('share')}
             className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'share'
-                ? 'border-[#0066CC] text-[#0066CC] font-semibold'
-                : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              ? 'border-[#0066CC] text-[#0066CC] font-semibold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
           >
             <LinkIcon className="w-3.5 h-3.5" />
@@ -340,8 +340,8 @@ export function GalleryAdminModal({
             type="button"
             onClick={() => setActiveTab('results')}
             className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'results'
-                ? 'border-[#0066CC] text-[#0066CC] font-semibold'
-                : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              ? 'border-[#0066CC] text-[#0066CC] font-semibold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
