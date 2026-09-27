@@ -37,7 +37,7 @@ export function SelectionStatusBar({
           <div className="flex items-center justify-between sm:justify-start gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold">
-                Progres Seleksi:
+                Foto Terpilih:
               </span>
               <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 <span className={isFull ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#0066CC]'}>

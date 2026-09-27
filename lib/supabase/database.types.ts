@@ -233,6 +233,14 @@ export type Database = {
           paid_amount: number | null;
           remaining_amount: number | null;
           total_price: number | null;
+          drive_folder_id?: string | null;
+          drive_folder_url?: string | null;
+          selection_max_count?: number | null;
+          selection_deadline?: string | null;
+          allow_download?: boolean;
+          gallery_slug?: string | null;
+          gallery_token?: string | null;
+          gallery_sent_at?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -260,6 +268,14 @@ export type Database = {
           paid_amount?: number | null;
           remaining_amount?: number | null;
           total_price?: number | null;
+          drive_folder_id?: string | null;
+          drive_folder_url?: string | null;
+          selection_max_count?: number | null;
+          selection_deadline?: string | null;
+          allow_download?: boolean;
+          gallery_slug?: string | null;
+          gallery_token?: string | null;
+          gallery_sent_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -285,7 +301,70 @@ export type Database = {
           paid_amount?: number | null;
           remaining_amount?: number | null;
           total_price?: number | null;
+          drive_folder_id?: string | null;
+          drive_folder_url?: string | null;
+          selection_max_count?: number | null;
+          selection_deadline?: string | null;
+          allow_download?: boolean;
+          gallery_slug?: string | null;
+          gallery_token?: string | null;
+          gallery_sent_at?: string | null;
           updated_at?: string;
+        };
+      };
+      gallery_files_cache: {
+        Row: {
+          id: string;
+          booking_id: string;
+          drive_file_id: string;
+          file_name: string;
+          thumbnail_link: string | null;
+          image_width: number | null;
+          image_height: number | null;
+          fetched_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          drive_file_id: string;
+          file_name: string;
+          thumbnail_link?: string | null;
+          image_width?: number | null;
+          image_height?: number | null;
+          fetched_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string;
+          drive_file_id?: string;
+          file_name?: string;
+          thumbnail_link?: string | null;
+          image_width?: number | null;
+          image_height?: number | null;
+          fetched_at?: string;
+        };
+      };
+      gallery_selections: {
+        Row: {
+          id: string;
+          booking_id: string;
+          drive_file_id: string;
+          file_name: string;
+          selected_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          drive_file_id: string;
+          file_name: string;
+          selected_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string;
+          drive_file_id?: string;
+          file_name?: string;
+          selected_at?: string;
         };
       };
       studio_settings: {

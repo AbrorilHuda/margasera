@@ -37,6 +37,45 @@ export function SelectionSuccessView({
   );
   const waUrl = `https://wa.me/${targetWa}?text=${waMessage}`;
 
+  const [isDownloadingZip, setIsDownloadingZip] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+
+  const handleDownloadZip = async () => {
+    if (isDownloadingZip || selectedPhotos.length === 0) return;
+    setIsDownloadingZip(true);
+    setDownloadError(null);
+
+    try {
+      const identifier = session.token || session.slug;
+      const idsQuery = selectedPhotos.map((p) => p.id).join(',');
+      const downloadEndpoint = `/api/gallery/${identifier}/download?ids=${encodeURIComponent(idsQuery)}`;
+
+      const res = await fetch(downloadEndpoint);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error || 'Gagal menyiapkan file ZIP foto.');
+      }
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const safeName = (session.clientName || 'Foto').trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const filename = `Foto_Pilihan_${safeName}_Margasera.zip`;
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      console.error('Download ZIP error:', err);
+      setDownloadError(err?.message || 'Gagal mengunduh file ZIP. Silakan coba beberapa saat lagi.');
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col justify-center items-center py-12 px-4 sm:px-6 transition-colors duration-300 relative">
       {/* Top right theme toggle */}
@@ -87,7 +126,7 @@ export function SelectionSuccessView({
         {/* Summary Card */}
         <div className="bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800/90 rounded-2xl p-5 sm:p-6 text-left space-y-4 shadow-lg dark:shadow-xl">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800/80">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Ringkasan Seleksi:</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Ringkasan Pilihan Foto:</span>
             <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#3399FF] border border-blue-200 dark:border-[#0066CC]/30">
               {selectedPhotos.length} Foto Dipilih
             </span>
@@ -124,19 +163,35 @@ export function SelectionSuccessView({
 
           {/* Download feature if enabled */}
           {session.allowDownload && (
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80 space-y-2">
               <button
                 type="button"
-                onClick={() => {
-                  alert(
-                    'Fitur unduh: Menyiapkan tautan Google Drive / ZIP untuk foto yang dipilih...'
-                  );
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-2 transition-colors shadow-xs"
+                onClick={handleDownloadZip}
+                disabled={isDownloadingZip || selectedPhotos.length === 0}
+                className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-2 transition-colors shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Unduh File Foto Terpilih ({selectedPhotos.length} File)</span>
+                {isDownloadingZip ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 text-[#0066CC] animate-spin" />
+                    <span>Menyiapkan File ZIP ({selectedPhotos.length} Foto)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Unduh File Foto Terpilih (.ZIP - {selectedPhotos.length} Foto)</span>
+                  </>
+                )}
               </button>
+
+              {downloadError && (
+                <p className="text-[11px] text-red-500 text-center font-medium">
+                  {downloadError}
+                </p>
+              )}
+
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
+                Semua foto pilihan akan digabung dalam satu file arsip ZIP secara otomatis.
+              </p>
             </div>
           )}
         </div>

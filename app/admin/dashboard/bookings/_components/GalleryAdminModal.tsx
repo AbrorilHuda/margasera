@@ -1,26 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   X,
   ExternalLink,
   Copy,
   Check,
-  Send,
-  Calendar,
   Clock,
   Images,
   Link as LinkIcon,
   CheckCircle2,
   FolderOpen,
-  Download,
   AlertCircle,
   Sparkles,
   MessageCircle,
+  RefreshCw,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/toast-context';
 import { saveBookingGallerySettings } from '@/lib/actions/bookings';
+import { syncBookingGalleryFromDrive, getAdminGallerySelections } from '@/lib/actions/client-gallery';
 import { formatDate } from '@/lib/utils';
 import type { Booking } from '@/lib/types';
 
@@ -29,6 +30,18 @@ interface GalleryAdminModalProps {
   siteUrl?: string;
   onClose: () => void;
   onSuccess?: () => void;
+}
+
+// Helper: format Date/string ke format lokal input datetime-local (YYYY-MM-DDTHH:mm)
+function formatToLocalDateTimeString(dateInput?: Date | string | null): string {
+  const d = dateInput ? new Date(dateInput) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 export function GalleryAdminModal({
@@ -47,11 +60,18 @@ export function GalleryAdminModal({
   const [maxCount, setMaxCount] = useState<number>(b.selectionMaxCount || 15);
   const [allowDownload, setAllowDownload] = useState<boolean>(b.allowDownload ?? true);
 
-  // Default deadline: existing or 7 days from now
-  const defaultDeadline = b.selectionDeadline
-    ? new Date(b.selectionDeadline).toISOString().slice(0, 16)
-    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  const [deadline, setDeadline] = useState(defaultDeadline);
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncedCount, setSyncedCount] = useState<number | null>(null);
+
+  // Live selections from client
+  const [realSelections, setRealSelections] = useState<
+    { id: string; fileId: string; fileName: string; selectedAt: string; thumbnailUrl?: string }[]
+  >([]);
+  const [isLoadingSelections, setIsLoadingSelections] = useState(false);
+
+  // Default deadline: format ke waktu lokal pengguna (bukan UTC)
+  const [deadline, setDeadline] = useState(() => formatToLocalDateTimeString(b.selectionDeadline));
 
   // Slug & Token
   const defaultSlug =
@@ -79,35 +99,68 @@ export function GalleryAdminModal({
 
   const detectedFolderId = extractFolderId(driveUrl);
 
-  // Quick deadline preset helper
+  // Fetch real selections when opening Tab 3
+  useEffect(() => {
+    if (activeTab === 'results') {
+      setIsLoadingSelections(true);
+      getAdminGallerySelections(b.id)
+        .then((res) => {
+          if (res.success && res.selections) {
+            setRealSelections(res.selections);
+          }
+        })
+        .finally(() => setIsLoadingSelections(false));
+    }
+  }, [activeTab, b.id]);
+
+  // Quick deadline preset helper (tetap dalam waktu lokal)
   const setDeadlineDaysAhead = (days: number) => {
     const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-    setDeadline(d.toISOString().slice(0, 16));
+    setDeadline(formatToLocalDateTimeString(d));
     toast.info(`Batas waktu diatur ke +${days} hari.`);
   };
 
   // Gallery URL
   const galleryUrl = `${siteUrl}/g/${gallerySlug}-${galleryToken}`;
 
-  // WhatsApp Message Template
-  const formattedDeadlineDate = new Date(deadline).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  // Helper untuk generate pesan WA dengan data terbaru
+  const getFormattedDeadlineDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const [waTemplate, setWaTemplate] = useState(
-    `Halo kak ${b.customerName}, terima kasih banyak telah mempercayakan momen bahagianya bersama Margasera Photography!\n\n` +
+    () =>
+      `Halo kak ${b.customerName}, terima kasih banyak telah mempercayakan momen bahagianya bersama Margasera Photography!\n\n` +
       `Foto sesi "${b.serviceName || 'Foto'}" Anda sudah selesai diunggah. Silakan pilih foto terbaik favorit Anda untuk diproses ke tahap editing & cetak album melalui tautan personal berikut:\n\n` +
       `🔗 ${galleryUrl}\n\n` +
       `📌 Ketentuan Seleksi:\n` +
       `• Kuota Foto: Maksimal ${maxCount} foto\n` +
-      `• Batas Waktu: ${formattedDeadlineDate} WIB\n\n` +
+      `• Batas Waktu: ${getFormattedDeadlineDate(deadline)} WIB\n\n` +
       `Jika ada kendala saat membuka link, silakan langsung balas chat ini ya kak. Terima kasih! 🙏\n\n` +
       `"Moment Satu Hari Untuk Selamanya" — Margasera Photography`
   );
+
+  // Update pesan WA secara otomatis saat beralih ke Tab 2 (Share) jika ada perubahan deadline / kuota
+  useEffect(() => {
+    if (activeTab === 'share') {
+      setWaTemplate(
+        `Halo kak ${b.customerName}, terima kasih banyak telah mempercayakan momen bahagianya bersama Margasera Photography!\n\n` +
+        `Foto sesi "${b.serviceName || 'Foto'}" Anda sudah selesai diunggah. Silakan pilih foto terbaik favorit Anda untuk diproses ke tahap editing & cetak album melalui tautan personal berikut:\n\n` +
+        `🔗 ${galleryUrl}\n\n` +
+        `📌 Ketentuan Seleksi:\n` +
+        `• Kuota Foto: Maksimal ${maxCount} foto\n` +
+        `• Batas Waktu: ${getFormattedDeadlineDate(deadline)} WIB\n\n` +
+        `Jika ada kendala saat membuka link, silakan langsung balas chat ini ya kak. Terima kasih! 🙏\n\n` +
+        `"Moment Satu Hari Untuk Selamanya" — Margasera Photography`
+      );
+    }
+  }, [activeTab, deadline, maxCount, galleryUrl, b.customerName, b.serviceName]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(galleryUrl);
@@ -116,21 +169,55 @@ export function GalleryAdminModal({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // Mock sample selected files if client has submitted
-  const mockSelectedPhotos = [
-    { id: '1', fileName: 'MS_0101.JPG', time: 'Hari ini, 14:20' },
-    { id: '2', fileName: 'MS_0104.JPG', time: 'Hari ini, 14:22' },
-    { id: '3', fileName: 'MS_0109.JPG', time: 'Hari ini, 14:25' },
-    { id: '4', fileName: 'MS_0112.JPG', time: 'Hari ini, 14:29' },
-    { id: '5', fileName: 'MS_0118.JPG', time: 'Hari ini, 14:35' },
-  ];
+  // Effective display list of selected photos
+  const displaySelectedPhotos = realSelections.length > 0 ? realSelections : [];
 
   const handleCopyAllFilenames = () => {
-    const list = mockSelectedPhotos.map((p) => p.fileName).join(', ');
+    if (displaySelectedPhotos.length === 0) {
+      toast.info('Belum ada foto yang dipilih klien.');
+      return;
+    }
+    const list = displaySelectedPhotos.map((p) => p.fileName).join(', ');
     navigator.clipboard.writeText(list);
     setCopiedFilenames(true);
     toast.success('Daftar nama file berhasil disalin ke clipboard!');
     setTimeout(() => setCopiedFilenames(false), 2500);
+  };
+
+  // Handle Sync Drive Photos
+  const handleSyncDrive = async () => {
+    if (!driveUrl) {
+      toast.error('Masukkan link folder Google Drive terlebih dahulu.');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      // 1. Simpan folder URL & settings ke database terlebih dahulu
+      await saveBookingGallerySettings(b.id, {
+        driveFolderUrl: driveUrl,
+        driveFolderId: detectedFolderId || undefined,
+        selectionMaxCount: maxCount,
+        selectionDeadline: new Date(deadline).toISOString(),
+        allowDownload,
+        gallerySlug,
+        galleryToken,
+      });
+
+      // 2. Sinkronkan file dari Google Drive
+      const res = await syncBookingGalleryFromDrive(b.id);
+      if (res.success) {
+        setSyncedCount(res.count ?? 0);
+        toast.success(`Berhasil menyinkronkan ${res.count ?? 0} foto dari Google Drive!`);
+        onSuccess?.();
+      } else {
+        toast.error(res.error || 'Gagal menyinkronkan foto dari Google Drive.');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat menyinkronkan foto.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Save Settings
@@ -228,11 +315,10 @@ export function GalleryAdminModal({
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
-            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
-              activeTab === 'settings'
+            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'settings'
                 ? 'border-[#0066CC] text-[#0066CC] font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-            }`}
+              }`}
           >
             <FolderOpen className="w-3.5 h-3.5" />
             <span>1. Pengaturan Galeri</span>
@@ -241,11 +327,10 @@ export function GalleryAdminModal({
           <button
             type="button"
             onClick={() => setActiveTab('share')}
-            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
-              activeTab === 'share'
+            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'share'
                 ? 'border-[#0066CC] text-[#0066CC] font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-            }`}
+              }`}
           >
             <LinkIcon className="w-3.5 h-3.5" />
             <span>2. Tautan &amp; Kirim WA</span>
@@ -254,11 +339,10 @@ export function GalleryAdminModal({
           <button
             type="button"
             onClick={() => setActiveTab('results')}
-            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
-              activeTab === 'results'
+            className={`py-3 px-3.5 font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'results'
                 ? 'border-[#0066CC] text-[#0066CC] font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-            }`}
+              }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>3. Hasil Pilihan ({b.selectedPhotosCount || 0})</span>
@@ -289,15 +373,36 @@ export function GalleryAdminModal({
                 </div>
 
                 {detectedFolderId ? (
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Folder ID terdeteksi: {detectedFolderId}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Folder ID terdeteksi: {detectedFolderId}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSyncDrive}
+                      disabled={isSyncing || !driveUrl}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-[#0066CC] dark:text-[#3399FF] border border-blue-200 dark:border-blue-900/60 text-[11px] font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Foto dari Drive'}</span>
+                    </button>
                   </div>
                 ) : driveUrl ? (
                   <div className="text-[11px] text-amber-600 dark:text-amber-400">
                     ⚠️ Pastikan link berupa URL folder Google Drive yang valid.
                   </div>
                 ) : null}
+
+                {syncedCount !== null && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span><strong>{syncedCount} foto</strong> berhasil disinkronkan & disimpan ke cache.</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Grid: Max Photos & Deadline */}
@@ -461,16 +566,28 @@ export function GalleryAdminModal({
               </div>
 
               {/* Status Info */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#0066CC]" />
-                  <span className="text-zinc-500 dark:text-zinc-400">Status Galeri:</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0066CC]" />
+                    <span className="text-zinc-500 dark:text-zinc-400">Status Galeri:</span>
+                  </div>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {b.gallerySentAt
+                      ? `Terkirim (${formatDate(b.gallerySentAt)})`
+                      : 'Belum Dikirim'}
+                  </span>
                 </div>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  {b.gallerySentAt
-                    ? `Terkirim pada ${formatDate(b.gallerySentAt)}`
-                    : 'Belum Dikirim ke Klien'}
-                </span>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-zinc-500 dark:text-zinc-400">Masa Aktif:</span>
+                  </div>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    30 Hari (Auto-Clean)
+                  </span>
+                </div>
               </div>
 
               {/* Editable WhatsApp Message Template */}
@@ -506,44 +623,76 @@ export function GalleryAdminModal({
                 <div>
                   <span className="text-xs text-zinc-500 dark:text-zinc-400">Total Foto yang Dipilih:</span>
                   <div className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                    {mockSelectedPhotos.length} / {maxCount} Foto
+                    {displaySelectedPhotos.length} / {maxCount} Foto
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleCopyAllFilenames}
-                  className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors shadow-xs"
+                  disabled={displaySelectedPhotos.length === 0}
+                  className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-40"
                 >
                   {copiedFilenames ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedFilenames ? 'Nama File Tersalin!' : 'Salin Daftar Nama File'}</span>
                 </button>
               </div>
 
-              {/* Selected Photos List */}
-              <div className="space-y-2">
-                <span className="font-semibold text-xs text-zinc-800 dark:text-zinc-200 block">
-                  Daftar Foto yang Terpilih:
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1">
-                  {mockSelectedPhotos.map((photo, idx) => (
-                    <div
-                      key={photo.id}
-                      className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/80 flex items-center gap-2"
-                    >
-                      <span className="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-700 text-[10px] font-mono font-bold flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div className="truncate min-w-0">
-                        <span className="font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100 block truncate">
-                          {photo.fileName}
-                        </span>
-                        <span className="text-[10px] text-zinc-400 block">{photo.time}</span>
-                      </div>
-                    </div>
-                  ))}
+              {isLoadingSelections ? (
+                <div className="py-12 flex flex-col items-center justify-center text-zinc-500 gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#0066CC]" />
+                  <span className="text-xs">Memuat pilihan foto klien...</span>
                 </div>
-              </div>
+              ) : displaySelectedPhotos.length === 0 ? (
+                <div className="py-12 px-4 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 text-center space-y-2">
+                  <Images className="w-8 h-8 text-zinc-400 mx-auto" />
+                  <p className="font-semibold text-xs text-zinc-700 dark:text-zinc-300">
+                    Belum Ada Foto yang Dipilih
+                  </p>
+                  <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                    Klien belum mengirimkan seleksi fotonya. Anda dapat membagikan link galeri melalui tab "Tautan & Kirim WA".
+                  </p>
+                </div>
+              ) : (
+                /* Selected Photos List */
+                <div className="space-y-2">
+                  <span className="font-semibold text-xs text-zinc-800 dark:text-zinc-200 block">
+                    Daftar Foto yang Terpilih:
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                    {displaySelectedPhotos.map((photo, idx) => (
+                      <div
+                        key={photo.id}
+                        className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/80 flex items-center gap-2.5"
+                      >
+                        {photo.thumbnailUrl ? (
+                          <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-700">
+                            <Image
+                              src={photo.thumbnailUrl}
+                              alt={photo.fileName}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <span className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-[10px] font-mono font-bold flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
+                            {idx + 1}
+                          </span>
+                        )}
+                        <div className="truncate min-w-0 flex-1">
+                          <span className="font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100 block truncate">
+                            {photo.fileName}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 block">
+                            {photo.selectedAt ? formatDate(photo.selectedAt) : 'Terpilih'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Lightroom Search Helper */}
               <div className="p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 text-xs text-blue-950 dark:text-blue-200/90 leading-relaxed flex items-start gap-2">
