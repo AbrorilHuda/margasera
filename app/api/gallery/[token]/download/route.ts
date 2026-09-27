@@ -82,23 +82,39 @@ export async function GET(
     }
 
     // 3. Tentukan foto mana yang akan diunduh
-    // Cek apakah ada query param ?ids=id1,id2
+    // Keamanan: Foto yang diunduh harus merupakan foto yang sah dipilih dan tidak boleh melebihi kuota paket
+    const maxAllowed = data.session.maxSelectCount || 15;
     const searchParams = request.nextUrl.searchParams;
     const requestedIdsParam = searchParams.get('ids');
-    let targetIds: string[] = [];
 
-    if (requestedIdsParam) {
-      targetIds = requestedIdsParam.split(',').map((id) => id.trim()).filter(Boolean);
-    } else {
-      targetIds = data.selectedPhotoIds || [];
+    let candidateIds: string[] = [];
+    if (data.selectedPhotoIds && data.selectedPhotoIds.length > 0) {
+      // Jika klien sudah submit, hanya izinkan unduh foto yang telah dipilih secara resmi
+      const officialSet = new Set(data.selectedPhotoIds);
+      if (requestedIdsParam) {
+        candidateIds = requestedIdsParam
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => officialSet.has(id));
+      } else {
+        candidateIds = data.selectedPhotoIds;
+      }
+    } else if (requestedIdsParam) {
+      candidateIds = requestedIdsParam.split(',').map((id) => id.trim()).filter(Boolean);
     }
 
-    // Filter dari daftar foto galeri
-    const photosToDownload = data.photos.filter((p) => targetIds.includes(p.id));
+    // Filter hanya dari daftar foto galeri sesi ini
+    let photosToDownload = data.photos.filter((p) => candidateIds.includes(p.id));
+
+    // Keamanan Kuota & Anti-DoS (OOM): Batasi maksimal sesuai kuota paket pemotretan (maks 50 foto)
+    const hardLimit = Math.min(maxAllowed, 50);
+    if (photosToDownload.length > hardLimit) {
+      photosToDownload = photosToDownload.slice(0, hardLimit);
+    }
 
     if (photosToDownload.length === 0) {
       return NextResponse.json(
-        { error: 'Tidak ada foto terpilih yang siap diunduh.' },
+        { error: 'Tidak ada foto terpilih yang sah untuk diunduh.' },
         { status: 400 }
       );
     }

@@ -424,7 +424,7 @@ export function ClientTestimonials({ initialTestimonials }: ClientTestimonialsPr
                 Pernah Mengabadikan Momen Bersama Margasera?
               </h3>
               <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-light mt-1 leading-relaxed max-w-xl">
-                Bagikan pengalaman dan cerita bahagia Anda bersama kami. Setiap ulasan Anda menjadi inspirasi bagi calon klien lainnya di Pamekasan &amp; Madura.
+                Bagikan pengalaman dan cerita bahagia Anda bersama kami. Setiap ulasan Anda menjadi inspirasi bagi calon klien lainnya di Madura &amp; Surabaya.
               </p>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] text-zinc-500 dark:text-zinc-400 font-light mt-3">
                 <span className="inline-flex items-center gap-1">

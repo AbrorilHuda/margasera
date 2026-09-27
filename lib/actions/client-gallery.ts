@@ -18,6 +18,7 @@ export async function checkDriveFolderAction(
   urlOrId: string
 ): Promise<{ success: boolean; folderId?: string; detectedCount?: number; error?: string }> {
   try {
+    await requireAdmin();
     const res = await testGoogleDriveFolder(urlOrId);
     return res;
   } catch (err: any) {
@@ -296,41 +297,32 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
 
     if (byToken) {
       booking = byToken;
+    } else if (cleaned.includes('-')) {
+      // Prioritas 2: Format kombinasi slug-token (misal "budi-ani-a1b2c3d4")
+      // Ambil potongan token terakhir (8-10 karakter acak)
+      const parts = cleaned.split('-');
+      const potentialToken = parts[parts.length - 1];
+
+      const { data: byTokenPart } = await (supabase as any)
+        .from('bookings')
+        .select('*')
+        .eq('gallery_token', potentialToken)
+        .maybeSingle();
+
+      if (byTokenPart) {
+        booking = byTokenPart;
+      }
     } else {
-      // Prioritas 2: Exact match gallery_slug
+      // Prioritas 3 (Fallback Legacy): Hanya izinkan slug murni jika booking tersebut belum memiliki gallery_token
       const { data: bySlug } = await (supabase as any)
         .from('bookings')
         .select('*')
         .eq('gallery_slug', cleaned)
+        .is('gallery_token', null)
         .maybeSingle();
 
       if (bySlug) {
         booking = bySlug;
-      } else {
-        // Prioritas 3: Cari berdasarkan kombinasi slug-token (misal slug_token)
-        // Ambil potongan token terakhir (biasanya 8-10 karakter acak)
-        const parts = cleaned.split('-');
-        if (parts.length > 1) {
-          const potentialToken = parts[parts.length - 1];
-          const potentialSlug = parts.slice(0, -1).join('-');
-
-          const { data: byTokenPart } = await (supabase as any)
-            .from('bookings')
-            .select('*')
-            .eq('gallery_token', potentialToken)
-            .maybeSingle();
-
-          if (byTokenPart) {
-            booking = byTokenPart;
-          } else {
-            const { data: bySlugPart } = await (supabase as any)
-              .from('bookings')
-              .select('*')
-              .eq('gallery_slug', potentialSlug)
-              .maybeSingle();
-            if (bySlugPart) booking = bySlugPart;
-          }
-        }
       }
     }
 
@@ -482,35 +474,25 @@ export async function submitClientGallerySelections(
 
     if (byToken) {
       booking = byToken;
+    } else if (cleanId.includes('-')) {
+      // Prioritas B: Jika format slug-token gabungan, ambil token di bagian akhir
+      const parts = cleanId.split('-');
+      const lastPart = parts[parts.length - 1];
+      const { data: byEndToken } = await (supabase as any)
+        .from('bookings')
+        .select('*')
+        .eq('gallery_token', lastPart)
+        .maybeSingle();
+      if (byEndToken) booking = byEndToken;
     } else {
-      // Prioritas B: Cari berdasarkan gallery_slug
+      // Prioritas C (Fallback Legacy): Hanya izinkan slug jika booking belum memiliki token
       const { data: bySlug } = await (supabase as any)
         .from('bookings')
         .select('*')
         .eq('gallery_slug', cleanId)
+        .is('gallery_token', null)
         .maybeSingle();
-
-      if (bySlug) {
-        booking = bySlug;
-      } else if (isValidUUID(cleanId)) {
-        // Prioritas C: Cari berdasarkan ID UUID (hanya jika formatnya UUID valid)
-        const { data: byId } = await (supabase as any)
-          .from('bookings')
-          .select('*')
-          .eq('id', cleanId)
-          .maybeSingle();
-        if (byId) booking = byId;
-      } else if (cleanId.includes('-')) {
-        // Prioritas D: Jika format slug-token gabungan, ambil token di bagian akhir
-        const parts = cleanId.split('-');
-        const lastPart = parts[parts.length - 1];
-        const { data: byEndToken } = await (supabase as any)
-          .from('bookings')
-          .select('*')
-          .eq('gallery_token', lastPart)
-          .maybeSingle();
-        if (byEndToken) booking = byEndToken;
-      }
+      if (bySlug) booking = bySlug;
     }
 
     if (!booking) {
@@ -530,21 +512,8 @@ export async function submitClientGallerySelections(
 
     // 3. Validasi kuota maksimal
     const maxCount = booking.selection_max_count || 15;
-    if (selectedFileIds.length > maxCount) {
-      return {
-        success: false,
-        error: `Jumlah foto yang dipilih (${selectedFileIds.length}) melebihi kuota maksimal (${maxCount} foto).`,
-      };
-    }
 
-    if (selectedFileIds.length === 0) {
-      return {
-        success: false,
-        error: 'Pilih minimal 1 foto sebelum mengirimkan pilihan.',
-      };
-    }
-
-    // 4. Ambil nama file dari cache
+    // 4. Ambil nama file dari cache dan validasi bahwa ID foto sah milik booking ini
     const { data: cachedFiles } = await (supabase as any)
       .from('gallery_files_cache')
       .select('drive_file_id, file_name')
@@ -557,13 +526,32 @@ export async function submitClientGallerySelections(
       }
     }
 
+    // Sanitasi input: filter ID unik, format alfanumerik valid, dan terdaftar di cache folder sesi ini
+    const validFileIds = Array.from(
+      new Set(selectedFileIds.map((id) => String(id).trim()))
+    ).filter((id) => /^[a-zA-Z0-9_-]{10,60}$/.test(id) && (nameMap.size === 0 || nameMap.has(id)));
+
+    if (validFileIds.length === 0) {
+      return {
+        success: false,
+        error: 'Pilih minimal 1 foto yang sah sebelum mengirimkan pilihan.',
+      };
+    }
+
+    if (validFileIds.length > maxCount) {
+      return {
+        success: false,
+        error: `Jumlah foto yang dipilih (${validFileIds.length}) melebihi kuota maksimal (${maxCount} foto).`,
+      };
+    }
+
     // 5. Replace pilihan lama (delete lalu insert baru)
     await (supabase as any)
       .from('gallery_selections')
       .delete()
       .eq('booking_id', booking.id);
 
-    const rows = selectedFileIds.map((id) => ({
+    const rows = validFileIds.map((id) => ({
       booking_id: booking.id,
       drive_file_id: id,
       file_name: nameMap.get(id) || `Foto-${id}`,
