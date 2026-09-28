@@ -452,6 +452,55 @@ export type Database = {
           updated_at?: string;
         };
       };
+      expenses: {
+        Row: {
+          id: string;
+          type: 'expense' | 'income';
+          date: string;
+          title: string;
+          category: string;
+          custom_category: string | null;
+          amount: number;
+          booking_id: string | null;
+          booking_code: string | null;
+          customer_name: string | null;
+          payment_method: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          type?: 'expense' | 'income';
+          date?: string;
+          title: string;
+          category: string;
+          custom_category?: string | null;
+          amount?: number;
+          booking_id?: string | null;
+          booking_code?: string | null;
+          customer_name?: string | null;
+          payment_method?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          type?: 'expense' | 'income';
+          date?: string;
+          title?: string;
+          category?: string;
+          custom_category?: string | null;
+          amount?: number;
+          booking_id?: string | null;
+          booking_code?: string | null;
+          customer_name?: string | null;
+          payment_method?: string | null;
+          notes?: string | null;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

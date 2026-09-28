@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { Booking } from '@/lib/types';
+import type { Booking, Expense } from '@/lib/types';
 
 export interface LocalBooking extends Booking {
   syncStatus?: 'synced' | 'pending' | 'failed';
@@ -30,6 +30,15 @@ export interface MargaseraDB extends DBSchema {
       'by-createdAt': string;
     };
   };
+  expenses: {
+    key: string;
+    value: Expense;
+    indexes: {
+      'by-date': string;
+      'by-category': string;
+      'by-bookingId': string;
+    };
+  };
   sync_queue: {
     key: string;
     value: SyncQueueItem;
@@ -49,7 +58,7 @@ export interface MargaseraDB extends DBSchema {
 }
 
 const DB_NAME = 'margasera_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<MargaseraDB>> | null = null;
 
@@ -72,14 +81,22 @@ export function getDB(): Promise<IDBPDatabase<MargaseraDB>> | null {
           bookingStore.createIndex('by-createdAt', 'createdAt');
         }
 
-        // 2. Store Sync Queue
+        // 2. Store Expenses (Keuangan)
+        if (!db.objectStoreNames.contains('expenses')) {
+          const expenseStore = db.createObjectStore('expenses', { keyPath: 'id' });
+          expenseStore.createIndex('by-date', 'date');
+          expenseStore.createIndex('by-category', 'category');
+          expenseStore.createIndex('by-bookingId', 'bookingId');
+        }
+
+        // 3. Store Sync Queue
         if (!db.objectStoreNames.contains('sync_queue')) {
           const queueStore = db.createObjectStore('sync_queue', { keyPath: 'id' });
           queueStore.createIndex('by-status', 'status');
           queueStore.createIndex('by-createdAt', 'createdAt');
         }
 
-        // 3. Store Master Data (Layanan, Paket, Settings)
+        // 4. Store Master Data (Layanan, Paket, Settings)
         if (!db.objectStoreNames.contains('master_data')) {
           db.createObjectStore('master_data', { keyPath: 'key' });
         }
@@ -343,3 +360,58 @@ export async function migrateFromLocalStorageIfNeeded(): Promise<void> {
     console.warn('[IndexedDB] Migrasi localStorage dilewati:', err);
   }
 }
+
+// ==========================================
+// 4. REPOSITORY EXPENSES (KEUANGAN)
+// ==========================================
+
+/** Ambil seluruh transaksi keuangan dari IndexedDB lokal */
+export async function getAllLocalExpenses(): Promise<Expense[]> {
+  const db = await getDB();
+  if (!db) return [];
+  try {
+    return await db.getAll('expenses');
+  } catch (err) {
+    console.warn('[IndexedDB] Gagal mengambil expenses lokal:', err);
+    return [];
+  }
+}
+
+/** Menyimpan seluruh snapshot expenses dari server ke IndexedDB */
+export async function saveLocalExpenses(expenses: Expense[]): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  try {
+    const tx = db.transaction('expenses', 'readwrite');
+    await tx.store.clear();
+    for (const exp of expenses) {
+      await tx.store.put(exp);
+    }
+    await tx.done;
+  } catch (err) {
+    console.warn('[IndexedDB] Gagal menyimpan snapshot expenses:', err);
+  }
+}
+
+/** Tambah atau update single expense di IndexedDB */
+export async function putLocalExpense(expense: Expense): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  try {
+    await db.put('expenses', expense);
+  } catch (err) {
+    console.warn('[IndexedDB] Gagal update single expense:', err);
+  }
+}
+
+/** Hapus single expense dari IndexedDB */
+export async function deleteLocalExpense(id: string): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  try {
+    await db.delete('expenses', id);
+  } catch (err) {
+    console.warn('[IndexedDB] Gagal menghapus single expense:', err);
+  }
+}
+

@@ -19,11 +19,16 @@ import {
   AlertCircle,
   CalendarCheck2,
   HelpCircle,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { getAvailability, updateAvailabilityStatus, resetAvailabilityDate } from '@/lib/actions/availability';
+import { getStudioSettings } from '@/lib/actions/settings';
 import { formatDate } from '@/lib/utils';
+import { DEFAULT_STUDIO_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/components/ui/toast-context';
-import type { Availability } from '@/lib/types';
+import type { Availability, StudioSettings } from '@/lib/types';
+import { CalendarPdfModal } from './_components/CalendarPdfModal';
 
 const MONTH_NAMES = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -34,6 +39,7 @@ const DAYS_OF_WEEK = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 export default function CalendarPage() {
   const { toast, confirmModal } = useToast();
   const [availability, setAvailability] = useState<Availability[]>([]);
+  const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
 
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -43,6 +49,11 @@ export default function CalendarPage() {
   const [showInfoGuide, setShowInfoGuide] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+
+  // Pagination State (Tampilkan 10 data per halaman)
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,8 +73,12 @@ export default function CalendarPage() {
   const refreshData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const list = await getAvailability();
+      const [list, settings] = await Promise.all([
+        getAvailability(),
+        getStudioSettings(),
+      ]);
       setAvailability(list);
+      if (settings) setStudioSettings(settings);
     } catch (err) {
       console.error('Failed to load availability data', err);
     } finally {
@@ -74,6 +89,11 @@ export default function CalendarPage() {
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+
+  // Reset ke halaman 1 saat tab filter status berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tableFilter]);
 
   const handleSaveAvailability = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,6 +175,13 @@ export default function CalendarPage() {
     if (tableFilter === 'all') return availability;
     return availability.filter((a) => a.status === tableFilter);
   }, [availability, tableFilter]);
+
+  // Pagination (10 data per halaman)
+  const totalPages = Math.max(1, Math.ceil(filteredAvailability.length / pageSize));
+  const paginatedAvailability = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAvailability.slice(start, start + pageSize);
+  }, [filteredAvailability, currentPage, pageSize]);
 
   if (loadingData) {
     return (
@@ -448,26 +475,38 @@ export default function CalendarPage() {
             </p>
           </div>
 
-          {/* Filter Status Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-mono">
-            {[
-              { id: 'all', label: `Semua (${availability.length})` },
-              { id: 'booked', label: 'Booked' },
-              { id: 'blocked', label: 'Libur' },
-              { id: 'almost_full', label: 'Almost Full' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setTableFilter(tab.id as any)}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                  tableFilter === tab.id
-                    ? 'bg-[#0066CC] text-white font-bold shadow-2xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Action Buttons: Export PDF & Filter Tabs */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => setShowPdfModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              title="Cetak atau Export Semua Jadwal Terdaftar ke PDF"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#0066CC]" />
+              <span>Export PDF ({availability.length})</span>
+            </button>
+
+            {/* Filter Status Tabs */}
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-mono">
+              {[
+                { id: 'all', label: `Semua (${availability.length})` },
+                { id: 'booked', label: 'Booked' },
+                { id: 'blocked', label: 'Libur' },
+                { id: 'almost_full', label: 'Almost Full' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTableFilter(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                    tableFilter === tab.id
+                      ? 'bg-[#0066CC] text-white font-bold shadow-2xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -490,7 +529,7 @@ export default function CalendarPage() {
                   </td>
                 </tr>
               ) : (
-                filteredAvailability.map((av) => {
+                paginatedAvailability.map((av) => {
                   // Build booking details summary
                   const weddingBookings = (av.weddingSlots || []).filter((w) => w.isBooked);
                   const regularBookings = av.bookedTimeSlots || [];
@@ -603,6 +642,64 @@ export default function CalendarPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls (10 data per halaman) */}
+        {filteredAvailability.length > pageSize && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
+              Menampilkan{' '}
+              <strong className="text-zinc-900 dark:text-zinc-100">
+                {(currentPage - 1) * pageSize + 1}
+              </strong>{' '}
+              -{' '}
+              <strong className="text-zinc-900 dark:text-zinc-100">
+                {Math.min(currentPage * pageSize, filteredAvailability.length)}
+              </strong>{' '}
+              dari{' '}
+              <strong className="text-zinc-900 dark:text-zinc-100">
+                {filteredAvailability.length}
+              </strong>{' '}
+              jadwal
+            </span>
+
+            <div className="flex items-center gap-1 font-mono">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-[#0066CC] text-white shadow-2xs font-bold'
+                        : 'border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Halaman Selanjutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ===== MODAL: SET/EDIT AVAILABILITY ===== */}
@@ -696,6 +793,15 @@ export default function CalendarPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ===== MODAL: EXPORT PDF SEMUA JADWAL ===== */}
+      {showPdfModal && (
+        <CalendarPdfModal
+          availability={availability}
+          studioSettings={studioSettings}
+          onClose={() => setShowPdfModal(false)}
+        />
       )}
     </div>
   );

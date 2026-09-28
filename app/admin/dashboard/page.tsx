@@ -19,14 +19,16 @@ import {
 import { getAllBookings } from '@/lib/actions/bookings';
 import { getGalleryProjects } from '@/lib/actions/gallery';
 import { getServices, getPackages } from '@/lib/actions/services';
+import { getAllExpenses } from '@/lib/actions/finance';
 import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
-import { getAllLocalBookings, getMasterDataLocal } from '@/lib/offline';
+import { getAllLocalBookings, getAllLocalExpenses, saveLocalExpenses, getMasterDataLocal } from '@/lib/offline';
 import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
-import type { Booking, GalleryProject, Service, Package } from '@/lib/types';
+import type { Booking, GalleryProject, Service, Package, Expense } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
 
 export default function AdminOverviewPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [projects, setProjects] = useState<GalleryProject[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
@@ -49,18 +51,20 @@ export default function AdminOverviewPage() {
   const loadData = useCallback(async () => {
     // 1. Tampilkan data dari IndexedDB secara instan jika ada
     try {
-      const localBookings = await getAllLocalBookings();
+      const [localBookings, localExpenses] = await Promise.all([
+        getAllLocalBookings(),
+        getAllLocalExpenses(),
+      ]);
       const [localSrv, localPkg] = await Promise.all([
         getMasterDataLocal<Service[]>('services'),
         getMasterDataLocal<Package[]>('packages'),
       ]);
 
-      if (localBookings.length > 0) {
-        setBookings(localBookings);
-        if (localSrv && localSrv.length > 0) setServices(localSrv);
-        if (localPkg && localPkg.length > 0) setPackages(localPkg);
-        setLoading(false);
-      }
+      if (localBookings.length > 0) setBookings(localBookings);
+      if (localExpenses.length > 0) setExpenses(localExpenses);
+      if (localSrv && localSrv.length > 0) setServices(localSrv);
+      if (localPkg && localPkg.length > 0) setPackages(localPkg);
+      if (localBookings.length > 0) setLoading(false);
     } catch {
       const cached = getCachedMasterData();
       if (cached.bookings.length > 0) {
@@ -79,11 +83,13 @@ export default function AdminOverviewPage() {
           getGalleryProjects(),
           getServices(),
           getPackages(),
+          getAllExpenses(),
         ]);
         const bList = res[0];
         const pList = res[1];
         const sList = res[2];
         const pkgList = res[3];
+        const expList = res[4];
 
         // Simpan snapshot ke IndexedDB
         cacheMasterData({
@@ -91,11 +97,13 @@ export default function AdminOverviewPage() {
           services: sList,
           packages: pkgList,
         });
+        await saveLocalExpenses(expList);
 
         setBookings(bList);
         setProjects(pList);
         setServices(sList);
         setPackages(pkgList);
+        setExpenses(expList);
       } catch (fetchErr) {
         console.warn('[Overview] Gagal mengambil data online, mempertahankan data lokal IndexedDB:', fetchErr);
       }
@@ -109,6 +117,8 @@ export default function AdminOverviewPage() {
 
   const realizedRevenue = bookings.reduce((sum, b) => sum + getBookingPaidAmount(b), 0);
   const pendingReceivables = bookings.reduce((sum, b) => sum + getBookingRemainingAmount(b), 0);
+  const totalExpenses = expenses.filter((e) => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = realizedRevenue - totalExpenses;
   const confirmedCount = bookings.filter((b) => b.status === 'confirmed' || b.status === 'completed').length;
   const pendingCount = bookings.filter((b) => b.status === 'pending').length;
 
@@ -146,7 +156,10 @@ export default function AdminOverviewPage() {
         </span>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {/* Revenue */}
-          <div className="p-4 sm:p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-2xl flex flex-col justify-between gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">
+          <Link
+            href="/admin/dashboard/finance"
+            className="p-4 sm:p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-2xl flex flex-col justify-between gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0 cursor-pointer"
+          >
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#0066CC] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
               <span className="text-[9px] sm:text-[10px] font-mono tracking-wider text-zinc-500 dark:text-zinc-400 uppercase font-medium truncate">
@@ -159,8 +172,12 @@ export default function AdminOverviewPage() {
             <span className="font-sans text-lg sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
               {formatCurrency(realizedRevenue)}
             </span>
-            <span className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1 truncate">
-              {pendingReceivables > 0 ? (
+            <div className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center justify-between gap-1 truncate">
+              {totalExpenses > 0 ? (
+                <span className={netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-600 dark:text-rose-400 font-semibold'}>
+                  Laba: {formatCurrency(netProfit)}
+                </span>
+              ) : pendingReceivables > 0 ? (
                 <span className="text-amber-600 dark:text-amber-400 font-medium truncate" title="Sisa tagihan yang belum dilunasi">
                   +{formatCurrency(pendingReceivables)} piutang
                 </span>
@@ -170,8 +187,11 @@ export default function AdminOverviewPage() {
                   {confirmedCount} Acara Aktif
                 </span>
               )}
-            </span>
-          </div>
+              <span className="text-[#0066CC] font-mono text-[9px]">
+                Keuangan &rarr;
+              </span>
+            </div>
+          </Link>
 
           {/* Total Bookings */}
           <div className="p-4 sm:p-5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 transition-all rounded-2xl flex flex-col justify-between gap-2 relative overflow-hidden group shadow-xs dark:shadow-lg min-w-0">

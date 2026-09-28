@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, FolderPlus, PackagePlus, Clock, X } from 'lucide-react';
+import { Calendar, FolderPlus, PackagePlus, Clock, X, Wallet } from 'lucide-react';
 
 interface QuickActionsBottomSheetProps {
   isOpen: boolean;
@@ -17,6 +17,14 @@ const QUICK_ACTIONS = [
     href: '/admin/dashboard/bookings?action=new',
     color: '#0066CC',
     bg: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/60',
+  },
+  {
+    icon: Wallet,
+    title: 'Catat Pengeluaran',
+    desc: 'Catat biaya project tim, cetak, atau operasional',
+    href: '/admin/dashboard/finance?action=new',
+    color: '#0066CC',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60',
   },
   {
     icon: FolderPlus,

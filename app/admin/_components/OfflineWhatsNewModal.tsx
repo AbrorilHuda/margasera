@@ -2,19 +2,21 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import {
-  WifiOff,
-  Database,
-  CloudOff,
+  Wallet,
+  TrendingUp,
+  Tag,
+  Printer,
   Sparkles,
   ArrowRight,
   X,
-  Smartphone,
 } from 'lucide-react';
 
-const STORAGE_KEY = 'margasera_offline_whats_new_seen_v1';
+const STORAGE_KEY = 'margasera_finance_whats_new_seen_v1';
 
 export function OfflineWhatsNewModal() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -26,6 +28,11 @@ export function OfflineWhatsNewModal() {
     }
     setIsOpen(false);
   }, []);
+
+  const handleGoToFinance = () => {
+    handleDismiss();
+    router.push('/admin/dashboard/finance');
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -60,7 +67,7 @@ export function OfflineWhatsNewModal() {
   return createPortal(
     <div
       onClick={handleDismiss}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/65 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/65 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="whats-new-title"
@@ -71,7 +78,7 @@ export function OfflineWhatsNewModal() {
         className="relative w-full max-w-sm sm:max-w-lg max-h-[92dvh] flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
       >
         {/* Glow Header Accent Line */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-400 z-10" />
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 z-10" />
 
         {/* Close Button (X) */}
         <button
@@ -92,7 +99,7 @@ export function OfflineWhatsNewModal() {
                 Pembaruan Sistem
               </span>
               <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
-                Fitur Offline Aktif
+                Fitur Keuangan & Kas
               </span>
             </div>
 
@@ -100,71 +107,71 @@ export function OfflineWhatsNewModal() {
               id="whats-new-title"
               className="font-sans text-lg sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight leading-snug"
             >
-              Kini Hadir: Dukungan Mode Offline Penuh
+              Kini Hadir: Manajemen Keuangan & Arus Kas Studio
             </h2>
             <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
-              Aplikasi Margasera kini tetap dapat diakses dan digunakan dengan lancar saat tidak ada koneksi internet atau jaringan sedang tidak stabil.
+              Kini admin tidak perlu bingung uang budget dipakai ke mana saja. Pantau arus kas masuk, beban operasional per project, dan laba bersih secara transparan.
             </p>
           </div>
 
           {/* Feature Highlights List */}
           <div className="flex flex-col gap-2.5 sm:gap-3">
-            {/* Feature 1 */}
+            {/* Feature 1: Catat Pengeluaran Project */}
             <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800 flex items-start gap-2.5 sm:gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0066CC] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                <WifiOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                  Akses Langsung Tanpa Internet
+                  Pencatatan Biaya Beban Project
                 </span>
                 <span className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
-                  Dashboard dan halaman booking dapat dibuka langsung kapan saja tanpa diarahkan ke halaman login.
+                  Catat honor freelance fotografer/editor, cetak album, transport, hingga konsumsi tim dengan menghubungkannya langsung ke project klien.
                 </span>
               </div>
             </div>
 
-            {/* Feature 2 */}
+            {/* Feature 2: Laba Bersih Otomatis */}
             <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800 flex items-start gap-2.5 sm:gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                <Database className="w-4 h-4 sm:w-5 sm:h-5" />
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                  Layanan & Paket Asli Tersinkron
+                  Kalkulasi Laba Bersih & Arus Kas Riil
                 </span>
                 <span className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
-                  Kategori layanan, paket foto, dan tarif harga riil otomatis tersimpan di perangkat sehingga formulir selalu lengkap.
+                  Sistem otomatis menghitung pemasukan DP & pelunasan dikurangi total beban pengeluaran, lengkap dengan persentase margin keuntungan studio.
                 </span>
               </div>
             </div>
 
-            {/* Feature 3 */}
+            {/* Feature 3: Kategori Fleksibel + Input Manual */}
             <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800 flex items-start gap-2.5 sm:gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                <CloudOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Tag className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                  Input Booking & Sinkronisasi Otomatis
+                  Preset Kategori & Input Manual (Lainnya)
                 </span>
                 <span className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
-                  Tetap bisa input pesanan baru saat offline. Data disimpan dalam antrean lokal dan otomatis terkirim saat internet kembali online.
+                  Tersedia kategori standar studio, serta opsi input manual saat memilih kategori &apos;Lainnya&apos; untuk fleksibilitas pencatatan biaya tidak terduga.
                 </span>
               </div>
             </div>
 
-            {/* Feature 4 */}
+            {/* Feature 4: Cetak Rekap PDF & Siap Offline */}
             <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800 flex items-start gap-2.5 sm:gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                  Penyimpanan Ringan & Hemat Memori
+                  Cetak Laporan Rekap PDF & Siap Offline
                 </span>
                 <span className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
-                  Menampilkan 5 data booking terbaru saat offline agar performa browser tetap cepat. Riwayat lengkap otomatis tampil saat online.
+                  Cetak atau simpan laporan keuangan bulanan ber-kop Marga Sera Photography, serta tetap dapat mencatat pengeluaran saat jaringan offline.
                 </span>
               </div>
             </div>
@@ -173,10 +180,10 @@ export function OfflineWhatsNewModal() {
           {/* Action Button & Note */}
           <div className="flex flex-col gap-2 pt-1">
             <button
-              onClick={handleDismiss}
+              onClick={handleGoToFinance}
               className="w-full py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-[#0066CC] hover:bg-[#0052a3] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <span>Mengerti & Lanjutkan</span>
+              <span>Buka Menu Keuangan</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <p className="text-center text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-light">

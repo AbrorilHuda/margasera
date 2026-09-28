@@ -166,3 +166,31 @@ export interface ClientGalleryPhoto {
   height?: number;
   aspectRatio?: 'portrait' | 'landscape' | 'square';
 }
+
+export type TransactionType = 'expense' | 'income';
+
+export type ExpenseCategoryKey =
+  | 'fee_team'
+  | 'production'
+  | 'transport_consumption'
+  | 'equipment'
+  | 'studio_operational'
+  | 'other';
+
+export interface Expense {
+  id: string;
+  type: TransactionType;
+  date: string; // YYYY-MM-DD
+  title: string;
+  category: ExpenseCategoryKey | string;
+  customCategory?: string; // Input manual jika kategori 'other'
+  amount: number;
+  bookingId?: string;
+  bookingCode?: string;
+  customerName?: string;
+  paymentMethod?: 'cash' | 'transfer' | 'other';
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
