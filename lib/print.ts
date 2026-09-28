@@ -85,17 +85,16 @@ export function printDocument(elementId: string, title: string = 'Margasera Offi
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 !important;
-            padding: 0.25rem 0.5rem !important;
+            padding: 0 !important;
             background: #ffffff !important;
             color: #09090b !important;
-            gap: 1.25rem !important;
             overflow: visible !important;
             height: auto !important;
             max-height: none !important;
           }
-          /* Logo kontras tajam hitam di atas kertas putih */
+          /* Pertahankan warna asli logo (Royal Blue khas Margasera) saat dicetak */
           img[src*="logo.png"] {
-            filter: brightness(0) !important;
+            filter: none !important;
           }
           /* Paksa layout 2-kolom & flex horizontal khas A4 */
           .print-flex-row {
@@ -120,8 +119,16 @@ export function printDocument(elementId: string, title: string = 'Margasera Offi
           .print-items-end {
             align-items: flex-end !important;
           }
-          /* Hindari page break di tengah baris tabel atau kartu */
-          table, tr, td, th, .print-grid-2, .print-grid-4 {
+          /* Tabel & tbody diizinkan mengalir alami antar halaman (mencegah tabel lompat ke page 2) */
+          table, tbody {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+          }
+          thead {
+            display: table-header-group !important;
+          }
+          /* Hindari pemotongan di tengah baris individual atau kartu */
+          tr, td, th, .print-grid-2, .print-grid-4, .print-avoid-break {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }

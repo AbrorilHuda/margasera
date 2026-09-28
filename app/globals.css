@@ -220,9 +220,9 @@ html.light body {
   color: #0F172A !important;
 }
 
-/* Crisp Dark Logo in Light Mode (except hero) */
+/* Preserve original brand colors for logo */
 html.light img[src="/logo.png"] {
-  filter: brightness(0);
+  filter: none;
 }
 
 /* Hero Banner Exemption: Hero text stays crisp white in Light Mode */
@@ -557,9 +557,9 @@ html.light .popular-badge {
     display: none !important;
   }
 
-  /* Ensure crisp black logo on white paper */
+  /* Ensure original logo color is preserved when printing */
   img[src*="logo.png"] {
-    filter: brightness(0) !important;
+    filter: none !important;
   }
 
   /* Force desktop horizontal layout on tablet, iPad & iOS print preview */

@@ -21,6 +21,8 @@ import {
   ArrowUpRight,
   Loader2,
   MessageSquareQuote,
+  PanelLeftClose,
+  PanelLeftOpen,
   Wallet,
 } from 'lucide-react';
 import { signOutAdmin } from '@/lib/actions/admin';
@@ -64,9 +66,54 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const pathname = usePathname();
   const { confirmModal } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
+
+  // Baca preferensi sidebar dari localStorage & adaptasi ukuran layar iPad
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('margasera_admin_sidebar_collapsed');
+      if (saved !== null) {
+        setIsCollapsed(saved === 'true');
+      } else if (window.innerWidth < 1024) {
+        // Pada iPad / layar tablet (< 1024px), ciutkan secara default agar tabel lebih lega
+        setIsCollapsed(true);
+      }
+    } catch { }
+  }, []);
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('margasera_admin_sidebar_collapsed', String(next));
+      } catch { }
+      return next;
+    });
+  };
+
+  // Keyboard shortcut Ctrl+B / Cmd+B untuk toggle buka-tutup sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleCollapse();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     // Sinkronisasi data asli Supabase ke cache offline lokal begitu admin online
@@ -122,67 +169,143 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-[#0066CC] selection:text-white transition-colors">
       {/* ===== SIDEBAR / NAVIGATION DRAWER ===== */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 w-72 h-screen max-h-screen shrink-0 overflow-y-auto bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] px-6 md:p-6 transition-transform duration-300 ease-out shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          }`}
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen max-h-screen shrink-0 ${isCollapsed ? 'md:overflow-visible' : 'overflow-y-auto'
+          } bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] transition-all duration-300 ease-in-out shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          } ${isCollapsed ? 'md:w-[76px] md:px-2.5' : 'md:w-68 md:px-5 lg:w-72 lg:px-6'
+          } w-72 px-6`}
       >
-        <div className="flex flex-col gap-8">
-          {/* Logo */}
+        <div className="flex flex-col gap-6">
+          {/* Logo & Toggle Header */}
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Margasera Logo"
-                width={160}
-                height={48}
-                className="h-10 w-auto object-contain dark:brightness-100"
-                priority
-              />
-            </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white active:scale-95 transition-transform"
-              aria-label="Tutup Menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!isCollapsed ? (
+              <>
+                <Link href="/" className="flex items-center gap-3">
+                  <Image
+                    src="/logo.png"
+                    alt="Margasera Logo"
+                    width={160}
+                    height={48}
+                    className="h-9 w-auto object-contain dark:brightness-100"
+                    priority
+                  />
+                </Link>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white active:scale-95 transition-transform"
+                    aria-label="Tutup Menu"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={toggleCollapse}
+                    className="hidden md:flex p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                    title="Ciutkan Sidebar (Ctrl+B)"
+                    aria-label="Ciutkan Sidebar"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex flex-col items-center gap-2">
+                <Link href="/" className="group flex items-center justify-center" title="Margasera Photography">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0066CC] to-[#004C99] text-white flex items-center justify-center font-bold font-serif text-lg shadow-md shadow-[#0066CC]/25 group-hover:scale-105 transition-transform">
+                    M
+                  </div>
+                </Link>
+                <button
+                  onClick={toggleCollapse}
+                  className="hidden md:flex p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                  title="Perluas Sidebar (Ctrl+B)"
+                  aria-label="Perluas Sidebar"
+                >
+                  <PanelLeftOpen className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Admin Profile Card */}
-          <div className="p-3.5 bg-zinc-100/90 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl flex items-center gap-3 shadow-xs">
-            <div className="w-10 h-10 rounded-full bg-[#0066CC] text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
-              AH
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-wide truncate">
-                {studioSettings.ownerName}
-              </span>
-              <div className="flex items-center gap-1 text-[10px] text-[#0066CC] font-mono tracking-widest uppercase font-medium">
-                <ShieldCheck className="w-3 h-3 shrink-0" />
-                <span>Lead Admin</span>
+          {!isCollapsed ? (
+            <div className="p-3 bg-zinc-100/90 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl flex items-center gap-3 shadow-xs">
+              <div className="w-9 h-9 rounded-full bg-[#0066CC] text-white font-bold flex items-center justify-center text-xs shadow-sm shrink-0">
+                AH
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-wide truncate">
+                  {studioSettings.ownerName}
+                </span>
+                <div className="flex items-center gap-1 text-[10px] text-[#0066CC] font-mono tracking-widest uppercase font-medium">
+                  <ShieldCheck className="w-3 h-3 shrink-0" />
+                  <span>Lead Admin</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div
+              className="relative group flex justify-center py-0.5 cursor-default"
+              title={`${studioSettings.ownerName} (Lead Admin)`}
+            >
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0066CC] to-blue-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                  AH
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-zinc-950" />
+              </div>
+              {/* Floating Tooltip */}
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 border border-zinc-700/50 dark:border-zinc-300/50">
+                <p className="font-bold">{studioSettings.ownerName}</p>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono">Lead Administrator</p>
+              </div>
+            </div>
+          )}
 
           {/* Navigation Items */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.2em] px-3 mb-2 font-medium">
-              Navigation Menu
-            </span>
+            {!isCollapsed && (
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.2em] px-3 mb-1.5 font-medium">
+                Navigation Menu
+              </span>
+            )}
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+
+              if (isCollapsed) {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={item.label}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`group relative flex items-center justify-center w-11 h-11 mx-auto rounded-xl text-xs font-medium transition-all duration-200 active:scale-95 ${isActive
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-md shadow-[#0066CC]/30 border border-[#0066CC]/50'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
+                      }`}
+                  >
+                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`} />
+                    {/* Floating Tooltip */}
+                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 flex items-center gap-1.5 border border-zinc-700/50 dark:border-zinc-300/50">
+                      <span>{item.label}</span>
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />}
+                    </div>
+                  </Link>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.98] ${isActive
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.98] ${isActive
                       ? 'bg-[#0066CC] text-white font-semibold shadow-md border border-[#0066CC]/50'
                       : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
                     }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-500'}`} />
-                  <span className="tracking-wide">{item.label}</span>
+                  <span className="tracking-wide truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -190,33 +313,68 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         </div>
 
         {/* Sidebar Bottom Buttons */}
-        <div className="flex flex-col gap-2.5 pt-6 border-t border-zinc-200 dark:border-zinc-900 text-xs font-medium">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center justify-between px-4 py-2.5 bg-zinc-100/90 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors group active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-2">
-              <Globe className="w-3.5 h-3.5 text-[#0066CC]" />
-              <span className="tracking-wide">Website Live</span>
-            </div>
-            <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#0066CC] transition-colors" />
-          </Link>
+        <div className="flex flex-col gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-900 text-xs font-medium">
+          {!isCollapsed ? (
+            <>
+              <Link
+                href="/"
+                target="_blank"
+                className="flex items-center justify-between px-3.5 py-2 bg-zinc-100/90 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors group active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-[#0066CC]" />
+                  <span className="tracking-wide text-xs">Website Live</span>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#0066CC] transition-colors" />
+              </Link>
 
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100/80 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:hover:bg-rose-900/50 dark:text-rose-300 rounded-lg transition-colors text-xs font-medium text-left w-full disabled:opacity-50 cursor-pointer shadow-xs group active:scale-[0.98]"
-          >
-            {isLoggingOut ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600 dark:text-rose-400" />
-            ) : (
-              <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
-            )}
-            <span className="tracking-wide font-medium">
-              {isLoggingOut ? 'Mengeluarkan Sesi...' : 'Keluar Dashboard'}
-            </span>
-          </button>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-2.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100/80 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:hover:bg-rose-900/50 dark:text-rose-300 rounded-lg transition-colors text-xs font-medium text-left w-full disabled:opacity-50 cursor-pointer shadow-xs group active:scale-[0.98]"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600 dark:text-rose-400" />
+                ) : (
+                  <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                )}
+                <span className="tracking-wide font-medium">
+                  {isLoggingOut ? 'Mengeluarkan Sesi...' : 'Keluar Dashboard'}
+                </span>
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href="/"
+                target="_blank"
+                title="Lihat Website Live"
+                className="group relative flex items-center justify-center w-11 h-11 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 hover:border-[#0066CC]/50 text-zinc-700 dark:text-zinc-300 transition-colors active:scale-95"
+              >
+                <Globe className="w-5 h-5 text-[#0066CC] group-hover:scale-110 transition-transform" />
+                <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 flex items-center gap-1.5 border border-zinc-700/50 dark:border-zinc-300/50">
+                  <span>Website Live</span>
+                  <ArrowUpRight className="w-3 h-3 text-zinc-400" />
+                </div>
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title="Keluar dari Dashboard Admin"
+                className="group relative flex items-center justify-center w-11 h-11 rounded-xl bg-rose-50 hover:bg-rose-100/80 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:hover:bg-rose-900/50 dark:text-rose-300 transition-colors active:scale-95 cursor-pointer shadow-xs"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-rose-600 dark:text-rose-400" />
+                ) : (
+                  <LogOut className="w-5 h-5 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                )}
+                <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 border border-zinc-700/50 dark:border-zinc-300/50">
+                  <span>Keluar Sesi Admin</span>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -232,7 +390,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header (Compact on Mobile, Full on Desktop) */}
         <header className="sticky top-0 z-20 bg-white/90 dark:bg-zinc-950/85 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-900 px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.875rem)] pb-3.5 sm:py-4 flex items-center justify-between transition-colors">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Mobile Drawer Trigger */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="md:hidden p-2 -ml-1 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-lg active:scale-95 transition-transform"
@@ -240,6 +399,21 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             >
               <Menu className="w-5 h-5" />
             </button>
+
+            {/* Desktop & iPad Collapse/Expand Toggle */}
+            <button
+              onClick={toggleCollapse}
+              className="hidden md:flex items-center justify-center p-2 -ml-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
+              title={isCollapsed ? 'Perluas Sidebar (Ctrl+B)' : 'Ciutkan Sidebar (Ctrl+B)'}
+              aria-label={isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'}
+            >
+              {isCollapsed ? (
+                <PanelLeftOpen className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
+              )}
+            </button>
+
             <div className="min-w-0">
               <span className="text-[9px] sm:text-[10px] font-mono tracking-[0.2em] text-[#0066CC] uppercase font-semibold block truncate">
                 Margasera Control Center
@@ -285,8 +459,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           <Link
             href="/admin/dashboard"
             className={`flex flex-col items-center justify-center gap-1 py-1 transition-all active:scale-95 ${isHomeActive
-                ? 'text-[#0066CC] font-bold'
-                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 font-medium'
+              ? 'text-[#0066CC] font-bold'
+              : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 font-medium'
               }`}
           >
             <div className={`p-1 rounded-xl transition-colors ${isHomeActive ? 'bg-blue-50 dark:bg-[#0066CC]/15' : ''}`}>
@@ -299,8 +473,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           <Link
             href="/admin/dashboard/bookings"
             className={`flex flex-col items-center justify-center gap-1 py-1 transition-all active:scale-95 ${isBookingActive
-                ? 'text-[#0066CC] font-bold'
-                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 font-medium'
+              ? 'text-[#0066CC] font-bold'
+              : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 font-medium'
               }`}
           >
             <div className={`p-1 rounded-xl transition-colors ${isBookingActive ? 'bg-blue-50 dark:bg-[#0066CC]/15' : ''}`}>
