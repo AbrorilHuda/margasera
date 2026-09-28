@@ -108,16 +108,31 @@
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAFAF9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #E5E7EB;
-  border-radius: 3px;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3F3F46;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #0066CC;
+}
+
+/* Hide Scrollbar Utilities */
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Pulsing Status Colors */
