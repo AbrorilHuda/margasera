@@ -15,7 +15,7 @@ export const MOCK_GALLERY_SESSION: ClientGallerySession = {
   allowDownload: true,
   status: 'active',
   whatsappContact: '6285806138955',
-  notes: 'Pilih maksimal 15 foto terbaik untuk dimasukkan ke Album Kolase Cetak Eksklusif dan retouch warna sinematik.',
+  notes: 'Pilih 15 foto yang paling berkesan untukmu. Foto terpilih akan masuk album cetak dan diretouch.',
 };
 
 export const MOCK_GALLERY_PHOTOS: ClientGalleryPhoto[] = [

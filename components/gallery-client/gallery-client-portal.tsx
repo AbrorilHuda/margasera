@@ -61,7 +61,6 @@ export function GalleryClientPortal({
       const next = new Set(selectedIds);
       next.delete(photoId);
       setSelectedIds(next);
-      toast.info('Foto dihapus dari pilihan');
     } else {
       if (selectedIds.size >= session.maxSelectCount) {
         toast.warning(
@@ -72,11 +71,6 @@ export function GalleryClientPortal({
       const next = new Set(selectedIds);
       next.add(photoId);
       setSelectedIds(next);
-      if (next.size === session.maxSelectCount) {
-        toast.success(`Selamat! Kuota lengkap (${session.maxSelectCount}/${session.maxSelectCount} foto).`);
-      } else {
-        toast.success(`Foto terpilih (${next.size}/${session.maxSelectCount})`);
-      }
     }
   };
 
@@ -84,7 +78,6 @@ export function GalleryClientPortal({
     const next = new Set(selectedIds);
     next.delete(photoId);
     setSelectedIds(next);
-    toast.info('Foto dihapus dari pilihan');
   };
 
   const handleConfirmSubmit = async () => {
