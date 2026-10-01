@@ -7,7 +7,12 @@ import { getMessaging } from 'firebase-admin/messaging';
 function getFirebaseAdmin(): App {
   if (getApps().length > 0) return getApps()[0];
 
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // Handle berbagai format: Vercel bisa kirim literal \n atau newline sungguhan
+  // Hapus tanda kutip di awal/akhir jika ada (kesalahan paste di Vercel)
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY ?? '';
+  const privateKey = rawKey
+    .replace(/^["']|["']$/g, '')   // hapus quote di awal/akhir
+    .replace(/\\n/g, '\n');         // ubah \n literal → newline
 
   return initializeApp({
     credential: cert({

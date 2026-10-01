@@ -67,8 +67,9 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
         bookingId: payload.bookingId || '',
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     // Notifikasi gagal tidak boleh crash proses utama
-    console.error('[notification] Error sending notification:', err);
+    console.error('[notification] Error sending notification:', err?.message || err);
+    if (err?.code) console.error('[notification] Error code:', err.code);
   }
 }
