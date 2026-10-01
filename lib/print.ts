@@ -1,11 +1,14 @@
 'use client';
 
 /**
- * Mencetak elemen DOM tertentu secara terisolasi menggunakan iframe tersembunyi.
- * Pendekatan ini 100% immune terhadap:
- * 1. Offset modal / fixed backdrop / scroll position pada perangkat mobile (iOS & Android).
- * 2. Halaman kedua kosong (blank page) karena elemen layout admin yang tidak terlihat.
- * 3. Ruang putih kosong di bagian atas pada Safari iOS / iPad.
+ * Mencetak dokumen secara universal (kompatibel penuh dengan iOS Safari, Chrome iPad/iPhone, Android, Windows & Mac).
+ *
+ * Menggunakan teknik Direct DOM Mount:
+ * 1. Mengkloning elemen target ke mount container langsung di document.body (#margasera-print-mount).
+ * 2. Mengaktifkan class `margasera-is-printing` pada <body>.
+ * 3. Melalui CSS @media print, semua elemen dashboard, modal backdrop gelap, dan navbar disembunyikan.
+ * 4. Memanggil window.print() langsung pada window utama (menghindari bug parent-override WebKit iOS).
+ * 5. Membersihkan DOM setelah print dialog selesai (afterprint).
  */
 export function printDocument(elementId: string, title: string = 'Margasera Official Document') {
   if (typeof window === 'undefined') return;
@@ -16,140 +19,82 @@ export function printDocument(elementId: string, title: string = 'Margasera Offi
     return;
   }
 
-  // Hapus iframe print lama jika ada
-  const oldIframe = document.getElementById('margasera-print-frame');
-  if (oldIframe) {
-    oldIframe.remove();
+  // Bersihkan mount atau class lama jika ada sesi sebelumnya yang tertinggal
+  document.body.classList.remove('margasera-is-printing');
+  const oldMount = document.getElementById('margasera-print-mount');
+  if (oldMount) {
+    oldMount.remove();
   }
 
-  const iframe = document.createElement('iframe');
-  iframe.id = 'margasera-print-frame';
-  iframe.style.position = 'fixed';
-  iframe.style.top = '0';
-  iframe.style.left = '0';
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.zIndex = '-99999';
-  iframe.style.opacity = '0';
-  iframe.style.pointerEvents = 'none';
-  iframe.style.border = 'none';
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow?.document;
-  if (!doc) {
-    window.print();
-    return;
-  }
-
-  // Kumpulkan semua stylesheet & style tag dari halaman utama
-  const styleNodes = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
-  const stylesHtml = styleNodes.map((node) => node.outerHTML).join('\n');
-
-  // Clone konten elemen
+  // Clone elemen yang ingin dicetak
   const clone = targetEl.cloneNode(true) as HTMLElement;
-  clone.id = 'print-root';
+  clone.id = 'margasera-print-clone';
   clone.style.overflow = 'visible';
   clone.style.height = 'auto';
   clone.style.maxHeight = 'none';
 
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html lang="id">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>${title}</title>
-        ${stylesHtml}
-        <style>
-          @page {
-            size: A4 portrait;
-            margin: 8mm 10mm;
-          }
-          *, *::before, *::after {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #09090b !important;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
-          #print-root {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #09090b !important;
-            overflow: visible !important;
-            height: auto !important;
-            max-height: none !important;
-          }
-          /* Pertahankan warna asli logo (Royal Blue khas Margasera) saat dicetak */
-          img[src*="logo.png"] {
-            filter: none !important;
-          }
-          /* Paksa layout 2-kolom & flex horizontal khas A4 */
-          .print-flex-row {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: flex-start !important;
-          }
-          .print-grid-2 {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 1.25rem !important;
-          }
-          .print-grid-4 {
-            display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-            gap: 0.75rem !important;
-          }
-          .print-text-right {
-            text-align: right !important;
-          }
-          .print-items-end {
-            align-items: flex-end !important;
-          }
-          /* Tabel & tbody diizinkan mengalir alami antar halaman (mencegah tabel lompat ke page 2) */
-          table, tbody {
-            break-inside: auto !important;
-            page-break-inside: auto !important;
-          }
-          thead {
-            display: table-header-group !important;
-          }
-          /* Hindari pemotongan di tengah baris individual atau kartu */
-          tr, td, th, .print-grid-2, .print-grid-4, .print-avoid-break {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="print-wrapper">
-          ${clone.outerHTML}
-        </div>
-      </body>
-    </html>
-  `);
-  doc.close();
+  // Pastikan seluruh elemen child (seperti wrapper tabel .overflow-x-auto) tidak memiliki overflow
+  // yang membuat browser menganggapnya 'monolithic block' dan melompatkan seluruh tabel ke halaman 2
+  const scrollableElements = clone.querySelectorAll<HTMLElement>(
+    '.overflow-x-auto, .overflow-y-auto, [class*="overflow-"]'
+  );
+  scrollableElements.forEach((el) => {
+    el.style.overflow = 'visible';
+    el.style.maxHeight = 'none';
+    el.style.height = 'auto';
+  });
 
-  // Beri jeda sejenak agar browser merender font & gambar sebelum print
-  setTimeout(() => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch {
-      window.print();
+  // Buat mount container langsung di bawah document.body
+  const printMount = document.createElement('div');
+  printMount.id = 'margasera-print-mount';
+  printMount.appendChild(clone);
+  document.body.appendChild(printMount);
+
+  // Simpan judul asli dan ubah judul agar nama default file PDF sesuai
+  const originalTitle = document.title;
+  if (title) {
+    document.title = title;
+  }
+
+  // Aktifkan mode cetak
+  document.body.classList.add('margasera-is-printing');
+
+  // Fungsi cleanup setelah print selesai / dibatalkan
+  let isCleanedUp = false;
+  const cleanup = () => {
+    if (isCleanedUp) return;
+    isCleanedUp = true;
+
+    document.body.classList.remove('margasera-is-printing');
+    if (title) {
+      document.title = originalTitle;
     }
-  }, 350);
+    const mountEl = document.getElementById('margasera-print-mount');
+    if (mountEl) {
+      mountEl.remove();
+    }
+
+    window.removeEventListener('afterprint', cleanup);
+    window.removeEventListener('focus', onFocus);
+  };
+
+  const onFocus = () => {
+    // Pada iOS WebKit, dialog AirPrint menutup dan mengembalikan fokus ke window
+    setTimeout(cleanup, 500);
+  };
+
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.addEventListener('focus', onFocus, { once: true });
+
+  // Beri sedikit jeda agar WebKit (iOS) / Blink (Android) selesai me-render klon sebelum memunculkan print dialog
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      try {
+        window.print();
+      } catch (err) {
+        console.error('[Print Error]:', err);
+        cleanup();
+      }
+    }, 150);
+  });
 }

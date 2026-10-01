@@ -1,11 +1,11 @@
-import { createManualBooking, updateBooking } from '@/lib/actions/bookings';
+import { createManualBooking, updateBooking, deleteBooking } from '@/lib/actions/bookings';
 import {
   getPendingSyncQueue,
   updateSyncQueueItem,
   removeFromSyncQueue,
   saveLocalBooking,
+  deleteLocalBooking,
   getLocalBooking,
-  type SyncQueueItem,
 } from './db';
 import {
   removeFromOfflineQueue,
@@ -88,6 +88,10 @@ export async function processSyncQueue(): Promise<SyncResult> {
             const res = await updateBooking(item.entityId, item.payload as any);
             isSuccess = res.success;
             errorMessage = res.error || '';
+          } else if (item.operation === 'delete') {
+            const res = await deleteBooking(item.entityId);
+            isSuccess = res.success;
+            errorMessage = res.error || '';
           }
         }
 
@@ -96,8 +100,10 @@ export async function processSyncQueue(): Promise<SyncResult> {
           await removeFromSyncQueue(item.id);
           removeFromOfflineQueue(item.entityId);
 
-          // 2. Tandai booking di IndexedDB sebagai synced
-          if (item.entity === 'booking' && item.payload) {
+          // 2. Update state di IndexedDB
+          if (item.operation === 'delete') {
+            await deleteLocalBooking(item.entityId);
+          } else if (item.entity === 'booking' && item.payload) {
             await saveLocalBooking({
               id: item.entityId,
               ...(item.payload as any),

@@ -101,6 +101,21 @@ export function getDB(): Promise<IDBPDatabase<MargaseraDB>> | null {
           db.createObjectStore('master_data', { keyPath: 'key' });
         }
       },
+      blocked() {
+        console.warn('[IndexedDB] Database upgrade blocked');
+      },
+      blocking() {
+        console.warn('[IndexedDB] Database connection blocking');
+      },
+      terminated() {
+        // WebKit / iOS Safari sering menutup koneksi saat tab masuk background
+        console.warn('[IndexedDB] Connection terminated by browser (iOS/WebKit), resetting handle...');
+        dbPromise = null;
+      },
+    }).catch((err) => {
+      console.error('[IndexedDB] Gagal membuka database:', err);
+      dbPromise = null;
+      throw err;
     });
   }
 
@@ -139,14 +154,32 @@ export async function saveLocalBooking(booking: LocalBooking): Promise<void> {
   }
 }
 
-/** Simpan banyak booking (snapshot dari Supabase saat online) ke IndexedDB */
-export async function saveLocalBookingsBatch(bookings: Booking[]): Promise<void> {
+/** 
+ * Simpan banyak booking (snapshot dari Supabase saat online) ke IndexedDB.
+ * Menggunakan REKONSILIASI DIFERENSIAL:
+ * - Data yang sudah dihapus di Supabase otomatis dihapus dari IndexedDB.
+ * - Draft offline lokal (status 'pending') tetap dipertahankan aman.
+ */
+export async function saveLocalBookingsBatch(remoteBookings: Booking[]): Promise<void> {
   const db = await getDB();
   if (!db) return;
   try {
     const tx = db.transaction('bookings', 'readwrite');
-    for (const b of bookings) {
-      // Pertahankan status pending jika ada draft offline dengan ID yang sama
+    const remoteIdSet = new Set(remoteBookings.map((b) => b.id));
+
+    // 1. Ambil seluruh data lokal untuk cek rekonsiliasi
+    const allLocal = await tx.store.getAll();
+
+    // 2. Hapus data lama yang sudah dihapus di server Supabase
+    // Kecualikan draft offline yang masih berstatus 'pending'
+    for (const local of allLocal) {
+      if (local.syncStatus !== 'pending' && !remoteIdSet.has(local.id)) {
+        await tx.store.delete(local.id);
+      }
+    }
+
+    // 3. Simpan / perbarui snapshot terbaru dari server
+    for (const b of remoteBookings) {
       const existing = await tx.store.get(b.id);
       if (existing && existing.syncStatus === 'pending') {
         continue;
@@ -163,14 +196,31 @@ export async function saveLocalBookingsBatch(bookings: Booking[]): Promise<void>
   }
 }
 
-/** Hapus booking dari IndexedDB */
+/** Hapus booking dari IndexedDB dan bersihkan cache fallback */
 export async function deleteLocalBooking(id: string): Promise<void> {
   const db = await getDB();
-  if (!db) return;
-  try {
-    await db.delete('bookings', id);
-  } catch (err) {
-    console.error('[IndexedDB] Gagal menghapus booking:', err);
+  if (db) {
+    try {
+      await db.delete('bookings', id);
+    } catch (err) {
+      console.error('[IndexedDB] Gagal menghapus booking:', err);
+    }
+  }
+
+  // Bersihkan juga dari fallback localStorage jika ada
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('margasera_cached_bookings');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter((b: any) => b.id !== id);
+          localStorage.setItem('margasera_cached_bookings', JSON.stringify(filtered));
+        }
+      }
+    } catch {
+      // Abaikan error localStorage
+    }
   }
 }
 

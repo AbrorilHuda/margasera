@@ -275,6 +275,12 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
               <strong className="text-zinc-900 font-semibold font-mono text-xs">MARGASERA Official</strong>
             </div>
           </div>
+
+          {/* Official Document Closing Footer */}
+          <div className="pt-3 border-t border-zinc-200 flex flex-col sm:flex-row justify-between items-center text-[10px] text-zinc-400 font-mono gap-1 print-flex-row">
+            <span>Terima kasih telah mempercayakan momen berharga Anda bersama Margasera Photography.</span>
+            <span>Dokumen Resmi Studio • https://margasera.id</span>
+          </div>
         </div>
 
         {/* Sticky Bottom Actions */}

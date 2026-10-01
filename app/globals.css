@@ -551,23 +551,92 @@ html.light .popular-badge {
   box-shadow: 0 4px 14px rgba(0, 102, 204, 0.35) !important;
 }
 
+/* Container khusus print saat aktif di layar normal (tidak mengganggu layout) */
+#margasera-print-mount {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 210mm;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -99999;
+}
+
 @page {
   size: A4 portrait;
-  margin: 10mm 12mm;
+  margin: 8mm 10mm;
 }
 
 @media print {
-  html, body {
+  html,
+  html.light,
+  html.dark,
+  body,
+  html.light body,
+  html.dark body {
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #09090b !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Hide UI chrome (header bar, action buttons, modals when not printing them) */
+  /* Sembunyikan SEMUA elemen website/dashboard/modal saat mode print aktif */
+  body.margasera-is-printing > *:not(#margasera-print-mount) {
+    display: none !important;
+  }
+
+  /* Tampilkan kontainer cetak secara penuh dan rapi */
+  body.margasera-is-printing {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #09090b !important;
+  }
+
+  body.margasera-is-printing #margasera-print-mount {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    opacity: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #09090b !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #printable-invoice,
+  #printable-rekap,
+  #margasera-calendar-schedule-doc,
+  #margasera-finance-report-doc {
+    display: block !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Spasi vertikal antar seksi saat mode block */
+  #printable-rekap > div,
+  #printable-invoice > div,
+  #margasera-calendar-schedule-doc > div,
+  #margasera-finance-report-doc > div {
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* Hide UI chrome */
   .no-print {
     display: none !important;
   }
@@ -583,12 +652,20 @@ html.light .popular-badge {
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: flex-start !important;
+    width: 100% !important;
   }
 
   .print-grid-2 {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 1.25rem !important;
+  }
+
+  .print-grid-2 > div:first-child {
+    border-bottom-width: 0 !important;
+    border-right-width: 1px !important;
+    padding-bottom: 0 !important;
+    padding-right: 1rem !important;
   }
 
   .print-grid-4 {
@@ -605,9 +682,34 @@ html.light .popular-badge {
     align-items: flex-end !important;
   }
 
-  table, tr, td, th {
+  /* Tabel dan tbody HARUS diizinkan mengalir alami antar halaman (mencegah tabel lompat ke halaman 2) */
+  table, tbody {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* thead otomatis berulang di setiap bagian atas halaman baru */
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Cegah baris individual (tr) atau kartu terbelah di tengah teks */
+  tr, td, th, .print-avoid-break, .print-grid-2, .print-grid-4 {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  /* Hilangkan overflow pada pembungkus tabel agar tidak dianggap monolithic block */
+  .overflow-x-auto,
+  .overflow-y-auto,
+  div:has(> table) {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
   }
 }
 

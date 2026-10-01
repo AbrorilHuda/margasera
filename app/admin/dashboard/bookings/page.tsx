@@ -21,13 +21,12 @@ import { InvoiceModal } from './_components/InvoiceModal';
 import { PdfRekapModal } from './_components/PdfRekapModal';
 import { ShareTestimonialModal } from './_components/ShareTestimonialModal';
 import { GalleryAdminModal } from './_components/GalleryAdminModal';
-import { calculateEndTime } from './_components/BookingHelpers';
 import {
   cacheMasterData,
   getCachedMasterData,
   OFFLINE_QUEUE_EVENT,
 } from '@/lib/offline-queue';
-import { getAllLocalBookings, getMasterDataLocal } from '@/lib/offline';
+import { getAllLocalBookings, getMasterDataLocal, deleteLocalBooking, addToSyncQueue } from '@/lib/offline';
 import { formatCompactIDR, formatCurrency, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
@@ -363,10 +362,20 @@ export default function BookingsPage() {
         const previousBookings = [...bookings];
         const previousSelected = selectedBookingForDetail ? { ...selectedBookingForDetail } : null;
 
-        // Optimistic remove
+        // Optimistic remove dari state React
         setBookings((prev) => prev.filter((b) => b.id !== id));
         if (selectedBookingForDetail?.id === id) {
           setSelectedBookingForDetail(null);
+        }
+
+        // Hapus langsung dari IndexedDB lokal agar data terhapus seketika (mencegah data zombie)
+        await deleteLocalBooking(id);
+
+        // Jika sedang offline, simpan ke antrean sinkronisasi delete
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          await addToSyncQueue('booking', id, 'delete', { id, bookingCode: code });
+          toast.info(`Offline: Pesanan ${code} dihapus secara lokal dan akan disinkronkan ke server saat online.`);
+          return;
         }
 
         const res = await deleteBooking(id);

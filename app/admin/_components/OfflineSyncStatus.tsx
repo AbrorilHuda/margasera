@@ -12,6 +12,7 @@ import {
 import { migrateFromLocalStorageIfNeeded, getPendingSyncQueue } from '@/lib/offline';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { getStudioSettings } from '@/lib/actions/settings';
+import { getAllBookings } from '@/lib/actions/bookings';
 import { useToast } from '@/components/ui/toast-context';
 
 export function OfflineSyncStatus() {
@@ -113,13 +114,14 @@ export function OfflineSyncStatus() {
       toast.info('Koneksi internet kembali online. Menyinkronkan antrean...');
       handleSync(true);
 
-      // Re-fetch dan re-cache data master asli dari Supabase
-      Promise.all([getServices(), getPackages(), getStudioSettings()])
-        .then(([srvList, pkgList, settings]) => {
+      // Re-fetch dan re-cache data master & booking asli dari Supabase untuk rekonsiliasi data terhapus
+      Promise.all([getServices(), getPackages(), getStudioSettings(), getAllBookings()])
+        .then(([srvList, pkgList, settings, bookingList]) => {
           cacheMasterData({
             services: srvList,
             packages: pkgList,
             studioSettings: settings,
+            bookings: bookingList,
           });
         })
         .catch((err) => {
