@@ -38,9 +38,12 @@ export async function requestNotificationPermission(): Promise<string | null> {
   if (!messaging) return null;
 
   try {
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    await reg.update().catch(() => {});
+
     const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js'),
+      serviceWorkerRegistration: reg,
     });
     return token;
   } catch (err) {

@@ -47,21 +47,17 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
 
     await messaging.sendEachForMulticast({
       tokens: tokenList,
-      notification: {
-        title: payload.title,
-        body: payload.body,
-      },
+      // Data-only message: tidak ada field 'notification' agar FCM tidak
+      // otomatis menampilkan notifikasi. Hanya onBackgroundMessage di SW
+      // yang akan menampilkan notifikasi → tidak dobel.
       webpush: {
-        notification: {
-          icon: '/icon-192-v2.png',
-          badge: '/180.png',
-          requireInteraction: false,
-        },
         fcmOptions: {
           link: payload.url || '/admin/dashboard',
         },
       },
       data: {
+        title: payload.title,
+        body: payload.body,
         type: payload.type,
         url: payload.url || '/admin/dashboard',
         bookingId: payload.bookingId || '',

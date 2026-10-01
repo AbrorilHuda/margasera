@@ -15,13 +15,25 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background push notifications (ketika tab browser tidak aktif / tertutup)
-messaging.onBackgroundMessage((payload) => {
-  const { title, body, icon } = payload.notification || {};
+// Langsung aktifkan SW baru tanpa harus tunggu browser/tab ditutup atau unregister manual
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
 
-  self.registration.showNotification(title || 'Margasera', {
-    body: body || 'Ada notifikasi baru',
-    icon: icon || '/icon-192-v2.png',
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+// Handle background push notifications (ketika tab browser tidak aktif / tertutup)
+// Pesan yang dikirim adalah data-only (tidak ada field notification di payload)
+// sehingga SW yang bertanggung jawab penuh menampilkan notifikasi → tidak dobel.
+messaging.onBackgroundMessage((payload) => {
+  const title = payload.data?.title || 'Margasera';
+  const body = payload.data?.body || 'Ada notifikasi baru';
+
+  self.registration.showNotification(title, {
+    body,
+    icon: '/icon-192-v2.png',
     badge: '/180.png',
     data: payload.data,
     requireInteraction: false,
