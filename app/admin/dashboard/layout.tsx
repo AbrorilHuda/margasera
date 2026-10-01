@@ -37,6 +37,7 @@ import { QuickActionsBottomSheet } from './_components/QuickActionsBottomSheet';
 import { PwaInstallPrompt } from '@/app/admin/_components/PwaInstallPrompt';
 import { OfflineSyncStatus } from '@/app/admin/_components/OfflineSyncStatus';
 import { OfflineWhatsNewModal } from '@/app/admin/_components/OfflineWhatsNewModal';
+import { NotificationBell } from '@/components/admin/NotificationBell';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -430,6 +431,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <OfflineSyncStatus />
+            <NotificationBell />
             <ThemeToggle />
             <button
               onClick={handleLogout}

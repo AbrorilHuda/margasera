@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/actions/admin';
 import { isValidUUID, isWeddingService, getTodayDateString } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
+import { sendAdminNotification } from '@/lib/notifications';
 
 type BookingRow = Database['public']['Tables']['bookings']['Row'];
 
@@ -210,6 +211,15 @@ export async function createBooking(
 
   const { error } = await (supabase as any).from('bookings').insert(payload);
   if (error) return { success: false, error: error.message };
+
+  // Kirim notifikasi ke admin (fire-and-forget, tidak block response)
+  sendAdminNotification({
+    type: 'booking',
+    title: '📅 Booking Baru Masuk',
+    body: `${formData.customerName} memesan ${formData.serviceName || formData.packageName || 'sesi foto'} pada ${formData.bookingDate}`,
+    url: '/admin/dashboard/bookings',
+  }).catch(() => {});
+
   return { success: true, bookingCode };
 }
 

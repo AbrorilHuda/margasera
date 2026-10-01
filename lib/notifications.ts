@@ -1,0 +1,74 @@
+// lib/notifications.ts
+// Helper server-side: simpan notifikasi ke DB + kirim FCM push
+
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getFirebaseAdminMessaging } from '@/lib/firebase/admin';
+
+export type NotificationType = 'booking' | 'testimonial' | 'gallery_selection';
+
+export interface SendNotificationPayload {
+  type: NotificationType;
+  title: string;
+  body: string;
+  bookingId?: string;
+  url?: string;
+}
+
+/**
+ * Simpan notifikasi ke tabel `notifications` dan kirim FCM push ke semua token admin.
+ * Dipanggil dari server actions setelah event terjadi.
+ */
+export async function sendAdminNotification(payload: SendNotificationPayload): Promise<void> {
+  try {
+    const supabase = createAdminClient();
+
+    // 1. Simpan ke tabel notifications
+    await (supabase as any).from('notifications').insert({
+      type: payload.type,
+      title: payload.title,
+      body: payload.body,
+      booking_id: payload.bookingId || null,
+      url: payload.url || null,
+      is_read: false,
+    });
+
+    // 2. Ambil semua FCM tokens yang aktif
+    const { data: tokens } = await (supabase as any)
+      .from('fcm_tokens')
+      .select('token');
+
+    if (!tokens || tokens.length === 0) return;
+
+    // 3. Kirim FCM push notification ke semua device admin
+    const messaging = getFirebaseAdminMessaging();
+    const tokenList: string[] = tokens.map((t: { token: string }) => t.token);
+
+    if (tokenList.length === 0) return;
+
+    await messaging.sendEachForMulticast({
+      tokens: tokenList,
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      webpush: {
+        notification: {
+          icon: '/icon-192-v2.png',
+          badge: '/180.png',
+          requireInteraction: false,
+        },
+        fcmOptions: {
+          link: payload.url || '/admin/dashboard',
+        },
+      },
+      data: {
+        type: payload.type,
+        url: payload.url || '/admin/dashboard',
+        bookingId: payload.bookingId || '',
+      },
+    });
+  } catch (err) {
+    // Notifikasi gagal tidak boleh crash proses utama
+    console.error('[notification] Error sending notification:', err);
+  }
+}

@@ -10,6 +10,7 @@ import {
 import { fetchStudioSettings } from '@/lib/data/settings';
 import { isValidUUID } from '@/lib/utils';
 import type { ClientGallerySession, ClientGalleryPhoto } from '@/lib/types';
+import { sendAdminNotification } from '@/lib/notifications';
 
 /**
  * Validasi dan uji koneksi folder Google Drive langsung dari link atau folder ID.
@@ -566,6 +567,15 @@ export async function submitClientGallerySelections(
       console.error('Error inserting gallery selections:', insErr);
       return { success: false, error: insErr.message };
     }
+
+    // Kirim notifikasi ke admin (fire-and-forget)
+    sendAdminNotification({
+      type: 'gallery_selection',
+      title: '🖼️ Klien Pilih Foto',
+      body: `${booking.customer_name} telah memilih ${validFileIds.length} foto dari galeri mereka`,
+      bookingId: booking.id,
+      url: '/admin/dashboard/bookings',
+    }).catch(() => {});
 
     return { success: true };
   } catch (err: any) {

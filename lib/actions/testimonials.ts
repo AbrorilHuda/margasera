@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
+import { sendAdminNotification } from '@/lib/notifications';
 
 export interface SubmitTestimonialPayload {
   name: string;
@@ -51,6 +52,14 @@ export async function submitClientTestimonial(payload: SubmitTestimonialPayload)
     if (error) {
       console.warn('Supabase testimonials insert notice:', error.message);
     }
+
+    // Kirim notifikasi ke admin (fire-and-forget)
+    sendAdminNotification({
+      type: 'testimonial',
+      title: '⭐ Testimoni Baru',
+      body: `${payload.name} mengirim testimoni untuk ${payload.eventType}`,
+      url: '/admin/dashboard/testimonials',
+    }).catch(() => {});
 
     return {
       success: true,

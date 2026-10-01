@@ -31,7 +31,7 @@ export default function TestimoniPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 text-zinc-100 pt-8 pb-24 overflow-hidden">
+    <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-8 pb-24 overflow-hidden transition-colors">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -39,15 +39,15 @@ export default function TestimoniPage() {
 
       {/* Breadcrumbs - Minimalist */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-8 relative z-10">
-        <nav className="inline-flex items-center gap-2 text-xs text-zinc-400 font-light font-sans">
+        <nav className="inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 font-light font-sans">
           <Link
             href="/"
-            className="hover:text-zinc-200 transition-colors"
+            className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
           >
             Beranda
           </Link>
-          <ChevronRight className="w-3 h-3 text-zinc-600" />
-          <span className="text-zinc-200 font-medium">
+          <ChevronRight className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+          <span className="text-zinc-800 dark:text-zinc-200 font-medium">
             Isi Testimoni
           </span>
         </nav>
@@ -59,15 +59,15 @@ export default function TestimoniPage() {
           Client Experience
         </span>
 
-        <h1 className="font-serif-editorial text-4xl sm:text-5xl md:text-6xl text-zinc-100 font-light tracking-wide uppercase mt-2 leading-tight">
+        <h1 className="font-serif-editorial text-4xl sm:text-5xl md:text-6xl text-zinc-900 dark:text-zinc-100 font-light tracking-wide uppercase mt-2 leading-tight">
           Kirimkan Cerita Anda
         </h1>
 
-        <p className="font-serif-editorial text-base sm:text-lg text-amber-300/90 italic mt-2.5">
+        <p className="font-serif-editorial text-base sm:text-lg text-amber-600 dark:text-amber-300/90 italic mt-2.5">
           &ldquo;Moment Satu Hari Untuk Selamanya&rdquo;
         </p>
 
-        <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed mt-3 max-w-lg mx-auto font-sans">
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-light leading-relaxed mt-3 max-w-lg mx-auto font-sans">
           Terima kasih telah mempercayakan dokumentasi hari berharga Anda kepada Margasera. Bagikan kesan, cerita, dan pengalaman bahagia Anda bersama kami.
         </p>
       </div>
@@ -76,9 +76,9 @@ export default function TestimoniPage() {
       <section className="max-w-3xl mx-auto px-4 sm:px-6 mb-24 relative z-10">
         <Suspense
           fallback={
-            <div className="p-10 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center flex flex-col items-center justify-center gap-3">
+            <div className="p-10 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl text-center flex flex-col items-center justify-center gap-3 shadow-xs">
               <Loader2 className="w-6 h-6 animate-spin text-[#0066CC]" />
-              <span className="text-xs text-zinc-400 font-mono">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
                 Memuat formulir testimoni...
               </span>
             </div>
