@@ -116,6 +116,7 @@ export function PhotoSelectionLightbox({
               className="object-contain"
               sizes="100vw"
               priority
+              unoptimized
             />
           </motion.div>
 

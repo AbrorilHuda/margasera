@@ -167,9 +167,16 @@ export async function getGalleryPhotosForBooking(
             else aspectRatio = 'square';
           }
 
-          // Generate preview url (w1920) and thumbnail url (w600)
-          const thumb = c.thumbnail_link || '';
-          const previewUrl = thumb.replace(/=w\d+.*$/, '=w1920').replace(/=s\d+.*$/, '=w1920');
+          // Pastikan URL thumbnail & preview menggunakan format permanen anti-403
+          let thumb = c.thumbnail_link || '';
+          if (!thumb || thumb.includes('drive-storage')) {
+            thumb = `https://lh3.googleusercontent.com/d/${c.drive_file_id}=w600`;
+          }
+
+          const previewUrl =
+            !c.thumbnail_link || c.thumbnail_link.includes('drive-storage')
+              ? `https://lh3.googleusercontent.com/d/${c.drive_file_id}=w1920`
+              : thumb.replace(/=w\d+.*$/, '=w1920').replace(/=s\d+.*$/, '=w1920');
 
           return {
             id: c.drive_file_id,
@@ -619,13 +626,20 @@ export async function getAdminGallerySelections(bookingId: string): Promise<{
       }
     }
 
-    const formatted = (selections || []).map((s: any) => ({
-      id: s.id,
-      fileId: s.drive_file_id,
-      fileName: s.file_name,
-      selectedAt: s.selected_at,
-      thumbnailUrl: thumbMap.get(s.drive_file_id),
-    }));
+    const formatted = (selections || []).map((s: any) => {
+      let thumb = thumbMap.get(s.drive_file_id);
+      if (!thumb || thumb.includes('drive-storage')) {
+        thumb = `https://lh3.googleusercontent.com/d/${s.drive_file_id}=w600`;
+      }
+
+      return {
+        id: s.id,
+        fileId: s.drive_file_id,
+        fileName: s.file_name,
+        selectedAt: s.selected_at,
+        thumbnailUrl: thumb,
+      };
+    });
 
     return { success: true, selections: formatted };
   } catch (err: any) {

@@ -70,10 +70,12 @@ export function extractDriveFolderId(input: string | null | undefined): string |
 
 /**
  * Format URL gambar Google Drive untuk grid thumbnail dan preview resolusi tinggi.
+ * Menggunakan direct link CDN permanen Google: https://lh3.googleusercontent.com/d/${fileId}
+ * Menghindari URL 'drive-storage' yang memiliki signed token sementara dan cepat kedaluwarsa (403 Forbidden).
  */
 export function formatDrivePhotoUrls(fileId: string, thumbnailLink?: string) {
-  // Jika Google Drive API mengembalikan thumbnailLink resmi (biasanya berakhiran =s220)
-  if (thumbnailLink && thumbnailLink.includes('=')) {
+  // Jika thumbnailLink ada, valid, dan BUKAN signed-url sementara drive-storage
+  if (thumbnailLink && thumbnailLink.includes('=') && !thumbnailLink.includes('drive-storage')) {
     const baseUrl = thumbnailLink.split('=')[0];
     return {
       thumbnailUrl: `${baseUrl}=w600`, // Tajam dan ringan untuk grid
@@ -82,10 +84,10 @@ export function formatDrivePhotoUrls(fileId: string, thumbnailLink?: string) {
     };
   }
 
-  // Fallback direct URL format
+  // Format permanen Google Drive CDN publik (anti-403 & tidak pernah kedaluwarsa)
   return {
-    thumbnailUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`,
-    previewUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1920`,
+    thumbnailUrl: `https://lh3.googleusercontent.com/d/${fileId}=w600`,
+    previewUrl: `https://lh3.googleusercontent.com/d/${fileId}=w1920`,
     downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
   };
 }

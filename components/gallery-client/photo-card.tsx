@@ -73,6 +73,7 @@ export function PhotoCard({
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
           onLoad={handleImageLoad}
+          unoptimized
         />
 
         {/* High-Contrast Bottom Vignette for Filename Legibility in Light Mode */}

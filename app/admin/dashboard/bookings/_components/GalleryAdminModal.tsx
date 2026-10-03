@@ -345,7 +345,7 @@ export function GalleryAdminModal({
               }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>3. Hasil Pilihan ({b.selectedPhotosCount || 0})</span>
+            <span>3. Hasil Pilihan</span>
           </button>
         </div>
 
@@ -673,6 +673,7 @@ export function GalleryAdminModal({
                               fill
                               sizes="40px"
                               className="object-cover"
+                              unoptimized
                             />
                           </div>
                         ) : (
