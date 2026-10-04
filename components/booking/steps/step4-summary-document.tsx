@@ -208,7 +208,12 @@ export function Step4SummaryDocument({
             </div>
             <div className="flex items-center justify-between text-xs gap-2 py-0.5">
               <span className="text-zinc-500 shrink-0">Paket Dipilih</span>
-              <span className="font-semibold text-zinc-900 text-right truncate">{selectedPackage?.name || '-'}</span>
+              <span className="font-semibold text-zinc-900 text-right truncate">
+                {selectedPackage?.name || '-'}
+                {selectedService?.name && (
+                  <span className="font-normal text-zinc-500"> ({selectedService.name})</span>
+                )}
+              </span>
             </div>
             <div className="flex items-center justify-between text-xs gap-2 py-0.5">
               <span className="text-zinc-500 shrink-0">Tanggal Acara</span>

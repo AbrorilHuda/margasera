@@ -1,4 +1,4 @@
-import type { Package, StudioSettings } from '@/lib/types';
+import type { Package, Service, StudioSettings } from '@/lib/types';
 import { formatCurrency, formatDate, getTimeOfDayLabel } from '@/lib/utils';
 
 export interface BookingCardImageParams {
@@ -8,6 +8,8 @@ export interface BookingCardImageParams {
   startTime: string;
   endTime: string;
   selectedPackage?: Package;
+  selectedService?: Service | { name: string };
+  serviceName?: string;
   studioSettings: StudioSettings;
 }
 
@@ -43,8 +45,15 @@ export async function downloadBookingCardImage(params: BookingCardImageParams): 
     startTime,
     endTime,
     selectedPackage,
+    selectedService,
+    serviceName,
     studioSettings,
   } = params;
+
+  const resolvedServiceName =
+    serviceName ||
+    selectedService?.name ||
+    selectedPackage?.serviceName;
 
   const depositAmount =
     selectedPackage?.downPayment && selectedPackage.downPayment > 0
@@ -221,12 +230,21 @@ export async function downloadBookingCardImage(params: BookingCardImageParams): 
     ctx.font = '11px "Plus Jakarta Sans", sans-serif';
     ctx.fillText(label, x, y);
 
-    ctx.fillStyle = isHighlighted ? '#0066CC' : '#0F172A';
+    let fontSize = isHighlighted ? 13 : 13;
     ctx.font = isHighlighted
-      ? 'bold 14px "Plus Jakarta Sans", sans-serif'
-      : '600 13px "Plus Jakarta Sans", sans-serif';
+      ? `bold ${fontSize}px "Plus Jakarta Sans", sans-serif`
+      : `600 ${fontSize}px "Plus Jakarta Sans", sans-serif`;
 
-    // Truncate if text is too wide
+    if (ctx.measureText(value).width > w) {
+      fontSize = 11.5;
+      ctx.font = isHighlighted
+        ? `bold ${fontSize}px "Plus Jakarta Sans", sans-serif`
+        : `600 ${fontSize}px "Plus Jakarta Sans", sans-serif`;
+    }
+
+    ctx.fillStyle = isHighlighted ? '#0066CC' : '#0F172A';
+
+    // Truncate if text is still too wide
     let displayVal = value;
     while (ctx.measureText(displayVal).width > w && displayVal.length > 5) {
       displayVal = displayVal.slice(0, -4) + '...';
@@ -238,9 +256,13 @@ export async function downloadBookingCardImage(params: BookingCardImageParams): 
   const col2X = margin + innerW / 2 + 10;
   const colW = innerW / 2 - 40;
 
+  const packageDisplay = resolvedServiceName
+    ? `${resolvedServiceName} - ${selectedPackage?.name || 'Paket Sesi'}`
+    : selectedPackage?.name || 'Paket Sesi';
+
   // Row 1
   drawInfoRow('Nama Klien / Pemesan', customerName || 'Klien Margasera', col1X, detailsY, colW);
-  drawInfoRow('Paket Dokumentasi', selectedPackage?.name || 'Paket Sesi', col2X, detailsY, colW, true);
+  drawInfoRow('Layanan & Paket', packageDisplay, col2X, detailsY, colW, true);
 
   // Row 2
   drawInfoRow(

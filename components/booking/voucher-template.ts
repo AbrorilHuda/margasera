@@ -346,7 +346,7 @@ export function generateVoucherHtml(params: VoucherTemplateParams): string {
           </div>
           <div class="info-row">
             <span class="info-label">Paket Dokumentasi</span>
-            <span class="info-value">${selectedPackage?.name || '-'}</span>
+            <span class="info-value">${selectedPackage?.name || '-'}${selectedService?.name ? ` (${selectedService.name})` : ''}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Tanggal Pelaksanaan</span>

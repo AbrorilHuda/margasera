@@ -1054,6 +1054,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               startTime={startTime}
               endTime={endTime}
               selectedPackage={selectedPackage}
+              selectedService={selectedService}
               studioSettings={studioSettings}
               copied={copied}
               onCopyCode={copyCodeToClipboard}

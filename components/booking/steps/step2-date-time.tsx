@@ -53,7 +53,7 @@ export function Step2DateTime({
         </h3>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light mt-1">
           Pilih tanggal dan tentukan Jam Mulai. Jam Selesai dihitung otomatis sesuai durasi paket pilihan Anda (
-          {selectedPackage?.name} — {selectedPackage?.duration}).
+          {selectedService?.name ? `${selectedService.name} - ` : ''}{selectedPackage?.name} — {selectedPackage?.duration}).
         </p>
       </div>
 
@@ -62,6 +62,9 @@ export function Step2DateTime({
           <Sparkles className="w-4 h-4 text-[#0066CC] shrink-0" />
           <span>
             Paket Dipilih: <strong>{selectedPackage?.name}</strong>
+            {selectedService?.name && (
+              <span className="font-normal opacity-85"> ({selectedService.name})</span>
+            )}
           </span>
         </span>
         <span className="inline-flex items-center gap-1.5 font-mono text-amber-700 dark:text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30 shrink-0">
@@ -222,7 +225,7 @@ export function Step2DateTime({
               </span>
             </div>
             <span className="text-[10px] text-zinc-500 font-mono italic">
-              Catatan: Jam Selesai ({endTime} WIB) otomatis disesuaikan dengan durasi paket {selectedPackage?.name} (
+              Catatan: Jam Selesai ({endTime} WIB) otomatis disesuaikan dengan durasi paket {selectedService?.name ? `${selectedService.name} - ` : ''}{selectedPackage?.name} (
               {selectedPackage?.duration}).
             </span>
           </div>

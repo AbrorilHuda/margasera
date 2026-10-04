@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Check, Calendar, Clock, Copy, Download, Loader2 } from 'lucide-react';
-import type { Package, StudioSettings } from '@/lib/types';
+import type { Package, Service, StudioSettings } from '@/lib/types';
 import { formatCurrency, formatDate, getTimeOfDayLabel } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast-context';
 import { downloadBookingCardImage } from '../booking-card-image';
@@ -16,6 +16,7 @@ interface Step5ConfirmationProps {
   startTime: string;
   endTime: string;
   selectedPackage?: Package;
+  selectedService?: Service;
   studioSettings: StudioSettings;
   copied: boolean;
   onCopyCode: () => void;
@@ -28,6 +29,7 @@ export function Step5Confirmation({
   startTime,
   endTime,
   selectedPackage,
+  selectedService,
   studioSettings,
   copied,
   onCopyCode,
@@ -51,6 +53,8 @@ export function Step5Confirmation({
         startTime,
         endTime,
         selectedPackage,
+        selectedService,
+        serviceName: selectedService?.name || selectedPackage?.serviceName,
         studioSettings,
       });
       toast.success('Kartu booking resmi berhasil diunduh sebagai gambar PNG!', 'Unduh Berhasil');
@@ -105,6 +109,14 @@ export function Step5Confirmation({
           </span>
         </div>
 
+        {(selectedService || selectedPackage) && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 dark:bg-[#0066CC]/15 border border-blue-200 dark:border-[#0066CC]/30 rounded-full text-xs text-[#0066CC] dark:text-blue-300 font-medium">
+            <span>
+              {selectedService?.name ? `${selectedService.name} — ` : ''}{selectedPackage?.name || 'Paket Sesi'}
+            </span>
+          </div>
+        )}
+
         {/* Action Buttons: Copy Code & Download Card Image */}
         <div className="flex items-center gap-2.5 mt-2 flex-wrap justify-center w-full">
           <button
@@ -158,7 +170,15 @@ export function Step5Confirmation({
         </div>
 
         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light">
-          Untuk mengunci jadwal sesi foto Anda, silakan melakukan transfer DP minimal sebesar{' '}
+          Untuk mengunci jadwal sesi foto{' '}
+          {selectedService?.name ? (
+            <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">{selectedService.name} ({selectedPackage?.name})</strong>
+          ) : selectedPackage ? (
+            <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">{selectedPackage.name}</strong>
+          ) : (
+            'Anda'
+          )}
+          , silakan melakukan transfer DP minimal sebesar{' '}
           <strong className="text-amber-700 dark:text-amber-300 font-mono font-bold">
             {selectedPackage ? formatCurrency(depositAmount) : 'DP'}
           </strong>{' '}
