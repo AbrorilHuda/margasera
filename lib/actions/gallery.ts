@@ -36,7 +36,7 @@ export async function getGalleryProjects(options?: {
   try {
     const supabase = createPublicClient();
 
-    let query = (supabase as any)
+    let query = supabase
       .from('gallery_projects')
       .select('*')
       .order('created_at', { ascending: false });
@@ -90,7 +90,7 @@ export async function getGalleryProjectBySlug(
   try {
     const supabase = createPublicClient();
 
-    const { data: project, error: projectError } = await (supabase as any)
+    const { data: project, error: projectError } = await supabase
       .from('gallery_projects')
       .select('*')
       .eq('slug', slug)
@@ -103,7 +103,7 @@ export async function getGalleryProjectBySlug(
 
     const projRow = project as ProjectRow;
 
-    const { data: images } = await (supabase as any)
+    const { data: images } = await supabase
       .from('gallery_images')
       .select('*')
       .eq('project_id', projRow.id)
@@ -131,7 +131,7 @@ export async function getProjectImages(projectId: string): Promise<GalleryImage[
   if (!(await requireAdmin())) return [];
   const supabase = createAdminClient();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('gallery_images')
     .select('*')
     .eq('project_id', projectId)
@@ -168,7 +168,7 @@ export async function createGalleryProject(
     is_featured: data.isFeatured ?? false,
   };
 
-  const { data: inserted, error } = await (supabase as any)
+  const { data: inserted, error } = await supabase
     .from('gallery_projects')
     .insert(payload)
     .select('id')
@@ -179,7 +179,7 @@ export async function createGalleryProject(
   const createdId = (inserted as { id: string }).id;
 
   if (data.coverImage) {
-    await (supabase as any).from('gallery_images').insert({
+    await supabase.from('gallery_images').insert({
       project_id: createdId,
       image_url: data.coverImage,
       alt_text: data.title,
@@ -201,7 +201,7 @@ export async function addGalleryImage(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
-  const { data: existing } = await (supabase as any)
+  const { data: existing } = await supabase
     .from('gallery_images')
     .select('sort_order')
     .eq('project_id', projectId)
@@ -210,7 +210,7 @@ export async function addGalleryImage(
 
   const nextSortOrder = (existing && existing.length > 0) ? (existing[0].sort_order + 1) : 1;
 
-  const { error } = await (supabase as any).from('gallery_images').insert({
+  const { error } = await supabase.from('gallery_images').insert({
     project_id: projectId,
     image_url: imageUrl,
     alt_text: altText ?? '',
@@ -230,13 +230,13 @@ export async function deleteGalleryImage(
   const supabase = createAdminClient();
 
   // Fetch image URL before deleting from DB
-  const { data: img } = await (supabase as any)
+  const { data: img } = await supabase
     .from('gallery_images')
     .select('image_url')
     .eq('id', imageId)
     .single();
 
-  const { error } = await (supabase as any).from('gallery_images').delete().eq('id', imageId);
+  const { error } = await supabase.from('gallery_images').delete().eq('id', imageId);
   if (error) return { success: false, error: error.message };
 
   // Auto-delete from Cloudinary CDN if it's a Cloudinary URL
@@ -255,19 +255,19 @@ export async function deleteGalleryProject(
   const supabase = createAdminClient();
 
   // Fetch project cover and album images before deleting
-  const { data: project } = await (supabase as any)
+  const { data: project } = await supabase
     .from('gallery_projects')
     .select('cover_image')
     .eq('id', id)
     .single();
 
-  const { data: images } = await (supabase as any)
+  const { data: images } = await supabase
     .from('gallery_images')
     .select('image_url')
     .eq('project_id', id);
 
-  await (supabase as any).from('gallery_images').delete().eq('project_id', id);
-  const { error } = await (supabase as any).from('gallery_projects').delete().eq('id', id);
+  await supabase.from('gallery_images').delete().eq('project_id', id);
+  const { error } = await supabase.from('gallery_projects').delete().eq('id', id);
 
   if (error) return { success: false, error: error.message };
 
@@ -300,7 +300,7 @@ export async function toggleProjectFeatured(
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('gallery_projects')
     .update(payload)
     .eq('id', id);

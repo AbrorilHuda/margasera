@@ -29,7 +29,7 @@ export async function updateStudioSettings(
     };
 
     if (settings.id) {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('studio_settings')
         .update(payload)
         .eq('id', settings.id);
@@ -37,13 +37,13 @@ export async function updateStudioSettings(
       if (error) return { success: false, error: error.message };
       return { success: true };
     } else {
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from('studio_settings')
         .select('id')
         .limit(1);
 
       if (existing && existing.length > 0) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('studio_settings')
           .update(payload)
           .eq('id', existing[0].id);
@@ -51,7 +51,7 @@ export async function updateStudioSettings(
         if (error) return { success: false, error: error.message };
         return { success: true };
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('studio_settings')
           .insert(payload);
 

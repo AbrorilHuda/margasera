@@ -60,7 +60,7 @@ export function formatTimeWithPeriod(timeStr: string): string {
 }
 
 /** Validasi apakah string adalah UUID v4 yang valid */
-export function isValidUUID(uuid?: string | null): boolean {
+export function isValidUUID(uuid?: string | null): uuid is string {
   if (!uuid) return false;
   const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return regex.test(uuid);
@@ -82,6 +82,18 @@ export function getTodayDateString(): string {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Kode booking: MS-YYMMDD-XXXXXX (6 karakter acak dari crypto,
+ * tanpa 0/O/1/I agar mudah dibacakan).
+ */
+export function generateBookingCode(bookingDate: string): string {
+  const ymd = bookingDate.replace(/-/g, '').slice(2, 8);
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  const suffix = Array.from(bytes, (b) => chars[b % chars.length]).join('');
+  return `MS-${ymd}-${suffix}`;
 }
 
 /**

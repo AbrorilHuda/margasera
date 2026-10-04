@@ -19,7 +19,7 @@ export async function fetchStudioSettings(): Promise<StudioSettings> {
 
     const supabase = createAdminClient();
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('studio_settings')
       .select('*')
       .limit(1)

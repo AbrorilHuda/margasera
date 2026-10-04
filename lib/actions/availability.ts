@@ -38,13 +38,13 @@ export async function getAvailability(yearMonth?: string): Promise<Availability[
   }
 
   // 1. Query tabel availability untuk admin override / manual status dari Supabase
-  let availQuery = (supabase as any).from('availability').select('*').order('date');
+  let availQuery = supabase.from('availability').select('*').order('date');
   if (startDateStr && endDateStr) {
     availQuery = availQuery.gte('date', startDateStr).lte('date', endDateStr);
   }
 
   // 2. Query tabel bookings langsung dari Supabase (kecuali pesanan yang dibatalkan)
-  let bookingsQuery = (supabase as any)
+  let bookingsQuery = supabase
     .from('bookings')
     .select('id, booking_code, customer_name, service_name, package_name, booking_date, start_time, end_time, slot_type, status')
     .neq('status', 'cancelled');
@@ -159,7 +159,7 @@ export async function updateAvailabilityStatus(
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('availability')
       .upsert(payload, { onConflict: 'date' });
 
@@ -183,7 +183,7 @@ export async function resetAvailabilityDate(
     if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('availability')
       .delete()
       .eq('date', date);

@@ -23,7 +23,7 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
     const supabase = createAdminClient();
 
     // 1. Simpan ke tabel notifications
-    await (supabase as any).from('notifications').insert({
+    await supabase.from('notifications').insert({
       type: payload.type,
       title: payload.title,
       body: payload.body,
@@ -33,7 +33,7 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
     });
 
     // 2. Ambil semua FCM tokens yang aktif
-    const { data: tokens } = await (supabase as any)
+    const { data: tokens } = await supabase
       .from('fcm_tokens')
       .select('token');
 

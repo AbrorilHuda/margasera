@@ -33,6 +33,7 @@ export type Database = {
           role?: 'admin' | 'staff';
           updated_at?: string;
         };
+        Relationships: [];
       };
       services: {
         Row: {
@@ -60,6 +61,7 @@ export type Database = {
           is_active?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       packages: {
         Row: {
@@ -69,6 +71,7 @@ export type Database = {
           slug: string;
           description: string | null;
           price: number;
+          down_payment: number | null;
           duration: string | null;
           photographer_count: number | null;
           edited_photos: string | null;
@@ -85,6 +88,7 @@ export type Database = {
           slug: string;
           description?: string | null;
           price: number;
+          down_payment?: number | null;
           duration?: string | null;
           photographer_count?: number | null;
           edited_photos?: string | null;
@@ -100,6 +104,7 @@ export type Database = {
           slug?: string;
           description?: string | null;
           price?: number;
+          down_payment?: number | null;
           duration?: string | null;
           photographer_count?: number | null;
           edited_photos?: string | null;
@@ -108,6 +113,7 @@ export type Database = {
           is_active?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       gallery_projects: {
         Row: {
@@ -150,6 +156,7 @@ export type Database = {
           is_featured?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       gallery_images: {
         Row: {
@@ -177,6 +184,7 @@ export type Database = {
           sort_order?: number;
           aspect_ratio?: 'portrait' | 'landscape' | 'square' | null;
         };
+        Relationships: [];
       };
       availability: {
         Row: {
@@ -207,6 +215,7 @@ export type Database = {
           booked_time_slots?: Json | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       bookings: {
         Row: {
@@ -214,7 +223,7 @@ export type Database = {
           booking_code: string;
           customer_name: string;
           whatsapp: string;
-          email: string;
+          email: string | null;
           instagram: string | null;
           service_id: string | null;
           service_name: string | null;
@@ -249,7 +258,7 @@ export type Database = {
           booking_code: string;
           customer_name: string;
           whatsapp: string;
-          email: string;
+          email?: string | null;
           instagram?: string | null;
           service_id?: string | null;
           service_name?: string | null;
@@ -282,7 +291,7 @@ export type Database = {
         Update: {
           customer_name?: string;
           whatsapp?: string;
-          email?: string;
+          email?: string | null;
           instagram?: string | null;
           service_id?: string | null;
           service_name?: string | null;
@@ -311,6 +320,7 @@ export type Database = {
           gallery_sent_at?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       gallery_files_cache: {
         Row: {
@@ -343,6 +353,7 @@ export type Database = {
           image_height?: number | null;
           fetched_at?: string;
         };
+        Relationships: [];
       };
       gallery_selections: {
         Row: {
@@ -366,6 +377,7 @@ export type Database = {
           file_name?: string;
           selected_at?: string;
         };
+        Relationships: [];
       };
       studio_settings: {
         Row: {
@@ -414,6 +426,7 @@ export type Database = {
           bank_account_holder?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       testimonials: {
         Row: {
@@ -451,6 +464,7 @@ export type Database = {
           is_published?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       expenses: {
         Row: {
@@ -500,6 +514,58 @@ export type Database = {
           notes?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          type: 'booking' | 'testimonial' | 'gallery_selection';
+          title: string;
+          body: string | null;
+          booking_id: string | null;
+          url: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: 'booking' | 'testimonial' | 'gallery_selection';
+          title: string;
+          body?: string | null;
+          booking_id?: string | null;
+          url?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          type?: 'booking' | 'testimonial' | 'gallery_selection';
+          title?: string;
+          body?: string | null;
+          booking_id?: string | null;
+          url?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      fcm_tokens: {
+        Row: {
+          id: string;
+          token: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

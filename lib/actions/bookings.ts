@@ -3,21 +3,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
-import { isValidUUID, isWeddingService, getTodayDateString } from '@/lib/utils';
+import { isValidUUID, isWeddingService, getTodayDateString, generateBookingCode } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 import { sendAdminNotification } from '@/lib/notifications';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type BookingRow = Database['public']['Tables']['bookings']['Row'];
 
-function generateBookingCode(bookingDate: string): string {
-  const d = new Date(bookingDate);
-  const yy = String(d.getFullYear()).slice(2);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const seq = String(Math.floor(Math.random() * 900) + 100);
-  return `MS-${yy}${mm}${dd}-${seq}`;
-}
 
 function mapBooking(b: BookingRow): Booking {
   return {
@@ -25,7 +18,7 @@ function mapBooking(b: BookingRow): Booking {
     bookingCode: b.booking_code,
     customerName: b.customer_name,
     whatsapp: b.whatsapp,
-    email: b.email,
+    email: b.email ?? undefined,
     instagram: b.instagram ?? undefined,
     serviceId: b.service_id ?? '',
     serviceName: b.service_name ?? undefined,
@@ -101,7 +94,7 @@ export async function createBooking(
 
     // 1. Cek status ketersediaan tanggal dari tabel availability (blocked / booked override)
 
-    const { data: dateAvailability } = await (supabase as any)
+    const { data: dateAvailability } = await supabase
       .from('availability')
       .select('status, notes')
       .eq('date', formData.bookingDate)
@@ -123,7 +116,7 @@ export async function createBooking(
     }
 
     // 2. Cek semua pesanan aktif yang sudah terdaftar pada tanggal yang sama di Supabase
-    const { data: existingBookings, error: fetchErr } = await (supabase as any)
+    const { data: existingBookings, error: fetchErr } = await supabase
       .from('bookings')
       .select('id, booking_code, customer_name, service_name, package_name, booking_date, start_time, end_time, slot_type, status')
       .eq('booking_date', formData.bookingDate)
@@ -183,7 +176,7 @@ export async function createBooking(
     }
   }
 
-  const bookingCode = generateBookingCode(formData.bookingDate);
+  let bookingCode = generateBookingCode(formData.bookingDate);
 
   const payload = {
     booking_code: bookingCode,
@@ -202,14 +195,20 @@ export async function createBooking(
     location: formData.location ?? null,
     event_type: formData.eventType ?? null,
     notes: formData.notes ?? null,
-    status: 'pending',
-    payment_status: 'unpaid',
+    status: 'pending' as const,
+    payment_status: 'unpaid' as const,
     total_price: formData.totalPrice ?? null,
     down_payment: formData.downPayment ?? null,
     remaining_amount: formData.remainingAmount ?? null,
   };
 
-  const { error } = await (supabase as any).from('bookings').insert(payload);
+  // Retry jika kode bentrok (unique violation 23505)
+  let error: any = null;
+  for (let i = 0; i < 3; i++) {
+    ({ error } = await supabase.from('bookings').insert(payload));
+    if (!error || error.code !== '23505') break;
+    payload.booking_code = bookingCode = generateBookingCode(formData.bookingDate);
+  }
   if (error) return { success: false, error: error.message };
 
   // Kirim notifikasi ke admin (fire-and-forget, tidak block response)
@@ -218,7 +217,7 @@ export async function createBooking(
     title: '📅 Booking Baru Masuk',
     body: `${formData.customerName} memesan ${formData.serviceName || formData.packageName || 'sesi foto'} pada ${formData.bookingDate}`,
     url: '/admin/dashboard/bookings',
-  }).catch(() => {});
+  }).catch(() => { });
 
   return { success: true, bookingCode };
 }
@@ -227,9 +226,13 @@ export async function createBooking(
 export async function getBookingByCode(
   code: string
 ): Promise<{ booking: Booking | null; error?: string }> {
+  if (!(await checkRateLimit('booking-status', 10))) {
+    return { booking: null, error: 'Terlalu banyak percobaan. Coba lagi dalam 1 menit.' };
+  }
+
   const supabase = await createClient();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('bookings')
     .select('*')
     .eq('booking_code', code.toUpperCase().trim())
@@ -251,7 +254,7 @@ export async function getAllBookings(): Promise<Booking[]> {
   if (!(await requireAdmin())) return [];
   const supabase = createAdminClient();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('bookings')
     .select('*')
     .order('created_at', { ascending: false });
@@ -273,7 +276,7 @@ export async function updateBookingStatus(
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await (supabase as any).from('bookings').update(payload).eq('id', id);
+  const { error } = await supabase.from('bookings').update(payload).eq('id', id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -293,7 +296,7 @@ export async function updatePaymentStatus(
     ...(paidAmount !== undefined ? { paid_amount: paidAmount } : {}),
   };
 
-  const { error } = await (supabase as any).from('bookings').update(payload).eq('id', id);
+  const { error } = await supabase.from('bookings').update(payload).eq('id', id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -331,7 +334,7 @@ export async function updateBooking(
 
   // 1. Conflict Detection: Bandingkan serverUpdatedAt dengan baseUpdatedAt lokal
   if (payload.baseUpdatedAt) {
-    const { data: serverRecord } = await (supabase as any)
+    const { data: serverRecord } = await supabase
       .from('bookings')
       .select('updated_at, customer_name, booking_code')
       .eq('id', id)
@@ -355,7 +358,7 @@ export async function updateBooking(
   // 2. Validasi bentrok tanggal & jam jika tanggal/jam berubah
   if (payload.bookingDate || payload.startTime || payload.endTime) {
     // Ambil data booking saat ini untuk perbandingan
-    const { data: current } = await (supabase as any)
+    const { data: current } = await supabase
       .from('bookings')
       .select('booking_date, start_time, end_time, service_name, package_name, slot_type, status')
       .eq('id', id)
@@ -367,7 +370,7 @@ export async function updateBooking(
       const checkEnd = payload.endTime ?? current.end_time;
 
       // 1. Cek tabel availability (blocked / booked override)
-      const { data: dateAvailability } = await (supabase as any)
+      const { data: dateAvailability } = await supabase
         .from('availability')
         .select('status, notes')
         .eq('date', checkDate)
@@ -387,7 +390,7 @@ export async function updateBooking(
       }
 
       // 2. Cek booking lain di tanggal yang sama, kecuali booking ini sendiri
-      const { data: existingBookings } = await (supabase as any)
+      const { data: existingBookings } = await supabase
         .from('bookings')
         .select('id, booking_code, customer_name, service_name, package_name, start_time, end_time, slot_type, status')
         .eq('booking_date', checkDate)
@@ -399,8 +402,8 @@ export async function updateBooking(
         const isNewWedding = newSName
           ? isWeddingService(newSName)
           : Boolean((payload as any).slotType
-              ? String((payload as any).slotType).startsWith('wedding')
-              : current.slot_type && String(current.slot_type).startsWith('wedding'));
+            ? String((payload as any).slotType).startsWith('wedding')
+            : current.slot_type && String(current.slot_type).startsWith('wedding'));
 
         // 3. Validasi bentrok jam (time overlap)
         for (const b of existingBookings) {
@@ -423,7 +426,7 @@ export async function updateBooking(
     }
   }
 
-  const updateData: Record<string, any> = {
+  const updateData: Database['public']['Tables']['bookings']['Update'] = {
     updated_at: new Date().toISOString(),
   };
 
@@ -433,7 +436,7 @@ export async function updateBooking(
   if (payload.location !== undefined) updateData.location = payload.location;
   if (payload.customerName !== undefined) updateData.customer_name = payload.customerName;
   if (payload.whatsapp !== undefined) updateData.whatsapp = payload.whatsapp;
-  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.email !== undefined) updateData.email = payload.email || null;
   if (payload.instagram !== undefined) updateData.instagram = payload.instagram;
   if (payload.notes !== undefined) updateData.notes = payload.notes;
   if (payload.status !== undefined) updateData.status = payload.status;
@@ -447,7 +450,7 @@ export async function updateBooking(
   if (payload.paidAmount !== undefined) updateData.paid_amount = payload.paidAmount;
   if (payload.remainingAmount !== undefined) updateData.remaining_amount = payload.remainingAmount;
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('bookings')
     .update(updateData)
     .eq('id', id);
@@ -467,7 +470,7 @@ export async function createManualBooking(
     booking_code: formData.bookingCode,
     customer_name: formData.customerName,
     whatsapp: formData.whatsapp,
-    email: formData.email,
+    email: formData.email || null,
     instagram: formData.instagram ?? null,
     service_id: isValidUUID(formData.serviceId) ? formData.serviceId : null,
     service_name: formData.serviceName ?? null,
@@ -488,7 +491,7 @@ export async function createManualBooking(
     remaining_amount: formData.remainingAmount ?? null,
   };
 
-  const { error } = await (supabase as any).from('bookings').insert(payload);
+  const { error } = await supabase.from('bookings').insert(payload);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -499,7 +502,7 @@ export async function deleteBooking(
 ): Promise<{ success: boolean; error?: string }> {
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
-  const { error } = await (supabase as any).from('bookings').delete().eq('id', id);
+  const { error } = await supabase.from('bookings').delete().eq('id', id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -512,7 +515,7 @@ export async function cancelBookingByClient(
   try {
     const supabase = await createClient();
 
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('bookings')
       .select('id, notes, status')
       .eq('id', bookingId)
@@ -527,7 +530,7 @@ export async function cancelBookingByClient(
       reason ? `[DIBATALKAN CLIENT]: ${reason}` : '[DIBATALKAN CLIENT]',
     ].filter(Boolean).join('\n');
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('bookings')
       .update({
         status: 'cancelled',
@@ -559,10 +562,10 @@ export async function saveBookingGallerySettings(
   input: SaveGallerySettingsInput
 ): Promise<{ success: boolean; error?: string; gallerySlug?: string; galleryToken?: string }> {
   try {
-    await requireAdmin();
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
-    // Generate token if not provided
+    // Generate token if not providedi
     const galleryToken = input.galleryToken || Math.random().toString(36).substring(2, 12);
 
     // Extract folder id if not provided
@@ -591,14 +594,14 @@ export async function saveBookingGallerySettings(
       payload.gallery_sent_at = input.gallerySentAt;
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('bookings')
       .update(payload)
       .eq('id', bookingId);
 
     if (error) {
-      // In case columns don't exist yet in Supabase schema, log notice
-      console.warn('[saveBookingGallerySettings] Database update notice:', error.message);
+      console.error('[saveBookingGallerySettings] Database update error:', error.message);
+      return { success: false, error: error.message };
     }
 
     return { success: true, gallerySlug: input.gallerySlug, galleryToken };

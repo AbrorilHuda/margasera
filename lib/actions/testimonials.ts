@@ -37,7 +37,7 @@ export async function submitClientTestimonial(payload: SubmitTestimonialPayload)
     const supabase = createPublicClient();
 
     // Simpan data testimoni ke tabel testimonials di Supabase
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('testimonials')
       .insert({
         booking_code: payload.bookingCode?.trim() || null,
@@ -77,7 +77,7 @@ export async function submitClientTestimonial(payload: SubmitTestimonialPayload)
 export async function getPublishedTestimonials() {
   try {
     const supabase = createPublicClient();
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('testimonials')
       .select('*')
       .eq('is_published', true)
@@ -109,7 +109,7 @@ export async function getAllTestimonialsAdmin(): Promise<AdminTestimonialItem[]>
   if (!(await requireAdmin())) return [];
   try {
     const supabase = createAdminClient();
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('testimonials')
       .select('*')
       .order('created_at', { ascending: false });
@@ -144,7 +144,7 @@ export async function toggleTestimonialPublishStatus(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   try {
     const supabase = createAdminClient();
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('testimonials')
       .update({ is_published: isPublished })
       .eq('id', id);
@@ -166,7 +166,7 @@ export async function deleteTestimonialAdmin(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   try {
     const supabase = createAdminClient();
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('testimonials')
       .delete()
       .eq('id', id);

@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { X, Loader2, WifiOff } from 'lucide-react';
 import { createManualBooking } from '@/lib/actions/bookings';
 import { saveToOfflineQueue, getCachedMasterData, OFFLINE_MASTER_DATA_EVENT } from '@/lib/offline-queue';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, generateBookingCode } from '@/lib/utils';
 import { BOOKING_FORM_DEFAULTS } from '@/lib/constants';
 import { calculateEndTime } from './BookingHelpers';
 import { useToast } from '@/components/ui/toast-context';
@@ -120,11 +120,9 @@ export function AddBookingModal({ services: propServices, packages: propPackages
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const cleanDate = form.bookingDate.replace(/-/g, '').substring(2);
-      const randomNum = String(Math.floor(Math.random() * 900) + 100);
       const selectedSrv = services.find((s) => s.id === form.serviceId);
       const selectedPkg = packages.find((p) => p.id === form.packageId);
-      const bookingCode = `MS-${cleanDate}-${randomNum}`;
+      const bookingCode = generateBookingCode(form.bookingDate);
       const totalPriceVal = Number(form.totalPrice) || (selectedPkg?.price ?? 10_000_000);
       const dpVal = Number(form.downPayment) || (selectedPkg?.downPayment && selectedPkg.downPayment > 0
         ? selectedPkg.downPayment

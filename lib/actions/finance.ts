@@ -34,7 +34,7 @@ export async function getAllExpenses(): Promise<Expense[]> {
   if (!(await requireAdmin())) return [];
   const supabase = createAdminClient();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('expenses')
     .select('*')
     .order('date', { ascending: false })
@@ -96,7 +96,7 @@ export async function createExpense(
     notes: payload.notes?.trim() || null,
   };
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('expenses')
     .insert(insertData)
     .select()
@@ -124,7 +124,7 @@ export async function updateExpense(
 
   const supabase = createAdminClient();
 
-  const updateData: Record<string, unknown> = {
+  const updateData: Database['public']['Tables']['expenses']['Update'] = {
     updated_at: new Date().toISOString(),
   };
 
@@ -143,7 +143,7 @@ export async function updateExpense(
   if (payload.paymentMethod !== undefined) updateData.payment_method = payload.paymentMethod;
   if (payload.notes !== undefined) updateData.notes = payload.notes?.trim() || null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('expenses')
     .update(updateData)
     .eq('id', id)
@@ -168,7 +168,7 @@ export async function deleteExpense(id: string): Promise<{ success: boolean; err
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
 
   const supabase = createAdminClient();
-  const { error } = await (supabase as any).from('expenses').delete().eq('id', id);
+  const { error } = await supabase.from('expenses').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting expense:', error.message);

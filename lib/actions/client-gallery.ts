@@ -8,9 +8,38 @@ import {
   type DrivePhotoItem,
 } from '@/lib/google-drive';
 import { fetchStudioSettings } from '@/lib/data/settings';
-import { isValidUUID } from '@/lib/utils';
 import type { ClientGallerySession, ClientGalleryPhoto } from '@/lib/types';
 import { sendAdminNotification } from '@/lib/notifications';
+
+/**
+ * Hapus link Drive & semua foto cache + pilihan klien untuk sebuah booking.
+ * Dipakai admin saat salah input folder Drive.
+ */
+export async function clearBookingGalleryDrive(
+  bookingId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
+    const supabase = createAdminClient() as any;
+
+    await supabase.from('gallery_selections').delete().eq('booking_id', bookingId);
+    await supabase.from('gallery_files_cache').delete().eq('booking_id', bookingId);
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        drive_folder_url: null,
+        drive_folder_id: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', bookingId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Gagal menghapus folder Drive.' };
+  }
+}
 
 /**
  * Validasi dan uji koneksi folder Google Drive langsung dari link atau folder ID.
@@ -19,7 +48,7 @@ export async function checkDriveFolderAction(
   urlOrId: string
 ): Promise<{ success: boolean; folderId?: string; detectedCount?: number; error?: string }> {
   try {
-    await requireAdmin();
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const res = await testGoogleDriveFolder(urlOrId);
     return res;
   } catch (err: any) {
@@ -43,11 +72,11 @@ export async function syncBookingGalleryFromDrive(
   error?: string;
 }> {
   try {
-    await requireAdmin();
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
     // 1. Ambil data booking untuk mendapatkan drive_folder_id / url
-    const { data: booking, error: bErr } = await (supabase as any)
+    const { data: booking, error: bErr } = await supabase
       .from('bookings')
       .select('id, customer_name, drive_folder_id, drive_folder_url')
       .eq('id', bookingId)
@@ -74,47 +103,42 @@ export async function syncBookingGalleryFromDrive(
     const photos = driveResult.photos;
 
     // 3. Simpan ke gallery_files_cache di Supabase
-    try {
-      // Hapus cache lama untuk booking ini
-      await (supabase as any)
+    // Hapus cache lama untuk booking ini
+    const { error: delErr } = await supabase
+      .from('gallery_files_cache')
+      .delete()
+      .eq('booking_id', bookingId);
+    if (delErr) {
+      return { success: false, error: `Gagal menghapus cache lama: ${delErr.message}` };
+    }
+
+    // Deduplikasi foto dari drive sebelum insert
+    const seenDriveIds = new Set<string>();
+    const uniquePhotos = photos.filter((p) => {
+      if (!p.id || seenDriveIds.has(p.id)) return false;
+      seenDriveIds.add(p.id);
+      return true;
+    });
+
+    // Insert foto-foto baru
+    const rowsToInsert = uniquePhotos.map((p) => ({
+      booking_id: bookingId,
+      drive_file_id: p.id,
+      file_name: p.fileName,
+      thumbnail_link: p.thumbnailUrl,
+      image_width: p.width || null,
+      image_height: p.height || null,
+      fetched_at: new Date().toISOString(),
+    }));
+
+    // Insert batch per 100 baris untuk efisiensi
+    for (let i = 0; i < rowsToInsert.length; i += 100) {
+      const { error: insErr } = await supabase
         .from('gallery_files_cache')
-        .delete()
-        .eq('booking_id', bookingId);
-
-      // Deduplikasi foto dari drive sebelum insert
-      const seenDriveIds = new Set<string>();
-      const uniquePhotos = photos.filter((p) => {
-        if (!p.id || seenDriveIds.has(p.id)) return false;
-        seenDriveIds.add(p.id);
-        return true;
-      });
-
-      // Insert foto-foto baru
-      if (uniquePhotos.length > 0) {
-        const rowsToInsert = uniquePhotos.map((p) => ({
-          booking_id: bookingId,
-          drive_file_id: p.id,
-          file_name: p.fileName,
-          thumbnail_link: p.thumbnailUrl,
-          image_width: p.width || null,
-          image_height: p.height || null,
-          fetched_at: new Date().toISOString(),
-        }));
-
-        // Insert batch per 100 baris untuk efisiensi
-        for (let i = 0; i < rowsToInsert.length; i += 100) {
-          const chunk = rowsToInsert.slice(i, i + 100);
-          const { error: insErr } = await (supabase as any)
-            .from('gallery_files_cache')
-            .insert(chunk);
-
-          if (insErr) {
-            console.warn('[syncBookingGalleryFromDrive] Notice inserting cache:', insErr.message);
-          }
-        }
+        .insert(rowsToInsert.slice(i, i + 100));
+      if (insErr) {
+        return { success: false, error: `Gagal menyimpan foto ke cache: ${insErr.message}` };
       }
-    } catch (cacheErr: any) {
-      console.warn('[syncBookingGalleryFromDrive] Cache storage warning:', cacheErr?.message);
     }
 
     return {
@@ -144,7 +168,7 @@ export async function getGalleryPhotosForBooking(
 
   if (!options?.forceRefresh) {
     try {
-      const { data: cached, error } = await (supabase as any)
+      const { data: cached, error } = await supabase
         .from('gallery_files_cache')
         .select('*')
         .eq('booking_id', bookingId)
@@ -230,7 +254,7 @@ export async function getClientGalleryMetadata(
     const cleaned = slugOrToken.trim();
 
     // 1. Exact match token
-    const { data: byToken } = await (supabase as any)
+    const { data: byToken } = await supabase
       .from('bookings')
       .select('customer_name')
       .eq('gallery_token', cleaned)
@@ -239,7 +263,7 @@ export async function getClientGalleryMetadata(
     if (byToken) return { clientName: byToken.customer_name };
 
     // 2. Exact match slug
-    const { data: bySlug } = await (supabase as any)
+    const { data: bySlug } = await supabase
       .from('bookings')
       .select('customer_name')
       .eq('gallery_slug', cleaned)
@@ -251,7 +275,7 @@ export async function getClientGalleryMetadata(
     const parts = cleaned.split('-');
     if (parts.length > 1) {
       const potentialToken = parts[parts.length - 1];
-      const { data: byTokenPart } = await (supabase as any)
+      const { data: byTokenPart } = await supabase
         .from('bookings')
         .select('customer_name')
         .eq('gallery_token', potentialToken)
@@ -297,7 +321,7 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
     let booking: any = null;
 
     // Prioritas 1: Exact match token
-    const { data: byToken } = await (supabase as any)
+    const { data: byToken } = await supabase
       .from('bookings')
       .select('*')
       .eq('gallery_token', cleaned)
@@ -311,7 +335,7 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
       const parts = cleaned.split('-');
       const potentialToken = parts[parts.length - 1];
 
-      const { data: byTokenPart } = await (supabase as any)
+      const { data: byTokenPart } = await supabase
         .from('bookings')
         .select('*')
         .eq('gallery_token', potentialToken)
@@ -322,7 +346,7 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
       }
     } else {
       // Prioritas 3 (Fallback Legacy): Hanya izinkan slug murni jika booking tersebut belum memiliki gallery_token
-      const { data: bySlug } = await (supabase as any)
+      const { data: bySlug } = await supabase
         .from('bookings')
         .select('*')
         .eq('gallery_slug', cleaned)
@@ -365,7 +389,7 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
     // Ambil pilihan foto yang sudah tersimpan sebelumnya
     let selectedPhotoIds: string[] = [];
     try {
-      const { data: existingSelections } = await (supabase as any)
+      const { data: existingSelections } = await supabase
         .from('gallery_selections')
         .select('drive_file_id')
         .eq('booking_id', booking.id);
@@ -381,7 +405,7 @@ export async function getClientGalleryData(slugOrToken: string): Promise<{
     if (isLinkExpired) {
       // Hapus cache foto dari Supabase agar database tetap bersih & hemat ruang
       try {
-        await (supabase as any)
+        await supabase
           .from('gallery_files_cache')
           .delete()
           .eq('booking_id', booking.id);
@@ -474,7 +498,7 @@ export async function submitClientGallerySelections(
     const cleanId = (bookingIdOrToken || '').trim();
 
     // Prioritas A: Cari berdasarkan gallery_token
-    const { data: byToken } = await (supabase as any)
+    const { data: byToken } = await supabase
       .from('bookings')
       .select('*')
       .eq('gallery_token', cleanId)
@@ -486,7 +510,7 @@ export async function submitClientGallerySelections(
       // Prioritas B: Jika format slug-token gabungan, ambil token di bagian akhir
       const parts = cleanId.split('-');
       const lastPart = parts[parts.length - 1];
-      const { data: byEndToken } = await (supabase as any)
+      const { data: byEndToken } = await supabase
         .from('bookings')
         .select('*')
         .eq('gallery_token', lastPart)
@@ -494,7 +518,7 @@ export async function submitClientGallerySelections(
       if (byEndToken) booking = byEndToken;
     } else {
       // Prioritas C (Fallback Legacy): Hanya izinkan slug jika booking belum memiliki token
-      const { data: bySlug } = await (supabase as any)
+      const { data: bySlug } = await supabase
         .from('bookings')
         .select('*')
         .eq('gallery_slug', cleanId)
@@ -522,7 +546,7 @@ export async function submitClientGallerySelections(
     const maxCount = booking.selection_max_count || 15;
 
     // 4. Ambil nama file dari cache dan validasi bahwa ID foto sah milik booking ini
-    const { data: cachedFiles } = await (supabase as any)
+    const { data: cachedFiles } = await supabase
       .from('gallery_files_cache')
       .select('drive_file_id, file_name')
       .eq('booking_id', booking.id);
@@ -554,7 +578,7 @@ export async function submitClientGallerySelections(
     }
 
     // 5. Replace pilihan lama (delete lalu insert baru)
-    await (supabase as any)
+    await supabase
       .from('gallery_selections')
       .delete()
       .eq('booking_id', booking.id);
@@ -566,7 +590,7 @@ export async function submitClientGallerySelections(
       selected_at: new Date().toISOString(),
     }));
 
-    const { error: insErr } = await (supabase as any)
+    const { error: insErr } = await supabase
       .from('gallery_selections')
       .insert(rows);
 
@@ -582,7 +606,7 @@ export async function submitClientGallerySelections(
       body: `${booking.customer_name} telah memilih ${validFileIds.length} foto dari galeri mereka`,
       bookingId: booking.id,
       url: '/admin/dashboard/bookings',
-    }).catch(() => {});
+    }).catch(() => { });
 
     return { success: true };
   } catch (err: any) {
@@ -600,10 +624,10 @@ export async function getAdminGallerySelections(bookingId: string): Promise<{
   error?: string;
 }> {
   try {
-    await requireAdmin();
+    if (!(await requireAdmin())) return { success: false, selections: [], error: 'Unauthorized' };
     const supabase = createAdminClient();
 
-    const { data: selections, error: selErr } = await (supabase as any)
+    const { data: selections, error: selErr } = await supabase
       .from('gallery_selections')
       .select('id, drive_file_id, file_name, selected_at')
       .eq('booking_id', bookingId)
@@ -614,7 +638,7 @@ export async function getAdminGallerySelections(bookingId: string): Promise<{
     }
 
     // Ambil thumbnail dari cache
-    const { data: cache } = await (supabase as any)
+    const { data: cache } = await supabase
       .from('gallery_files_cache')
       .select('drive_file_id, thumbnail_link')
       .eq('booking_id', bookingId);
@@ -652,10 +676,10 @@ export async function getAdminGallerySelections(bookingId: string): Promise<{
  */
 export async function clearBookingGalleryCache(bookingId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await requireAdmin();
+    if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
     const supabase = createAdminClient();
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('gallery_files_cache')
       .delete()
       .eq('booking_id', bookingId);

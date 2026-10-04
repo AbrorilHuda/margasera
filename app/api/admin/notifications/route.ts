@@ -9,7 +9,7 @@ export async function GET() {
   }
 
   const supabase = createAdminClient();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('notifications')
     .select('*')
     .order('created_at', { ascending: false })
@@ -30,9 +30,9 @@ export async function PATCH(req: NextRequest) {
   const supabase = createAdminClient();
 
   if (markAll) {
-    await (supabase as any).from('notifications').update({ is_read: true }).eq('is_read', false);
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
   } else if (id) {
-    await (supabase as any).from('notifications').update({ is_read: true }).eq('id', id);
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   }
 
   return NextResponse.json({ success: true });
@@ -49,13 +49,13 @@ export async function DELETE(req: NextRequest) {
     const supabase = createAdminClient();
 
     if (deleteAll) {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('notifications')
         .delete()
         .gte('created_at', '1970-01-01T00:00:00Z');
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     } else if (id) {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('notifications')
         .delete()
         .eq('id', id);

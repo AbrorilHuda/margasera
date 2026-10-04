@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
   // Upsert agar tidak duplikat token yang sama
-  await (supabase as any).from('fcm_tokens').upsert({ token }, { onConflict: 'token' });
+  await supabase.from('fcm_tokens').upsert({ token }, { onConflict: 'token' });
 
   return NextResponse.json({ success: true });
 }
@@ -30,7 +30,7 @@ export async function DELETE(req: NextRequest) {
   if (!token) return NextResponse.json({ error: 'Token tidak valid' }, { status: 400 });
 
   const supabase = createAdminClient();
-  await (supabase as any).from('fcm_tokens').delete().eq('token', token);
+  await supabase.from('fcm_tokens').delete().eq('token', token);
 
   return NextResponse.json({ success: true });
 }

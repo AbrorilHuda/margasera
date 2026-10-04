@@ -17,7 +17,7 @@ export async function getServices(): Promise<Service[]> {
   try {
     const supabase = createPublicClient();
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('services')
       .select('*')
       .eq('is_active', true)
@@ -43,7 +43,7 @@ export async function getPackages(serviceId?: string): Promise<Package[]> {
   try {
     const supabase = createPublicClient();
 
-    let query = (supabase as any)
+    let query = supabase
       .from('packages')
       .select('*, services(name, slug)')
       .eq('is_active', true)
@@ -102,9 +102,9 @@ export async function upsertService(
     is_active: service.isActive,
   };
 
-  const { error } = isExistingUUID
-    ? await (supabase as any).from('services').update(updatePayload).eq('id', service.id)
-    : await (supabase as any).from('services').insert(insertPayload);
+  const { error } = isValidUUID(service.id)
+    ? await supabase.from('services').update(updatePayload).eq('id', service.id)
+    : await supabase.from('services').insert(insertPayload);
 
   if (error) return { success: false, error: error.message };
   return { success: true };
@@ -119,7 +119,7 @@ export async function deleteService(
   const targetId = isValidUUID(id) ? id : null;
   if (!targetId) return { success: true };
 
-  const { error } = await (supabase as any).from('services').delete().eq('id', targetId);
+  const { error } = await supabase.from('services').delete().eq('id', targetId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -136,7 +136,7 @@ export async function upsertPackage(
 
   if (!targetServiceId && pkg.serviceId) {
     const cleanSlug = pkg.serviceId.replace(/^s-/, '');
-    const { data: srv } = await (supabase as any)
+    const { data: srv } = await supabase
       .from('services')
       .select('id, slug')
       .or(`slug.eq.${cleanSlug},slug.eq.${pkg.serviceId}`)
@@ -149,7 +149,7 @@ export async function upsertPackage(
   }
 
   if (!targetServiceId) {
-    const { data: firstSrv } = await (supabase as any)
+    const { data: firstSrv } = await supabase
       .from('services')
       .select('id, slug')
       .limit(1);
@@ -165,7 +165,7 @@ export async function upsertPackage(
   }
 
   if (!serviceSlug && targetServiceId) {
-    const { data: srvData } = await (supabase as any)
+    const { data: srvData } = await supabase
       .from('services')
       .select('slug')
       .eq('id', targetServiceId)
@@ -184,7 +184,7 @@ export async function upsertPackage(
   let counter = 1;
 
   while (true) {
-    let checkQuery = (supabase as any)
+    let checkQuery = supabase
       .from('packages')
       .select('id')
       .eq('slug', finalSlug);
@@ -212,16 +212,14 @@ export async function upsertPackage(
     photographer_count: pkg.photographerCount ?? 1,
     edited_photos: pkg.editedPhotos ?? null,
     features: pkg.features,
-    is_popular: pkg.isPopular,
+    is_popular: pkg.isPopular ?? false,
     is_active: pkg.isActive ?? true,
     updated_at: new Date().toISOString(),
   };
 
-  const isExistingUUID = isValidUUID(pkg.id);
-
-  const { error } = isExistingUUID
-    ? await (supabase as any).from('packages').update(payload).eq('id', pkg.id)
-    : await (supabase as any).from('packages').insert(payload);
+  const { error } = isValidUUID(pkg.id)
+    ? await supabase.from('packages').update(payload).eq('id', pkg.id)
+    : await supabase.from('packages').insert(payload);
 
   if (error) return { success: false, error: error.message };
   return { success: true };
@@ -236,7 +234,7 @@ export async function deletePackage(
   const targetId = isValidUUID(id) ? id : null;
   if (!targetId) return { success: true };
 
-  const { error } = await (supabase as any).from('packages').delete().eq('id', targetId);
+  const { error } = await supabase.from('packages').delete().eq('id', targetId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
