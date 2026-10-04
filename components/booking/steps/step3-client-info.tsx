@@ -62,7 +62,7 @@ export function Step3ClientInfo({
     >
       <div>
         <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 3 dari 4</span>
-        <h3 className="font-serif-editorial text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
+        <h3 className="font-serif-editorial text-2xl sm:text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
           Isi Data Diri Pelanggan
         </h3>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light mt-1">

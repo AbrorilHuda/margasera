@@ -34,11 +34,11 @@ export function Step1ServicePackage({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-6 sm:gap-8"
     >
       <div>
         <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 1 dari 4</span>
-        <h3 className="font-serif-editorial text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
+        <h3 className="font-serif-editorial text-2xl sm:text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
           Pilih Layanan &amp; Paket Dokumentasi
         </h3>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light mt-1">
@@ -69,13 +69,13 @@ export function Step1ServicePackage({
       </div>
 
       <div className="flex flex-col gap-3 pt-2">
-        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 uppercase tracking-widest flex items-center justify-between">
+        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 uppercase tracking-widest flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <span className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#0066CC]" /> 2. Pilih Paket Dokumentasi{' '}
             {selectedService?.name ? `(${selectedService.name})` : ''}:
           </span>
           <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">
-            Durasi Paket Pilihan Anda akan Menentukan Jam Selesai
+            Durasi Paket Pilihan Anda Menentukan Jam Selesai
           </span>
         </label>
 
@@ -86,7 +86,7 @@ export function Step1ServicePackage({
                 key={pkg.id}
                 type="button"
                 onClick={() => onSelectPackage(pkg.id)}
-                className={`p-6 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                className={`p-4 sm:p-6 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   selectedPackageId === pkg.id
                     ? 'border-[#0066CC] bg-blue-50/50 dark:bg-[#0066CC]/15 shadow-[0_0_20px_rgba(0,102,204,0.2)]'
                     : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'

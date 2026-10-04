@@ -48,7 +48,7 @@ export function Step2DateTime({
     >
       <div>
         <span className="text-xs font-semibold tracking-widest uppercase text-[#0066CC]">Langkah 2 dari 4</span>
-        <h3 className="font-serif-editorial text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
+        <h3 className="font-serif-editorial text-2xl sm:text-3xl text-zinc-900 dark:text-zinc-100 font-light mt-1">
           Pilih Tanggal &amp; Tentukan Jam Acara
         </h3>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-light mt-1">
@@ -57,14 +57,14 @@ export function Step2DateTime({
         </p>
       </div>
 
-      <div className="p-3.5 bg-blue-50/80 dark:bg-[#0066CC]/15 border border-blue-200 dark:border-[#0066CC]/40 rounded-xl flex items-center justify-between text-xs text-blue-950 dark:text-zinc-200">
+      <div className="p-3.5 bg-blue-50/80 dark:bg-[#0066CC]/15 border border-blue-200 dark:border-[#0066CC]/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-950 dark:text-zinc-200">
         <span className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#0066CC]" />
+          <Sparkles className="w-4 h-4 text-[#0066CC] shrink-0" />
           <span>
             Paket Dipilih: <strong>{selectedPackage?.name}</strong>
           </span>
         </span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-amber-700 dark:text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30">
+        <span className="inline-flex items-center gap-1.5 font-mono text-amber-700 dark:text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30 shrink-0">
           <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>Durasi Paket: {selectedPackage?.duration}</span>
         </span>
@@ -146,11 +146,11 @@ export function Step2DateTime({
           </label>
 
           {selectedService?.slug === 'wedding' && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-300">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-amber-900 dark:text-amber-300">
               <span>
                 <strong>Kuota Wedding Khusus:</strong> Maksimal 2 reservasi per hari.
               </span>
-              <span className="font-mono text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-700 dark:text-amber-400 font-medium">
+              <span className="font-mono text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-700 dark:text-amber-400 font-medium shrink-0 self-start sm:self-auto">
                 Slot Tersedia
               </span>
             </div>

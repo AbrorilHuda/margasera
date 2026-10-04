@@ -6,13 +6,18 @@ import { useSearchParams } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import {
   Check,
+  CheckCircle2,
   ChevronRight,
   ChevronLeft,
   Camera,
+  Calendar,
+  User,
+  ShieldCheck,
   Sparkles,
   Loader2,
   RotateCcw,
 } from 'lucide-react';
+import { printDocument } from '@/lib/print';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { getAvailability } from '@/lib/actions/availability';
 import { createBooking } from '@/lib/actions/bookings';
@@ -46,6 +51,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   // Local draft restoration status
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const hasHydratedRef = useRef(false);
+  const wizardTopRef = useRef<HTMLDivElement>(null);
 
   // Data from Supabase
   const [services, setServices] = useState<Service[]>([]);
@@ -98,6 +104,23 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
       setDraftDocId(generateCryptoDocId());
     }
   }, [currentStep, draftDocId]);
+
+  // Auto-scroll to wizard top on step change for mobile UX
+  useEffect(() => {
+    if (hasHydratedRef.current && wizardTopRef.current && currentStep > 1) {
+      const rect = wizardTopRef.current.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > 250) {
+        wizardTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [currentStep]);
+
+  const handleStepClick = (targetStep: number) => {
+    // Only allow navigating back to completed steps to avoid bypassing validation
+    if (targetStep < currentStep && !isSubmitting) {
+      setCurrentStep(targetStep);
+    }
+  };
 
   // Reset form and purge draft from localStorage
   const handleResetDraft = () => {
@@ -475,7 +498,7 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
   // Document action handlers for Step 4
   const handlePrintDocument = () => {
-    window.print();
+    printDocument('booking-official-document', `Pra-Reservasi Margasera - ${draftDocId || 'DRAFT'}`);
   };
 
   const handleDownloadDocument = () => {
@@ -699,10 +722,34 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   };
 
   const steps = [
-    { number: 1, label: 'Layanan & Paket' },
-    { number: 2, label: 'Tanggal & Jam' },
-    { number: 3, label: 'Data Diri' },
-    { number: 4, label: 'Ringkasan' },
+    {
+      number: 1,
+      label: 'Layanan & Paket',
+      shortLabel: 'Paket',
+      description: 'Pilih layanan & paket',
+      icon: Camera,
+    },
+    {
+      number: 2,
+      label: 'Tanggal & Jam',
+      shortLabel: 'Jadwal',
+      description: 'Atur tanggal & waktu sesi',
+      icon: Calendar,
+    },
+    {
+      number: 3,
+      label: 'Data Diri',
+      shortLabel: 'Kontak',
+      description: 'Data klien & lokasi acara',
+      icon: User,
+    },
+    {
+      number: 4,
+      label: 'Ringkasan',
+      shortLabel: 'Review',
+      description: 'Review draf pra-reservasi',
+      icon: ShieldCheck,
+    },
   ];
 
   if (isDataLoading) {
@@ -743,48 +790,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-12 px-6">
-      {/* Print isolation stylesheet */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #booking-official-document,
-          #booking-official-document * {
-            visibility: visible;
-          }
-          #booking-official-document {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 24px !important;
-            box-shadow: none !important;
-            border: 1px solid #cbd5e1 !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
+    <div className="w-full max-w-4xl mx-auto py-5 sm:py-12 px-3 sm:px-6">
+      <div ref={wizardTopRef} className="scroll-mt-4" />
 
       {/* Restored Draft Notice Banner */}
       {hasRestoredDraft && currentStep <= 4 && (
-        <div className="mb-8 p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-[#0066CC]/30 dark:border-blue-900/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#0066CC] dark:text-blue-300 no-print animate-in fade-in duration-300">
+        <div className="mb-4 sm:mb-8 p-3 sm:p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-[#0066CC]/30 dark:border-blue-900/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 text-xs text-[#0066CC] dark:text-blue-300 no-print animate-in fade-in duration-300">
           <div className="flex items-center gap-2.5">
             <Sparkles className="w-4 h-4 shrink-0 text-[#0066CC] dark:text-blue-400" />
             <span>
-              <strong>Draf Tersimpan:</strong> Data formulir pemesanan Anda dari sesi sebelumnya telah dipulihkan otomatis.
+              <strong>Draf Tersimpan:</strong> Data formulir pemesanan dari sesi sebelumnya telah dipulihkan.
             </span>
           </div>
           <button
             type="button"
             onClick={handleResetDraft}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-800 hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 rounded-lg text-[11px] font-medium transition-all shrink-0 cursor-pointer shadow-sm text-zinc-700 dark:text-zinc-300"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-800 hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 rounded-lg text-[11px] font-medium transition-all shrink-0 cursor-pointer shadow-sm text-zinc-700 dark:text-zinc-300"
           >
             <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
             <span>Mulai Baru</span>
@@ -794,46 +815,163 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
       {/* Wizard Progress Stepper */}
       {currentStep <= 4 && (
-        <div className="mb-12 no-print">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-zinc-200 dark:bg-zinc-800 -translate-y-1/2 z-0" />
-            <div
-              className="absolute top-1/2 left-0 h-[2px] bg-[#0066CC] -translate-y-1/2 z-0 transition-all duration-500"
-              style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-            />
+        <div className="mb-5 sm:mb-12 no-print">
+          {/* Mobile Stepper Card (App-like experience) */}
+          <div className="sm:hidden bg-white/95 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200/90 dark:border-zinc-800/90 rounded-2xl p-3.5 shadow-sm">
+            {/* Header: Badge & Status */}
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-[#0066CC]/20 border border-blue-200/80 dark:border-[#0066CC]/40 text-[11px] font-semibold text-[#0066CC] dark:text-blue-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC] animate-pulse" />
+                <span>Langkah {currentStep} dari 4</span>
+              </div>
+              <span className="text-[11px] font-mono font-medium text-zinc-500 dark:text-zinc-400">
+                {Math.round((currentStep / 4) * 100)}% Selesai
+              </span>
+            </div>
 
-            {steps.map((st) => {
-              const isCompleted = currentStep > st.number;
-              const isCurrent = currentStep === st.number;
-              return (
-                <div key={st.number} className="relative z-10 flex flex-col items-center gap-2">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
+            {/* Active Step Highlight Banner */}
+            <div className="flex items-center gap-2.5 mb-3 bg-zinc-50/70 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/60">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0066CC] to-[#0052A3] text-white flex items-center justify-center shrink-0 shadow-sm">
+                {React.createElement(steps[currentStep - 1]?.icon || Camera, { className: 'w-4 h-4' })}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                  {steps[currentStep - 1]?.label}
+                </h4>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                  {currentStep < 4
+                    ? `Berikutnya: ${steps[currentStep]?.label}`
+                    : 'Tahap konfirmasi pra-reservasi'}
+                </p>
+              </div>
+            </div>
+
+            {/* Segmented Progress Track */}
+            <div className="grid grid-cols-4 gap-1.5 mb-2.5">
+              {steps.map((st) => {
+                const isCompleted = currentStep > st.number;
+                const isCurrent = currentStep === st.number;
+                return (
+                  <button
+                    key={st.number}
+                    type="button"
+                    disabled={!isCompleted}
+                    onClick={() => handleStepClick(st.number)}
+                    title={isCompleted ? `Kembali ke ${st.label}` : st.label}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
                       isCompleted
-                        ? 'bg-[#0066CC] text-white shadow-sm'
+                        ? 'bg-[#0066CC] cursor-pointer hover:opacity-85 active:scale-95'
                         : isCurrent
-                        ? 'bg-white dark:bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.3)] font-bold'
-                        : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500'
+                        ? 'bg-[#0066CC] ring-2 ring-[#0066CC]/25 shadow-sm'
+                        : 'bg-zinc-200 dark:bg-zinc-800 cursor-default'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Step Pills Quick Navigation */}
+            <div className="grid grid-cols-4 gap-1 pt-0.5">
+              {steps.map((st) => {
+                const isCompleted = currentStep > st.number;
+                const isCurrent = currentStep === st.number;
+                const IconComponent = st.icon;
+
+                return (
+                  <button
+                    key={st.number}
+                    type="button"
+                    disabled={!isCompleted && !isCurrent}
+                    onClick={() => handleStepClick(st.number)}
+                    className={`py-1 px-1 rounded-lg text-center flex flex-col items-center gap-0.5 transition-all ${
+                      isCompleted
+                        ? 'bg-blue-50/80 dark:bg-blue-950/40 text-[#0066CC] dark:text-blue-300 cursor-pointer active:scale-95 hover:bg-blue-100/80'
+                        : isCurrent
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-sm'
+                        : 'text-zinc-400 dark:text-zinc-600 cursor-default opacity-50'
                     }`}
                   >
-                    {isCompleted ? <Check className="w-4 h-4" /> : st.number}
-                  </div>
-                  <span
-                    className={`text-[11px] font-semibold tracking-wider uppercase hidden sm:inline ${
-                      isCurrent ? 'text-[#0066CC]' : 'text-zinc-500 dark:text-zinc-500'
+                    <div className="flex items-center justify-center">
+                      {isCompleted ? (
+                        <Check className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <IconComponent className="w-3 h-3 shrink-0" />
+                      )}
+                    </div>
+                    <span className="text-[10px] leading-tight font-medium truncate max-w-full">
+                      {st.shortLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop Stepper (Timeline with interactive nodes) */}
+          <div className="hidden sm:block">
+            <div className="flex items-center justify-between relative">
+              <div className="absolute top-5 left-0 right-0 h-[2px] bg-zinc-200 dark:bg-zinc-800 -translate-y-1/2 z-0" />
+              <div
+                className="absolute top-5 left-0 h-[2px] bg-[#0066CC] -translate-y-1/2 z-0 transition-all duration-500"
+                style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+              />
+
+              {steps.map((st) => {
+                const isCompleted = currentStep > st.number;
+                const isCurrent = currentStep === st.number;
+                const IconComponent = st.icon;
+
+                return (
+                  <button
+                    key={st.number}
+                    type="button"
+                    disabled={!isCompleted}
+                    onClick={() => handleStepClick(st.number)}
+                    className={`relative z-10 flex flex-col items-center gap-2 group transition-all text-center ${
+                      isCompleted ? 'cursor-pointer' : 'cursor-default'
                     }`}
                   >
-                    {st.label}
-                  </span>
-                </div>
-              );
-            })}
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-[#0066CC] text-white shadow-sm group-hover:scale-110 group-hover:bg-[#0052A3]'
+                          : isCurrent
+                          ? 'bg-white dark:bg-zinc-950 border-2 border-[#0066CC] text-[#0066CC] shadow-[0_0_15px_rgba(0,102,204,0.3)] font-bold scale-105'
+                          : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <IconComponent className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <span
+                        className={`text-[11px] font-semibold tracking-wider uppercase block ${
+                          isCurrent
+                            ? 'text-[#0066CC]'
+                            : isCompleted
+                            ? 'text-zinc-700 dark:text-zinc-300 group-hover:text-[#0066CC]'
+                            : 'text-zinc-400 dark:text-zinc-500'
+                        }`}
+                      >
+                        {st.label}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-light hidden md:block">
+                        {st.description}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
       {/* Step Content Panels */}
-      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-10 md:p-12 shadow-xl dark:shadow-2xl rounded-2xl transition-colors">
+      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-8 md:p-12 shadow-xl dark:shadow-2xl rounded-2xl sm:rounded-3xl transition-colors">
         <AnimatePresence mode="wait">
           {/* STEP 1: SELECT SERVICE & PACKAGE */}
           {currentStep === 1 && (
@@ -925,29 +1063,17 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
 
         {/* Wizard Controls Footer */}
         {currentStep < 5 && (
-          <div className="mt-10 pt-6 border-t border-zinc-200 dark:border-zinc-900 flex items-center justify-between no-print">
+          <div className="mt-8 sm:mt-10 pt-4 sm:pt-6 border-t border-zinc-200 dark:border-zinc-900 flex items-center justify-between gap-3 no-print">
             {currentStep > 1 ? (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handlePrevStep}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold tracking-widest uppercase transition-colors rounded-xl cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Sebelumnya</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResetDraft}
-                  disabled={isSubmitting}
-                  title="Atur ulang formulir ke awal"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-medium transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Reset</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handlePrevStep}
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold tracking-wider uppercase transition-all rounded-xl cursor-pointer active:scale-[0.98] min-h-[44px]"
+              >
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+                <span>Sebelumnya</span>
+              </button>
             ) : (
               <div />
             )}
@@ -956,22 +1082,22 @@ export function BookingWizard({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
               type="button"
               onClick={handleNextStep}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0066CC] text-white disabled:opacity-60 disabled:cursor-not-allowed text-xs font-semibold tracking-widest uppercase hover:bg-[#0052A3] transition-colors shadow-[0_0_15px_rgba(0,102,204,0.3)] cursor-pointer rounded-xl"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-5 sm:px-6 py-2.5 bg-[#0066CC] text-white disabled:opacity-60 disabled:cursor-not-allowed text-xs font-semibold tracking-wider uppercase hover:bg-[#0052A3] transition-all shadow-[0_0_15px_rgba(0,102,204,0.3)] cursor-pointer rounded-xl active:scale-[0.98] min-h-[44px]"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   <span>Memproses...</span>
                 </>
               ) : currentStep === 4 ? (
                 <>
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                   <span>Kirim Pemesanan</span>
                 </>
               ) : (
                 <>
                   <span>Selanjutnya</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 shrink-0" />
                 </>
               )}
             </button>

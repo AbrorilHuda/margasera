@@ -622,18 +622,34 @@ html.light .popular-badge {
   #printable-invoice,
   #printable-rekap,
   #margasera-calendar-schedule-doc,
-  #margasera-finance-report-doc {
+  #margasera-finance-report-doc,
+  #booking-official-document,
+  #margasera-print-mount #margasera-print-clone {
     display: block !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
   }
 
-  /* Spasi vertikal antar seksi saat mode block */
+  #booking-official-document,
+  #margasera-print-mount #margasera-print-clone {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Spasi vertikal antar seksi saat mode print */
   #printable-rekap > div,
   #printable-invoice > div,
   #margasera-calendar-schedule-doc > div,
-  #margasera-finance-report-doc > div {
-    margin-bottom: 1.25rem !important;
+  #margasera-finance-report-doc > div,
+  #booking-official-document > div,
+  #margasera-print-mount #margasera-print-clone > div {
+    margin-bottom: 0.85rem !important;
+  }
+
+  #booking-official-document > div:last-child,
+  #margasera-print-mount #margasera-print-clone > div:last-child {
+    margin-bottom: 0 !important;
   }
 
   /* Hide UI chrome */
