@@ -23,7 +23,7 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
     const supabase = createAdminClient();
 
     // 1. Simpan ke tabel notifications
-    await supabase.from('notifications').insert({
+    const { error: insertErr } = await supabase.from('notifications').insert({
       type: payload.type,
       title: payload.title,
       body: payload.body,
@@ -32,10 +32,19 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
       is_read: false,
     });
 
+    if (insertErr) {
+      console.error('[notification] Gagal menyimpan notifikasi ke DB:', insertErr.message);
+    }
+
     // 2. Ambil semua FCM tokens yang aktif
-    const { data: tokens } = await supabase
+    const { data: tokens, error: tokenFetchErr } = await supabase
       .from('fcm_tokens')
       .select('token');
+
+    if (tokenFetchErr) {
+      console.error('[notification] Gagal mengambil fcm_tokens:', tokenFetchErr.message);
+      return;
+    }
 
     if (!tokens || tokens.length === 0) return;
 
@@ -45,7 +54,7 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
 
     if (tokenList.length === 0) return;
 
-    await messaging.sendEachForMulticast({
+    const response = await messaging.sendEachForMulticast({
       tokens: tokenList,
       // Data-only message: tidak ada field 'notification' agar FCM tidak
       // otomatis menampilkan notifikasi. Hanya onBackgroundMessage di SW
@@ -63,6 +72,18 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
         bookingId: payload.bookingId || '',
       },
     });
+
+    // Bersihkan token FCM kedaluwarsa secara otomatis
+    const invalidTokens: string[] = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+        invalidTokens.push(tokenList[idx]);
+      }
+    });
+
+    if (invalidTokens.length > 0) {
+      await supabase.from('fcm_tokens').delete().in('token', invalidTokens);
+    }
   } catch (err: any) {
     // Notifikasi gagal tidak boleh crash proses utama
     console.error('[notification] Error sending notification:', err?.message || err);

@@ -59,13 +59,15 @@ export async function submitClientTestimonial(payload: SubmitTestimonialPayload)
       console.warn('Supabase testimonials insert notice:', error.message);
     }
 
-    // Kirim notifikasi ke admin (fire-and-forget)
-    sendAdminNotification({
+    // Kirim notifikasi ke admin dan tunggu hingga tersimpan
+    await sendAdminNotification({
       type: 'testimonial',
       title: '⭐ Testimoni Baru',
       body: `${payload.name} mengirim testimoni untuk ${payload.eventType}`,
       url: '/admin/dashboard/testimonials',
-    }).catch(() => {});
+    });
+
+    revalidatePath('/admin/dashboard/testimonials');
 
     return {
       success: true,

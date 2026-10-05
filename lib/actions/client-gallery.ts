@@ -604,14 +604,14 @@ export async function submitClientGallerySelections(
       return { success: false, error: insErr.message };
     }
 
-    // Kirim notifikasi ke admin (fire-and-forget)
-    sendAdminNotification({
+    // Kirim notifikasi ke admin dan tunggu hingga tersimpan
+    await sendAdminNotification({
       type: 'gallery_selection',
       title: '🖼️ Klien Pilih Foto',
       body: `${booking.customer_name} telah memilih ${validFileIds.length} foto dari galeri mereka`,
       bookingId: booking.id,
       url: '/admin/dashboard/bookings',
-    }).catch(() => { });
+    });
 
     return { success: true };
   } catch (err: any) {

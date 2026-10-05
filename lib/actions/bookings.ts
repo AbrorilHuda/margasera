@@ -212,13 +212,13 @@ export async function createBooking(
   }
   if (error) return { success: false, error: error.message };
 
-  // Kirim notifikasi ke admin (fire-and-forget, tidak block response)
-  sendAdminNotification({
+  // Kirim notifikasi ke admin dan tunggu hingga tersimpan
+  await sendAdminNotification({
     type: 'booking',
     title: '📅 Booking Baru Masuk',
     body: `${formData.customerName} memesan ${formData.serviceName || formData.packageName || 'sesi foto'} pada ${formData.bookingDate}`,
     url: '/admin/dashboard/bookings',
-  }).catch(() => { });
+  });
 
   return { success: true, bookingCode };
 }
