@@ -26,6 +26,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { signOutAdmin } from '@/lib/actions/admin';
+import { clearAllLocalOfflineData } from '@/lib/offline/db';
 import { getStudioSettings } from '@/lib/actions/settings';
 import { getServices, getPackages } from '@/lib/actions/services';
 import { cacheMasterData } from '@/lib/offline-queue';
@@ -40,15 +41,15 @@ import { OfflineWhatsNewModal } from '@/app/admin/_components/OfflineWhatsNewMod
 import { NotificationBell } from '@/components/admin/NotificationBell';
 
 const NAV_ITEMS = [
-  { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/admin/dashboard/bookings', label: 'Booking & Orders', icon: Calendar },
-  { href: '/admin/dashboard/finance', label: 'Keuangan & Kas', icon: Wallet },
-  { href: '/admin/dashboard/testimonials', label: 'Testimonials', icon: MessageSquareQuote },
-  { href: '/admin/dashboard/portfolio', label: 'Portfolio', icon: Camera },
-  { href: '/admin/dashboard/services', label: 'Services', icon: Layers },
-  { href: '/admin/dashboard/pricing', label: 'Packages & Pricing', icon: Tag },
-  { href: '/admin/dashboard/calendar', label: 'Availability Calendar', icon: Clock },
-  { href: '/admin/dashboard/settings', label: 'Studio Settings', icon: Settings },
+  { href: '/admin/dashboard', label: 'Overview', shortLabel: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/dashboard/bookings', label: 'Booking & Orders', shortLabel: 'Booking', icon: Calendar },
+  { href: '/admin/dashboard/finance', label: 'Keuangan & Kas', shortLabel: 'Keuangan', icon: Wallet },
+  { href: '/admin/dashboard/testimonials', label: 'Testimonials', shortLabel: 'Testimoni', icon: MessageSquareQuote },
+  { href: '/admin/dashboard/portfolio', label: 'Portfolio', shortLabel: 'Portfolio', icon: Camera },
+  { href: '/admin/dashboard/services', label: 'Services', shortLabel: 'Layanan', icon: Layers },
+  { href: '/admin/dashboard/pricing', label: 'Packages & Pricing', shortLabel: 'Paket', icon: Tag },
+  { href: '/admin/dashboard/calendar', label: 'Availability Calendar', shortLabel: 'Kalender', icon: Clock },
+  { href: '/admin/dashboard/settings', label: 'Studio Settings', shortLabel: 'Setting', icon: Settings },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -156,6 +157,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       variant: 'danger',
       onConfirm: async () => {
         setIsLoggingOut(true);
+        try {
+          await clearAllLocalOfflineData();
+        } catch {
+          // Abaikan error lokal agar proses logout tetap berjalan
+        }
         await signOutAdmin();
       },
     });
@@ -289,21 +295,24 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                     <span className="tracking-wide truncate">{item.label}</span>
                   </Link>
 
-                  {/* Collapsed item: visible only on desktop when collapsed */}
+                  {/* Collapsed item: visible only on desktop/tablet when collapsed */}
                   {isCollapsed && (
                     <Link
                       href={item.href}
                       title={item.label}
                       onClick={() => setSidebarOpen(false)}
-                      className={`hidden md:flex group relative items-center justify-center w-11 h-11 mx-auto rounded-xl text-xs font-medium transition-all duration-200 active:scale-95 ${
+                      className={`hidden md:flex flex-col group relative items-center justify-center w-[60px] py-2 px-0.5 mx-auto rounded-xl text-xs font-medium transition-all duration-200 active:scale-95 ${
                         isActive
                           ? 'bg-[#0066CC] text-white font-semibold shadow-md shadow-[#0066CC]/30 border border-[#0066CC]/50'
                           : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`} />
-                      {/* Floating Tooltip */}
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 flex items-center gap-1.5 border border-zinc-700/50 dark:border-zinc-300/50">
+                      <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`} />
+                      <span className={`text-[9px] font-mono leading-tight tracking-tight mt-1 truncate max-w-[56px] text-center ${isActive ? 'text-white font-semibold' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                        {item.shortLabel || item.label}
+                      </span>
+                      {/* Floating Tooltip for Desktop hover */}
+                      <div className="hidden lg:flex absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 translate-x-1 group-hover:translate-x-0 z-50 items-center gap-1.5 border border-zinc-700/50 dark:border-zinc-300/50">
                         <span>{item.label}</span>
                         {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />}
                       </div>

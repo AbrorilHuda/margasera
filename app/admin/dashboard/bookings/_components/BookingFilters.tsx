@@ -29,6 +29,8 @@ interface BookingFiltersProps {
   pageSize: number;
   filteredCount: number;
   availableMonths: string[];
+  startDate?: string;
+  endDate?: string;
   // Setters
   setBookingStatusFilter: (v: string) => void;
   setMonthFilter: (v: string) => void;
@@ -36,6 +38,8 @@ interface BookingFiltersProps {
   setBookingSort: (v: 'newest' | 'oldest' | 'upcoming_event') => void;
   setBookingSearch: (v: string) => void;
   setPageSize: (v: number) => void;
+  setStartDate?: (v: string) => void;
+  setEndDate?: (v: string) => void;
   // Actions
   onOpenPdfRekap: () => void;
   onOpenAddBooking: () => void;
@@ -61,12 +65,16 @@ export function BookingFilters({
   pageSize,
   filteredCount,
   availableMonths,
+  startDate,
+  endDate,
   setBookingStatusFilter,
   setMonthFilter,
   setServiceFilter,
   setBookingSort,
   setBookingSearch,
   setPageSize,
+  setStartDate,
+  setEndDate,
   onOpenPdfRekap,
   onOpenAddBooking,
   formatMonthLabel,
@@ -93,14 +101,17 @@ export function BookingFilters({
   const activeSecondaryFilterCount = React.useMemo(() => {
     let count = 0;
     if (monthFilter !== 'all') count++;
+    if (startDate || endDate) count++;
     if (serviceFilter !== 'all') count++;
     if (bookingSort !== 'newest') count++;
     if (pageSize !== 10) count++;
     return count;
-  }, [monthFilter, serviceFilter, bookingSort, pageSize]);
+  }, [monthFilter, startDate, endDate, serviceFilter, bookingSort, pageSize]);
 
   const handleResetSecondaryFilters = () => {
     setMonthFilter('all');
+    if (setStartDate) setStartDate('');
+    if (setEndDate) setEndDate('');
     setServiceFilter('all');
     setBookingSort('newest');
     setPageSize(10);
@@ -423,6 +434,53 @@ export function BookingFilters({
             )}
           </div>
         </div>
+
+        {/* Custom Date Range Row (Desktop) */}
+        {(setStartDate && setEndDate) && (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] font-medium flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-[#0066CC]" /> Rentang Tanggal Acara:
+              </span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={startDate || ''}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (monthFilter !== 'all') setMonthFilter('all');
+                  }}
+                  className="px-2.5 py-1 text-xs bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
+                  title="Tanggal Mulai"
+                />
+                <span className="text-zinc-400 font-mono">–</span>
+                <input
+                  type="date"
+                  value={endDate || ''}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    if (monthFilter !== 'all') setMonthFilter('all');
+                  }}
+                  className="px-2.5 py-1 text-xs bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
+                  title="Tanggal Selesai"
+                />
+              </div>
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="p-1 text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer"
+                  title="Hapus filter rentang tanggal"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Filter Bottom Sheet Modal */}
@@ -440,6 +498,10 @@ export function BookingFilters({
         setServiceFilter={setServiceFilter}
         setBookingSort={setBookingSort}
         setPageSize={setPageSize}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
         onResetFilters={handleResetSecondaryFilters}
       />
     </div>

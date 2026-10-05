@@ -5,6 +5,7 @@ import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
 import { sendAdminNotification } from '@/lib/notifications';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export interface SubmitTestimonialPayload {
   name: string;
@@ -29,6 +30,11 @@ export interface AdminTestimonialItem {
 }
 
 export async function submitClientTestimonial(payload: SubmitTestimonialPayload) {
+  // Rate limiting spam testimoni
+  if (!(await checkRateLimit('testimonial-submit', 5, 60_000))) {
+    return { success: false, error: 'Terlalu banyak pengiriman ulasan. Silakan tunggu 1 menit.' };
+  }
+
   try {
     if (!payload.name?.trim() || !payload.message?.trim() || !payload.eventType) {
       return { success: false, error: 'Nama, jenis layanan, dan pesan ulasan wajib diisi.' };

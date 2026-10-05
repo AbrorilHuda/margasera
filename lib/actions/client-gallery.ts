@@ -10,6 +10,7 @@ import {
 import { fetchStudioSettings } from '@/lib/data/settings';
 import type { ClientGallerySession, ClientGalleryPhoto } from '@/lib/types';
 import { sendAdminNotification } from '@/lib/notifications';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * Hapus link Drive & semua foto cache + pilihan klien untuk sebuah booking.
@@ -490,6 +491,10 @@ export async function submitClientGallerySelections(
   selectedFileIds: string[],
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await checkRateLimit('gallery-selection-submit', 10, 60_000))) {
+    return { success: false, error: 'Terlalu banyak permintaan. Silakan tunggu 1 menit.' };
+  }
+
   try {
     const supabase = createAdminClient();
 

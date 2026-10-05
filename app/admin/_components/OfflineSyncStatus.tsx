@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { WifiOff, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import {
   getOfflineQueue,
   syncOfflineQueue,
@@ -20,6 +20,7 @@ export function OfflineSyncStatus() {
   const [isOnline, setIsOnline] = useState(true);
   const [queue, setQueue] = useState<OfflineBookingItem[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [justSyncedCount, setJustSyncedCount] = useState<number | null>(null);
 
   // 1. Refresh status antrean lokal dari IndexedDB & localStorage
   const updateQueueState = useCallback(async () => {
@@ -67,6 +68,10 @@ export function OfflineSyncStatus() {
     try {
       const res = await syncOfflineQueue();
       if (res.successCount > 0) {
+        setJustSyncedCount(res.successCount);
+        setTimeout(() => {
+          setJustSyncedCount(null);
+        }, 4000);
         toast.success(`Berhasil menyinkronkan ${res.successCount} data offline ke server.`);
       }
       if (res.failedCount > 0) {
@@ -196,6 +201,15 @@ export function OfflineSyncStatus() {
                 : `${queueCount} Antrean Sync`}
           </span>
         </button>
+      ) : justSyncedCount !== null ? (
+        /* Feedback Visual Sukses Sinkronisasi */
+        <div
+          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-400 dark:border-emerald-700 shadow-xs animate-in fade-in zoom-in-95 duration-200 shrink-0"
+          title={`${justSyncedCount} perubahan lokal berhasil disinkronkan ke server`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{justSyncedCount} Data Tersinkron!</span>
+        </div>
       ) : (
         /* Jika Online Normal & Bersih (Tampil di Desktop & Mobile) */
         <div

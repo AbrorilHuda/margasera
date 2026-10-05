@@ -465,3 +465,24 @@ export async function deleteLocalExpense(id: string): Promise<void> {
   }
 }
 
+/**
+ * Membersihkan seluruh data offline sensitif (keuangan, kontak klien, dll) dari IndexedDB saat logout.
+ * Mencegah kebocoran data jika perangkat admin digunakan bersama.
+ */
+export async function clearAllLocalOfflineData(): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  try {
+    const tx = db.transaction(['bookings', 'expenses', 'sync_queue', 'master_data'], 'readwrite');
+    await Promise.all([
+      tx.objectStore('bookings').clear(),
+      tx.objectStore('expenses').clear(),
+      tx.objectStore('sync_queue').clear(),
+      tx.objectStore('master_data').clear(),
+    ]);
+    await tx.done;
+  } catch (err) {
+    console.warn('[IndexedDB] Gagal membersihkan offline data saat logout:', err);
+  }
+}
+

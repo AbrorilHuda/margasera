@@ -60,6 +60,8 @@ export default function BookingsPage() {
   // Filter & Pagination States
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [bookingSort, setBookingSort] = useState<'newest' | 'oldest' | 'upcoming_event'>('newest');
   const [bookingSearch, setBookingSearch] = useState<string>('');
@@ -69,7 +71,7 @@ export default function BookingsPage() {
   // Auto Reset to page 1 whenever any filter or limit changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [bookingStatusFilter, monthFilter, serviceFilter, bookingSort, bookingSearch, pageSize]);
+  }, [bookingStatusFilter, monthFilter, startDate, endDate, serviceFilter, bookingSort, bookingSearch, pageSize]);
 
   // Modal States
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
@@ -184,7 +186,17 @@ export default function BookingsPage() {
     return bookings
       .filter((b) => {
         const matchStatus = bookingStatusFilter === 'all' || b.status === bookingStatusFilter;
-        const matchMonth = monthFilter === 'all' || (b.bookingDate && b.bookingDate.startsWith(monthFilter));
+        let matchDate = true;
+        if (startDate && b.bookingDate) {
+          matchDate = matchDate && b.bookingDate >= startDate;
+        }
+        if (endDate && b.bookingDate) {
+          matchDate = matchDate && b.bookingDate <= endDate;
+        }
+        if (!startDate && !endDate && monthFilter !== 'all') {
+          matchDate = Boolean(b.bookingDate && b.bookingDate.startsWith(monthFilter));
+        }
+
         const matchService = serviceFilter === 'all' || b.serviceId === serviceFilter;
         const query = bookingSearch.toLowerCase();
         const matchSearch =
@@ -192,7 +204,7 @@ export default function BookingsPage() {
           b.customerName.toLowerCase().includes(query) ||
           b.whatsapp.includes(bookingSearch) ||
           (b.location && b.location.toLowerCase().includes(query));
-        return matchStatus && matchMonth && matchService && matchSearch;
+        return matchStatus && matchDate && matchService && matchSearch;
       })
       .sort((a, b) => {
         if (bookingSort === 'newest')
@@ -203,7 +215,7 @@ export default function BookingsPage() {
           return new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime();
         return 0;
       });
-  }, [bookings, bookingStatusFilter, monthFilter, serviceFilter, bookingSearch, bookingSort]);
+  }, [bookings, bookingStatusFilter, monthFilter, startDate, endDate, serviceFilter, bookingSearch, bookingSort]);
 
   // Pagination Slice
   const totalFiltered = filteredBookings.length;
@@ -240,6 +252,8 @@ export default function BookingsPage() {
   const resetFilters = () => {
     setBookingStatusFilter('all');
     setMonthFilter('all');
+    setStartDate('');
+    setEndDate('');
     setServiceFilter('all');
     setBookingSearch('');
   };
@@ -353,10 +367,16 @@ export default function BookingsPage() {
   };
 
   const handleDeleteBooking = (id: string, code: string) => {
+    const targetBooking = bookings.find((b) => b.id === id);
+    const isCancelled = targetBooking?.status === 'cancelled';
+
     confirmModal({
-      title: `Hapus Pesanan ${code}?`,
-      message: `Apakah Anda yakin ingin menghapus data pemesanan "${code}" secara permanen? Data yang terhapus tidak dapat dikembalikan.`,
+      title: `Hapus Permanen Pesanan ${code}?`,
+      message: isCancelled
+        ? `Pesanan "${code}" sudah berstatus Dibatalkan. Apakah Anda yakin ingin menghapus data ini secara permanen dari basis data? Data yang terhapus tidak dapat dipulihkan.`
+        : `PERINGATAN: Pesanan "${code}" saat ini belum dibatalkan. Menghapus data langsung akan menghilangkan rekam jejak keuangan dan jadwal klien. Jika hanya ingin membatalkan, disarankan ubah status menjadi "Cancelled" (Arsip). Tetap hapus permanen?`,
       confirmText: 'Ya, Hapus Permanen',
+      cancelText: 'Batal',
       variant: 'danger',
       onConfirm: async () => {
         const previousBookings = [...bookings];
@@ -484,6 +504,8 @@ export default function BookingsPage() {
         services={services}
         bookingStatusFilter={bookingStatusFilter}
         monthFilter={monthFilter}
+        startDate={startDate}
+        endDate={endDate}
         serviceFilter={serviceFilter}
         bookingSort={bookingSort}
         bookingSearch={bookingSearch}
@@ -492,6 +514,8 @@ export default function BookingsPage() {
         availableMonths={availableMonths}
         setBookingStatusFilter={setBookingStatusFilter}
         setMonthFilter={setMonthFilter}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
         setServiceFilter={setServiceFilter}
         setBookingSort={setBookingSort}
         setBookingSearch={setBookingSearch}
@@ -512,6 +536,8 @@ export default function BookingsPage() {
         startIndex={totalFiltered === 0 ? 0 : startIndex + 1}
         endIndex={endIndex}
         monthFilter={monthFilter}
+        startDate={startDate}
+        endDate={endDate}
         bookingSearch={bookingSearch}
         bookingStatusFilter={bookingStatusFilter}
         serviceFilter={serviceFilter}

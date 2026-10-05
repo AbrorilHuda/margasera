@@ -21,6 +21,8 @@ import {
   ArrowUpRight,
   Sparkles,
   FileSpreadsheet,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 import { getAllExpenses, deleteExpense } from '@/lib/actions/finance';
 import { getAllBookings } from '@/lib/actions/bookings';
@@ -75,10 +77,31 @@ export default function FinanceDashboardPage() {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     return `${yy}-${mm}`;
   });
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const hasActiveFilter =
+    monthFilter !== 'all' ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
+    categoryFilter !== 'all' ||
+    typeFilter !== 'all' ||
+    projectFilter !== 'all' ||
+    Boolean(searchQuery.trim());
+
+  const resetFilters = () => {
+    setMonthFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setCategoryFilter('all');
+    setTypeFilter('all');
+    setProjectFilter('all');
+    setSearchQuery('');
+  };
 
   // Modals
   const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -160,14 +183,19 @@ export default function FinanceDashboardPage() {
     return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date);
   };
 
-  // Filter Bookings sesuai Bulan yang Dipilih (untuk menghitung pemasukan riil)
+  // Filter Bookings sesuai Rentang Tanggal / Bulan yang Dipilih (untuk menghitung pemasukan riil)
   const periodBookings = useMemo(() => {
     return bookings.filter((b) => {
       if (b.status === 'cancelled') return false;
-      if (monthFilter === 'all') return true;
-      return b.bookingDate && b.bookingDate.startsWith(monthFilter);
+      if (!b.bookingDate) return false;
+      if (startDate && b.bookingDate < startDate) return false;
+      if (endDate && b.bookingDate > endDate) return false;
+      if (!startDate && !endDate && monthFilter !== 'all') {
+        return b.bookingDate.startsWith(monthFilter);
+      }
+      return true;
     });
-  }, [bookings, monthFilter]);
+  }, [bookings, monthFilter, startDate, endDate]);
 
   // Pemasukan dari Booking pada Periode Ini (DP + Pelunasan riil)
   const bookingRevenue = useMemo(() => {
@@ -182,8 +210,10 @@ export default function FinanceDashboardPage() {
   // Filter Expenses sesuai kriteria
   const filteredExpenses = useMemo(() => {
     return expenses.filter((exp) => {
-      // 1. Filter Bulan
-      if (monthFilter !== 'all' && (!exp.date || !exp.date.startsWith(monthFilter))) {
+      // 1. Filter Rentang Tanggal / Bulan
+      if (startDate && (!exp.date || exp.date < startDate)) return false;
+      if (endDate && (!exp.date || exp.date > endDate)) return false;
+      if (!startDate && !endDate && monthFilter !== 'all' && (!exp.date || !exp.date.startsWith(monthFilter))) {
         return false;
       }
       // 2. Filter Tipe
@@ -213,7 +243,7 @@ export default function FinanceDashboardPage() {
 
       return true;
     });
-  }, [expenses, monthFilter, typeFilter, categoryFilter, projectFilter, searchQuery]);
+  }, [expenses, monthFilter, startDate, endDate, typeFilter, categoryFilter, projectFilter, searchQuery]);
 
   // Total Pengeluaran pada Periode yang Dipilih
   const totalExpense = useMemo(() => {
@@ -442,7 +472,11 @@ export default function FinanceDashboardPage() {
             <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <select
               value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
+              onChange={(e) => {
+                setMonthFilter(e.target.value);
+                setStartDate('');
+                setEndDate('');
+              }}
               className="w-full pl-9 pr-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-hidden focus:border-[#0066CC] cursor-pointer"
             >
               <option value="all">Semua Periode</option>
@@ -485,6 +519,60 @@ export default function FinanceDashboardPage() {
             </select>
           </div>
         </div>
+
+        {/* Custom Date Range & Reset Row */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] font-medium flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#0066CC]" /> Rentang Tanggal Kustom:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (monthFilter !== 'all') setMonthFilter('all');
+                }}
+                className="px-2.5 py-1 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-lg focus:outline-hidden focus:border-[#0066CC] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                title="Tanggal Mulai"
+              />
+              <span className="text-zinc-400 font-mono">–</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  if (monthFilter !== 'all') setMonthFilter('all');
+                }}
+                className="px-2.5 py-1 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-lg focus:outline-hidden focus:border-[#0066CC] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                title="Tanggal Selesai"
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                className="p-1 text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer"
+                title="Hapus filter rentang tanggal"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {hasActiveFilter && (
+            <button
+              onClick={resetFilters}
+              className="text-[11px] font-mono font-medium text-[#0066CC] dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer ml-auto"
+            >
+              <RefreshCw className="w-3 h-3" /> Reset Filter
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ===== TRANSACTIONS TABLE & LIST ===== */}
@@ -499,33 +587,45 @@ export default function FinanceDashboardPage() {
             </span>
           </div>
           <span className="text-[11px] text-zinc-400 hidden sm:inline">
-            Periode: <strong>{formatMonthLabel(monthFilter)}</strong>
+            Periode: <strong>{startDate && endDate ? `${formatDate(startDate)} – ${formatDate(endDate)}` : formatMonthLabel(monthFilter)}</strong>
           </span>
         </div>
 
         {filteredExpenses.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
-              <Wallet className="w-6 h-6" />
+              {hasActiveFilter ? <Search className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
             </div>
             <div className="max-w-xs">
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Belum ada transaksi tercatat
+                {hasActiveFilter ? 'Tidak ada transaksi ditemukan' : 'Belum ada transaksi tercatat'}
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Catat pengeluaran untuk honor tim, cetak foto, atau operasional studio agar arus kas terpantau jelas.
+                {hasActiveFilter
+                  ? 'Tidak ada pengeluaran atau kas yang cocok dengan kriteria filter saat ini.'
+                  : 'Catat pengeluaran untuk honor tim, cetak foto, atau operasional studio agar arus kas terpantau jelas.'}
               </p>
             </div>
-            <button
-              onClick={() => {
-                setEditingExpense(null);
-                setShowExpenseModal(true);
-              }}
-              className="mt-2 px-4 py-2 bg-[#0066CC] hover:bg-[#0055b3] text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Catat Pengeluaran Pertama</span>
-            </button>
+            {hasActiveFilter ? (
+              <button
+                onClick={resetFilters}
+                className="mt-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset Semua Filter</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingExpense(null);
+                  setShowExpenseModal(true);
+                }}
+                className="mt-2 px-4 py-2 bg-[#0066CC] hover:bg-[#0055b3] text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Catat Pengeluaran Pertama</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -674,6 +774,7 @@ export default function FinanceDashboardPage() {
           monthFilter={monthFilter}
           categoryFilter={categoryFilter}
           formatMonthLabel={formatMonthLabel}
+          dateRangeLabel={startDate && endDate ? `${formatDate(startDate)} – ${formatDate(endDate)}` : startDate ? `Mulai ${formatDate(startDate)}` : endDate ? `Sampai ${formatDate(endDate)}` : undefined}
           onClose={() => setShowReportModal(false)}
         />
       )}

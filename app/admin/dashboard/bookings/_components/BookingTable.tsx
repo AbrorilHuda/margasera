@@ -34,6 +34,8 @@ interface BookingTableProps {
   startIndex: number;
   endIndex: number;
   monthFilter: string;
+  startDate?: string;
+  endDate?: string;
   bookingSearch: string;
   bookingStatusFilter: string;
   serviceFilter: string;
@@ -86,6 +88,8 @@ export function BookingTable({
   startIndex,
   endIndex,
   monthFilter,
+  startDate,
+  endDate,
   bookingSearch,
   bookingStatusFilter,
   serviceFilter,
@@ -104,6 +108,8 @@ export function BookingTable({
   const hasActiveFilter =
     bookingStatusFilter !== 'all' ||
     monthFilter !== 'all' ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
     serviceFilter !== 'all' ||
     Boolean(bookingSearch.trim());
 

@@ -8,6 +8,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 import { sendAdminNotification } from '@/lib/notifications';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logAdminAudit } from '@/lib/audit-logger';
 
 type BookingRow = Database['public']['Tables']['bookings']['Row'];
 
@@ -278,6 +279,8 @@ export async function updateBookingStatus(
 
   const { error } = await supabase.from('bookings').update(payload).eq('id', id);
   if (error) return { success: false, error: error.message };
+
+  await logAdminAudit('UPDATE_BOOKING_STATUS', id, { status });
   return { success: true };
 }
 
@@ -298,6 +301,8 @@ export async function updatePaymentStatus(
 
   const { error } = await supabase.from('bookings').update(payload).eq('id', id);
   if (error) return { success: false, error: error.message };
+
+  await logAdminAudit('UPDATE_PAYMENT_STATUS', id, { paymentStatus, paidAmount });
   return { success: true };
 }
 
@@ -456,6 +461,13 @@ export async function updateBooking(
     .eq('id', id);
 
   if (error) return { success: false, error: error.message };
+
+  await logAdminAudit('UPDATE_BOOKING', id, {
+    customerName: payload.customerName,
+    date: payload.bookingDate,
+    status: payload.status,
+    paymentStatus: payload.paymentStatus,
+  });
   return { success: true };
 }
 
@@ -493,6 +505,12 @@ export async function createManualBooking(
 
   const { error } = await supabase.from('bookings').insert(payload);
   if (error) return { success: false, error: error.message };
+
+  await logAdminAudit('CREATE_MANUAL_BOOKING', formData.bookingCode, {
+    customerName: formData.customerName,
+    date: formData.bookingDate,
+    totalPrice: formData.totalPrice,
+  });
   return { success: true };
 }
 
@@ -504,26 +522,59 @@ export async function deleteBooking(
   const supabase = createAdminClient();
   const { error } = await supabase.from('bookings').delete().eq('id', id);
   if (error) return { success: false, error: error.message };
+
+  await logAdminAudit('DELETE_BOOKING', id);
   return { success: true };
 }
 
-/** Public: pembatalan booking oleh client */
+export interface CancelBookingVerification {
+  bookingCode: string;
+  whatsapp?: string;
+}
+
+/** Public: pembatalan booking oleh client dengan proteksi verifikasi (Anti-IDOR) */
 export async function cancelBookingByClient(
   bookingId: string,
+  verification: CancelBookingVerification,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Rate limiting untuk mencegah abuse / brute-force endpoint pembatalan
+  if (!(await checkRateLimit('client-cancel', 5, 60_000))) {
+    return { success: false, error: 'Terlalu banyak permintaan. Silakan tunggu 1 menit.' };
+  }
+
+  const cleanCode = verification?.bookingCode?.trim().toUpperCase();
+  if (!cleanCode) {
+    return { success: false, error: 'Verifikasi kode booking diperlukan untuk membatalkan pesanan.' };
+  }
+
   try {
     const supabase = await createClient();
 
-    const { data: existing } = await supabase
+    const { data: existing, error: fetchErr } = await supabase
       .from('bookings')
-      .select('id, notes, status')
+      .select('id, notes, status, booking_code, whatsapp')
       .eq('id', bookingId)
+      .eq('booking_code', cleanCode)
       .single();
 
-    if (!existing) return { success: false, error: 'Pemesanan tidak ditemukan.' };
+    if (fetchErr || !existing) {
+      return { success: false, error: 'Pemesanan tidak ditemukan atau data verifikasi tidak cocok.' };
+    }
+
+    // Jika nomor whatsapp disertakan, periksa kecocokan nomor
+    if (verification.whatsapp) {
+      const cleanWaInput = verification.whatsapp.replace(/\D/g, '');
+      const cleanWaDb = (existing.whatsapp || '').replace(/\D/g, '');
+      if (cleanWaInput && cleanWaDb && !cleanWaDb.endsWith(cleanWaInput.slice(-8))) {
+        return { success: false, error: 'Verifikasi kontak WhatsApp tidak cocok.' };
+      }
+    }
+
     if (existing.status === 'cancelled') return { success: true };
-    if (existing.status === 'completed') return { success: false, error: 'Pemesanan yang sudah selesai tidak dapat dibatalkan.' };
+    if (existing.status === 'completed') {
+      return { success: false, error: 'Pemesanan yang sudah selesai tidak dapat dibatalkan.' };
+    }
 
     const updatedNotes = [
       existing.notes,

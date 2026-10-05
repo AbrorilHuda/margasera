@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
+import { logAdminAudit } from '@/lib/audit-logger';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Expense } from '@/lib/types';
 
@@ -110,6 +111,13 @@ export async function createExpense(
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/dashboard/finance');
 
+  await logAdminAudit('CREATE_EXPENSE', data.id, {
+    type: insertData.type,
+    title: insertData.title,
+    amount: insertData.amount,
+    category: insertData.category,
+  });
+
   return { success: true, data: mapExpense(data as ExpenseRow) };
 }
 
@@ -158,6 +166,11 @@ export async function updateExpense(
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/dashboard/finance');
 
+  await logAdminAudit('UPDATE_EXPENSE', id, {
+    title: payload.title,
+    amount: payload.amount,
+  });
+
   return { success: true, data: mapExpense(data as ExpenseRow) };
 }
 
@@ -177,6 +190,8 @@ export async function deleteExpense(id: string): Promise<{ success: boolean; err
 
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/dashboard/finance');
+
+  await logAdminAudit('DELETE_EXPENSE', id);
 
   return { success: true };
 }

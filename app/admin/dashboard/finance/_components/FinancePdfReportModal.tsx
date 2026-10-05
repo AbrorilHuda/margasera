@@ -18,6 +18,7 @@ interface FinancePdfReportModalProps {
   monthFilter: string;
   categoryFilter: string;
   formatMonthLabel: (ym: string) => string;
+  dateRangeLabel?: string;
   onClose: () => void;
 }
 
@@ -31,9 +32,10 @@ export function FinancePdfReportModal({
   monthFilter,
   categoryFilter,
   formatMonthLabel,
+  dateRangeLabel,
   onClose,
 }: FinancePdfReportModalProps) {
-  const periodLabel = monthFilter === 'all' ? 'Seluruh Periode Tercatat' : formatMonthLabel(monthFilter);
+  const periodLabel = dateRangeLabel || (monthFilter === 'all' ? 'Seluruh Periode Tercatat' : formatMonthLabel(monthFilter));
 
   // Breakdown per kategori pengeluaran
   const expenseByCategory = expenses

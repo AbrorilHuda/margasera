@@ -19,6 +19,10 @@ interface BookingFilterBottomSheetProps {
   setServiceFilter: (v: string) => void;
   setBookingSort: (v: 'newest' | 'oldest' | 'upcoming_event') => void;
   setPageSize: (v: number) => void;
+  startDate?: string;
+  endDate?: string;
+  setStartDate?: (v: string) => void;
+  setEndDate?: (v: string) => void;
   onResetFilters: () => void;
 }
 
@@ -36,6 +40,10 @@ export function BookingFilterBottomSheet({
   setServiceFilter,
   setBookingSort,
   setPageSize,
+  startDate,
+  endDate,
+  setStartDate,
+  setEndDate,
   onResetFilters,
 }: BookingFilterBottomSheetProps) {
   const [mounted, setMounted] = useState(false);
@@ -108,6 +116,37 @@ export function BookingFilterBottomSheet({
               <ChevronRight className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
+
+          {/* Custom Date Range */}
+          {(setStartDate && setEndDate) && (
+            <div className="flex flex-col gap-1.5">
+              <label className="font-mono text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                Rentang Tanggal Acara
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={startDate || ''}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (monthFilter !== 'all') setMonthFilter('all');
+                  }}
+                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC]"
+                  title="Mulai"
+                />
+                <input
+                  type="date"
+                  value={endDate || ''}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    if (monthFilter !== 'all') setMonthFilter('all');
+                  }}
+                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC]"
+                  title="Selesai"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Service */}
           <div className="flex flex-col gap-1.5">

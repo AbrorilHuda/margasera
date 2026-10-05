@@ -142,7 +142,7 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
             <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Contoh: MS-260829-001"
+              placeholder="Contoh: MS-xxxxxx-xxxxxx"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               disabled={isLoading}
@@ -458,7 +458,14 @@ export function StatusChecker({ studioSettings = DEFAULT_STUDIO_SETTINGS }: { st
                   onClick={async () => {
                     if (!searchedBooking) return;
                     setIsCancelling(true);
-                    const res = await cancelBookingByClient(searchedBooking.id, cancelReason);
+                    const res = await cancelBookingByClient(
+                      searchedBooking.id,
+                      {
+                        bookingCode: searchedBooking.bookingCode,
+                        whatsapp: searchedBooking.whatsapp,
+                      },
+                      cancelReason
+                    );
                     setIsCancelling(false);
                     if (res.success) {
                       setSearchedBooking({

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { Database } from '@/lib/supabase/database.types';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -18,6 +19,15 @@ export async function signInAdmin(
   email: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Rate limiting: maksimal 5 percobaan login per menit per IP
+  const allowed = await checkRateLimit('admin-login', 5, 60_000);
+  if (!allowed) {
+    return {
+      success: false,
+      error: 'Terlalu banyak percobaan login. Silakan tunggu 1 menit sebelum mencoba lagi.',
+    };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });

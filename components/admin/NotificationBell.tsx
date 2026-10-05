@@ -11,6 +11,8 @@ import {
   CheckCheck,
   BellOff,
   Clock,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { createPublicClient } from '@/lib/supabase/public';
 import {
@@ -77,11 +79,46 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fcmTokenRef = useRef<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  // Baca preferensi suara dari localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('margasera_sound_enabled');
+    if (saved !== null) {
+      setSoundEnabled(saved === 'true');
+    }
+  }, []);
+
+  // Mainkan audio notifikasi (file: /sounds/notification.mp3)
+  const playNotificationSound = useCallback((force = false) => {
+    if (typeof window === 'undefined') return;
+    const isMuted = localStorage.getItem('margasera_sound_enabled') === 'false';
+    if (!force && isMuted) return;
+
+    try {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.85;
+      audio.play().catch(() => {
+        // Abaikan jika terbentur autoplay policy browser atau file belum ditaruh
+      });
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem('margasera_sound_enabled', String(next));
+    if (next) {
+      playNotificationSound(true);
+    }
+  };
 
   // Fetch notifikasi dari API
   const fetchNotifications = useCallback(async () => {
@@ -112,11 +149,12 @@ export function NotificationBell() {
       const messaging = getFirebaseMessaging();
       if (messaging) {
         onMessage(messaging, () => {
+          playNotificationSound();
           fetchNotifications();
         });
       }
     })();
-  }, [fetchNotifications]);
+  }, [fetchNotifications, playNotificationSound]);
 
   // Realtime: Supabase subscription + polling fallback setiap 15 detik
   useEffect(() => {
@@ -133,6 +171,7 @@ export function NotificationBell() {
           'postgres_changes' as any,
           { event: 'INSERT', schema: 'public', table: 'notifications' },
           () => {
+            playNotificationSound();
             fetchNotifications();
           }
         )
@@ -145,7 +184,7 @@ export function NotificationBell() {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, playNotificationSound]);
 
   // Tutup dropdown saat klik di luar
   useEffect(() => {
@@ -297,6 +336,19 @@ export function NotificationBell() {
             </div>
 
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleSound}
+                title={soundEnabled ? 'Suara notifikasi aktif (klik untuk membisukan)' : 'Suara notifikasi dibisukan (klik untuk mengaktifkan)'}
+                className={`p-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer active:scale-95 ${
+                  soundEnabled
+                    ? 'text-zinc-600 hover:text-[#0066CC] hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/50'
+                    : 'text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50'
+                }`}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -322,6 +374,21 @@ export function NotificationBell() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Sound Controls Bar */}
+          <div className="px-4 py-1.5 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
+            <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+              <span className={`w-1.5 h-1.5 rounded-full ${soundEnabled ? 'bg-emerald-500 shadow-xs' : 'bg-zinc-400'}`} />
+              Suara notifikasi: <strong className="font-medium text-zinc-700 dark:text-zinc-300">{soundEnabled ? 'Aktif' : 'Mati'}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => playNotificationSound(true)}
+              className="text-[#0066CC] dark:text-blue-400 hover:underline font-medium cursor-pointer"
+            >
+              Uji Suara
+            </button>
           </div>
 
           {/* List Content */}

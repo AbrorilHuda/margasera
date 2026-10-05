@@ -51,7 +51,7 @@ export function GalleryAdminModal({
   onClose,
   onSuccess,
 }: GalleryAdminModalProps) {
-  const { toast } = useToast();
+  const { toast, confirmModal } = useToast();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'settings' | 'share' | 'results'>('settings');
@@ -222,20 +222,27 @@ export function GalleryAdminModal({
   };
 
   // Hapus link Drive (salah input)
-  const handleClearDrive = async () => {
-    if (!confirm('Hapus link Drive, foto cache, dan pilihan klien untuk booking ini?')) return;
-    setIsSyncing(true);
-    const res = await clearBookingGalleryDrive(b.id);
-    setIsSyncing(false);
-    if (res.success) {
-      setDriveUrl('');
-      setSyncedCount(null);
-      setRealSelections([]);
-      toast.success('Folder Drive berhasil dihapus. Silakan input ulang.');
-      onSuccess?.();
-    } else {
-      toast.error(res.error || 'Gagal menghapus folder Drive.');
-    }
+  const handleClearDrive = () => {
+    confirmModal({
+      title: 'Hapus Folder Drive & Cache?',
+      message: 'Apakah Anda yakin ingin menghapus link Drive, foto cache, dan pilihan klien untuk booking ini?',
+      confirmText: 'Ya, Hapus Folder Drive',
+      variant: 'danger',
+      onConfirm: async () => {
+        setIsSyncing(true);
+        const res = await clearBookingGalleryDrive(b.id);
+        setIsSyncing(false);
+        if (res.success) {
+          setDriveUrl('');
+          setSyncedCount(null);
+          setRealSelections([]);
+          toast.success('Folder Drive berhasil dihapus. Silakan input ulang.');
+          onSuccess?.();
+        } else {
+          toast.error(res.error || 'Gagal menghapus folder Drive.');
+        }
+      },
+    });
   };
 
   // Save Settings

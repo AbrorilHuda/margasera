@@ -1,15 +1,17 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Helper: validasi keberadaan dan kedaluwarsa JWT Supabase secara lokal (tanpa request ke cloud)
+// Helper: validasi keberadaan, struktur JWT, dan kedaluwarsa token Supabase secara ketat
 function isSupabaseTokenValid(cookies: { name: string; value: string }[]): boolean {
   try {
-    const authCookie = cookies.find(
-      (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
-    );
-    if (!authCookie) return false;
+    const authCookies = cookies
+      .filter((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    let raw = authCookie.value;
+    if (authCookies.length === 0) return false;
+
+    // Gabungkan potongan cookie jika terfragmentasi (.0, .1, dst)
+    let raw = authCookies.map((c) => c.value).join('');
     if (raw.startsWith('base64-')) {
       raw = Buffer.from(raw.slice(7), 'base64').toString('utf-8');
     }
@@ -22,27 +24,41 @@ function isSupabaseTokenValid(cookies: { name: string; value: string }[]): boole
       token = raw;
     }
 
-    if (!token || !token.includes('.')) {
-      return true; // Cookie ada, izinkan lewat
+    if (!token || typeof token !== 'string') return false;
+
+    // Struktur JWT wajib memiliki 3 bagian: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+
+    const [headerB64, payloadB64, signatureB64] = parts;
+    if (!headerB64 || !payloadB64 || !signatureB64 || signatureB64.length < 10) {
+      return false;
     }
 
-    // Decode payload JWT
-    const parts = token.split('.');
-    if (parts.length >= 2) {
-      const payloadStr = Buffer.from(parts[1], 'base64url').toString('utf-8');
-      const payload = JSON.parse(payloadStr);
-      // Jika token sudah kedaluwarsa, return false
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        return false;
-      }
+    // 1. Verifikasi Header (algoritma wajib valid dan bukan 'none')
+    const headerStr = Buffer.from(headerB64, 'base64url').toString('utf-8');
+    const header = JSON.parse(headerStr);
+    const validAlgorithms = ['HS256', 'RS256', 'ES256', 'HS512', 'RS512'];
+    if (!header.alg || !validAlgorithms.includes(header.alg) || header.alg.toLowerCase() === 'none') {
+      return false;
+    }
+
+    // 2. Verifikasi Payload (subjek, audiens/role, dan waktu kedaluwarsa)
+    const payloadStr = Buffer.from(payloadB64, 'base64url').toString('utf-8');
+    const payload = JSON.parse(payloadStr);
+
+    if (!payload.sub || typeof payload.sub !== 'string') return false;
+    if (payload.aud !== 'authenticated' && payload.role !== 'authenticated') return false;
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (!payload.exp || typeof payload.exp !== 'number' || payload.exp < nowSeconds) {
+      return false;
     }
 
     return true;
   } catch {
-    // Jika ada cookie auth, anggap valid untuk toleransi offline
-    return cookies.some(
-      (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
-    );
+    // Jika format tidak valid atau gagal didecode, tolak akses demi keamanan
+    return false;
   }
 }
 
