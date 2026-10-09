@@ -182,14 +182,14 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
             </div>
           </div>
 
-            <div className="flex items-center gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 pt-3 md:pt-0 md:pl-6">
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:gap-6 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 pt-3 md:pt-0 md:pl-6">
             <div className="flex flex-col">
               <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">Total Order</span>
-              <strong className="text-xl font-extrabold font-mono text-[#0066CC]">{peakMonth.count} Event</strong>
+              <strong className="text-base sm:text-xl font-extrabold font-mono text-[#0066CC]">{peakMonth.count} Event</strong>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">Kas Masuk Bulan Ini</span>
-              <strong className="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+              <strong className="text-base sm:text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 truncate">
                 {formatCurrency(peakMonth.revenue)}
               </strong>
             </div>
@@ -302,7 +302,7 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
                   }`}
               >
                 <span className="hidden sm:inline">{m.shortName}</span>
-                <span className="sm:hidden text-[10px]">{m.shortName.substring(0, 1)}</span>
+                <span className="sm:hidden text-[9px] font-mono tracking-tighter">{m.shortName}</span>
               </div>
             );
           })}

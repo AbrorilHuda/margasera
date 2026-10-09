@@ -280,9 +280,25 @@ export function NotificationBell() {
     if (!notif.is_read) {
       markAsRead(notif.id);
     }
-    if (notif.url) {
-      setOpen(false);
-      router.push(notif.url);
+    setOpen(false);
+
+    let targetUrl = notif.url;
+
+    // Cerdas tangani notifikasi legacy yang belum punya parameter pencarian atau deep link
+    if (!targetUrl || targetUrl === '/admin/dashboard/bookings') {
+      if (notif.type === 'booking' && notif.booking_id) {
+        targetUrl = `/admin/dashboard/bookings?search=${encodeURIComponent(notif.booking_id)}&openDetail=true`;
+      } else if (notif.type === 'gallery_selection' && notif.booking_id) {
+        targetUrl = `/admin/dashboard/bookings?search=${encodeURIComponent(notif.booking_id)}&openGallery=true`;
+      } else if (notif.type === 'testimonial') {
+        targetUrl = '/admin/dashboard/testimonials';
+      } else {
+        targetUrl = '/admin/dashboard/bookings';
+      }
+    }
+
+    if (targetUrl) {
+      router.push(targetUrl);
     }
   };
 

@@ -217,7 +217,8 @@ export async function createBooking(
     type: 'booking',
     title: '📅 Booking Baru Masuk',
     body: `${formData.customerName} memesan ${formData.serviceName || formData.packageName || 'sesi foto'} pada ${formData.bookingDate}`,
-    url: '/admin/dashboard/bookings',
+    bookingId: bookingCode,
+    url: `/admin/dashboard/bookings?search=${encodeURIComponent(bookingCode)}&openDetail=true`,
   });
 
   return { success: true, bookingCode };

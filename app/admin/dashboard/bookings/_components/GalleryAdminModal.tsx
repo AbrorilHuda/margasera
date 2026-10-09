@@ -29,6 +29,7 @@ import type { Booking } from '@/lib/types';
 interface GalleryAdminModalProps {
   booking: Booking;
   siteUrl?: string;
+  initialTab?: 'settings' | 'share' | 'results';
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -48,13 +49,14 @@ function formatToLocalDateTimeString(dateInput?: Date | string | null): string {
 export function GalleryAdminModal({
   booking: b,
   siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://margasera.id',
+  initialTab = 'settings',
   onClose,
   onSuccess,
 }: GalleryAdminModalProps) {
   const { toast, confirmModal } = useToast();
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'settings' | 'share' | 'results'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'share' | 'results'>(initialTab);
 
   // Form State
   const [driveUrl, setDriveUrl] = useState(b.driveFolderUrl || '');

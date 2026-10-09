@@ -605,12 +605,13 @@ export async function submitClientGallerySelections(
     }
 
     // Kirim notifikasi ke admin dan tunggu hingga tersimpan
+    const targetCode = booking.booking_code || booking.id;
     await sendAdminNotification({
       type: 'gallery_selection',
       title: '🖼️ Klien Pilih Foto',
       body: `${booking.customer_name} telah memilih ${validFileIds.length} foto dari galeri mereka`,
-      bookingId: booking.id,
-      url: '/admin/dashboard/bookings',
+      bookingId: targetCode,
+      url: `/admin/dashboard/bookings?search=${encodeURIComponent(targetCode)}&openGallery=true`,
     });
 
     return { success: true };

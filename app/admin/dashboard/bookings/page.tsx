@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ClipboardList, CheckCircle2, Clock, Wallet, WifiOff } from 'lucide-react';
 import {
   getAllBookings,
+  getBookingByCode,
   updateBookingStatus,
   updatePaymentStatus,
   deleteBooking,
@@ -30,8 +32,16 @@ import { getAllLocalBookings, getMasterDataLocal, deleteLocalBooking, addToSyncQ
 import { formatCompactIDR, formatCurrency, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
 import type { Booking, BookingStatus, PaymentStatus, Service, Package, StudioSettings } from '@/lib/types';
 
-export default function BookingsPage() {
+function BookingsContent() {
   const { toast, confirmModal } = useToast();
+  const searchParams = useSearchParams();
+
+  // Read URL params
+  const urlSearch = searchParams.get('search') || searchParams.get('q') || '';
+  const urlStatus = searchParams.get('status') || '';
+  const urlAction = searchParams.get('action') || '';
+  const urlOpenDetail = searchParams.get('openDetail') === 'true' || searchParams.get('openDetail') === '1' || urlAction === 'detail';
+  const urlOpenGallery = searchParams.get('openGallery') === 'true' || searchParams.get('openGallery') === '1' || urlAction === 'gallery';
 
   // Connection & Offline State
   const [isOffline, setIsOffline] = useState(false);
@@ -81,16 +91,63 @@ export default function BookingsPage() {
   const [showPdfRekapModal, setShowPdfRekapModal] = useState(false);
   const [completedBookingForShare, setCompletedBookingForShare] = useState<Booking | null>(null);
   const [selectedGalleryBooking, setSelectedGalleryBooking] = useState<Booking | null>(null);
+  const [galleryInitialTab, setGalleryInitialTab] = useState<'settings' | 'share' | 'results'>('settings');
 
-  // Auto-open Add modal if ?action=new
+  // Synchronize URL query params with state
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('action') === 'new') {
-        setShowAddBookingModal(true);
-      }
+    if (urlSearch) {
+      setBookingSearch(urlSearch);
     }
-  }, []);
+    if (urlStatus && ['all', 'pending', 'confirmed', 'completed', 'cancelled'].includes(urlStatus)) {
+      setBookingStatusFilter(urlStatus);
+    }
+    if (urlAction === 'new') {
+      setShowAddBookingModal(true);
+    }
+  }, [urlSearch, urlStatus, urlAction]);
+
+  // Auto-open modal for deep-linked booking
+  const autoOpenedKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!urlSearch) return;
+    const currentKey = `${urlSearch}:${urlOpenGallery}:${urlOpenDetail}`;
+    if (autoOpenedKeyRef.current === currentKey) return;
+
+    const queryClean = urlSearch.trim().toLowerCase();
+    const matched = bookings.find(
+      (b) =>
+        b.bookingCode.toLowerCase() === queryClean ||
+        b.id.toLowerCase() === queryClean
+    );
+
+    if (matched) {
+      autoOpenedKeyRef.current = currentKey;
+      if (urlOpenGallery) {
+        setGalleryInitialTab('results');
+        setSelectedGalleryBooking(matched);
+      } else {
+        setSelectedBookingForDetail(matched);
+      }
+    } else if (!loadingData) {
+      // Direct database lookup if not yet loaded in local state
+      getBookingByCode(urlSearch).then((res) => {
+        if (res.booking && autoOpenedKeyRef.current !== currentKey) {
+          autoOpenedKeyRef.current = currentKey;
+          setBookings((prev) => {
+            if (prev.some((b) => b.id === res.booking!.id)) return prev;
+            return [res.booking!, ...prev];
+          });
+          if (urlOpenGallery) {
+            setGalleryInitialTab('results');
+            setSelectedGalleryBooking(res.booking);
+          } else {
+            setSelectedBookingForDetail(res.booking);
+          }
+        }
+      });
+    }
+  }, [bookings, loadingData, urlSearch, urlOpenGallery, urlOpenDetail]);
 
   // Data Fetching: Stale-While-Revalidate via IndexedDB
   const refreshData = useCallback(async (showSkeleton = false) => {
@@ -547,7 +604,10 @@ export default function BookingsPage() {
         onPageSizeChange={(size) => setPageSize(size)}
         onDetail={setSelectedBookingForDetail}
         onInvoice={setSelectedInvoiceBooking}
-        onOpenGallery={setSelectedGalleryBooking}
+        onOpenGallery={(b) => {
+          setGalleryInitialTab('settings');
+          setSelectedGalleryBooking(b);
+        }}
         onUpdateStatus={handleUpdateBookingStatus}
         onShareTestimonial={(b) => setCompletedBookingForShare(b)}
         onDelete={handleDeleteBooking}
@@ -591,6 +651,7 @@ export default function BookingsPage() {
           onUpdatePayment={handleUpdatePaymentStatus}
           onOpenGallery={(b) => {
             setSelectedBookingForDetail(null);
+            setGalleryInitialTab('settings');
             setSelectedGalleryBooking(b);
           }}
           onEdit={(b) => {
@@ -642,12 +703,38 @@ export default function BookingsPage() {
       {selectedGalleryBooking && (
         <GalleryAdminModal
           booking={selectedGalleryBooking}
-          onClose={() => setSelectedGalleryBooking(null)}
+          initialTab={galleryInitialTab}
+          onClose={() => {
+            setSelectedGalleryBooking(null);
+            setGalleryInitialTab('settings');
+          }}
           onSuccess={async () => {
             await refreshData(false);
           }}
         />
       )}
     </div>
+  );
+}
+
+function BookingsLoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 animate-pulse">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
+        ))}
+      </div>
+      <div className="h-24 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
+      <div className="h-96 bg-zinc-200/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 rounded-xl" />
+    </div>
+  );
+}
+
+export default function BookingsPage() {
+  return (
+    <Suspense fallback={<BookingsLoadingSkeleton />}>
+      <BookingsContent />
+    </Suspense>
   );
 }
