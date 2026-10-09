@@ -85,13 +85,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     try {
       const active = sessionStorage.getItem('margasera_audit_mode_active') === 'true';
       setIsAuditMode(active);
-    } catch {}
+    } catch { }
 
     const handleModeChange = () => {
       try {
         const active = sessionStorage.getItem('margasera_audit_mode_active') === 'true';
         setIsAuditMode(active);
-      } catch {}
+      } catch { }
     };
 
     window.addEventListener('margasera_audit_mode_change', handleModeChange);
@@ -251,11 +251,9 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-[#0066CC] selection:text-white transition-colors">
       {/* ===== SIDEBAR / NAVIGATION DRAWER ===== */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen max-h-screen shrink-0 overflow-y-auto no-scrollbar scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-          isCollapsed ? 'md:overflow-visible md:w-[76px] md:px-2.5' : 'md:w-68 md:px-5 lg:w-72 lg:px-6'
-        } bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] transition-all duration-300 ease-in-out shadow-xl md:shadow-none ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        } w-72 px-6`}
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen max-h-screen shrink-0 overflow-y-auto no-scrollbar scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${isCollapsed ? 'md:overflow-visible md:w-[76px] md:px-2.5' : 'md:w-68 md:px-5 lg:w-72 lg:px-6'
+          } bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-900 flex flex-col justify-between pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] transition-all duration-300 ease-in-out shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          } w-72 px-6`}
       >
         <div className="flex flex-col gap-6">
           {/* Logo & Toggle Header */}
@@ -263,7 +261,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             <div
               onClick={handleLogoSecretClick}
               className="flex items-center gap-3 cursor-pointer select-none active:scale-95 transition-transform"
-              title="Ketuk 5 kali untuk membuka Secret Audit Mode"
+              title="Ketuk"
             >
               <Image
                 src="/logo.png"
@@ -366,13 +364,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                   <Link
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.98] ${
-                      isCollapsed ? 'flex md:hidden' : 'flex'
-                    } ${
-                      isActive
+                    className={`items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.98] ${isCollapsed ? 'flex md:hidden' : 'flex'
+                      } ${isActive
                         ? 'bg-[#0066CC] text-white font-semibold shadow-md border border-[#0066CC]/50'
                         : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
-                    }`}
+                      }`}
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-500'}`} />
                     <span className="tracking-wide truncate">{item.label}</span>
@@ -384,11 +380,10 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                       href={item.href}
                       title={item.label}
                       onClick={() => setSidebarOpen(false)}
-                      className={`hidden md:flex flex-col group relative items-center justify-center w-[60px] py-2 px-0.5 mx-auto rounded-xl text-xs font-medium transition-all duration-200 active:scale-95 ${
-                        isActive
+                      className={`hidden md:flex flex-col group relative items-center justify-center w-[60px] py-2 px-0.5 mx-auto rounded-xl text-xs font-medium transition-all duration-200 active:scale-95 ${isActive
                           ? 'bg-[#0066CC] text-white font-semibold shadow-md shadow-[#0066CC]/30 border border-[#0066CC]/50'
                           : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
-                      }`}
+                        }`}
                     >
                       <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`} />
                       <span className={`text-[9px] font-mono leading-tight tracking-tight mt-1 truncate max-w-[56px] text-center ${isActive ? 'text-white font-semibold' : 'text-zinc-500 dark:text-zinc-400'}`}>

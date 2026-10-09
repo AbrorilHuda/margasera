@@ -148,3 +148,29 @@ export function getBookingRemainingAmount(b: {
   return Math.max(0, total - paid);
 }
 
+/**
+ * Normalisasi nomor WhatsApp ke format internasional E.164 tanpa '+' (contoh: 628123456789).
+ * Penting untuk iOS/iPad/iPhone agar WhatsApp tidak menolak nomor berawalan 0.
+ */
+export function formatWhatsAppNumber(phone: string): string {
+  if (!phone) return '';
+  let clean = phone.replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '62' + clean.slice(1);
+  } else if (clean.startsWith('8')) {
+    clean = '62' + clean;
+  }
+  return clean;
+}
+
+/**
+ * Buat URL WhatsApp resmi menggunakan endpoint langsung 'https://api.whatsapp.com/send'.
+ * Mencegah gagal redirect wa.me di iOS Safari & iPadOS.
+ */
+export function getWhatsAppUrl(phone: string, text?: string): string {
+  const formattedPhone = formatWhatsAppNumber(phone);
+  const query = text ? `?phone=${formattedPhone}&text=${encodeURIComponent(text)}` : `?phone=${formattedPhone}`;
+  return `https://api.whatsapp.com/send${query}`;
+}
+
+

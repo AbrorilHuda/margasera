@@ -1,8 +1,10 @@
 'use client';
 
+import React, { useState } from 'react';
 import Image from 'next/image';
-import { X, Receipt, Share2, Printer, Building2 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { X, Receipt, Share2, Printer, Building2, Copy, Check } from 'lucide-react';
+import { formatCurrency, formatDate, getWhatsAppUrl } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-context';
 import { printDocument } from '@/lib/print';
 import { calculateEndTime } from './BookingHelpers';
 import type { Booking, Package, StudioSettings } from '@/lib/types';
@@ -15,6 +17,8 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }: InvoiceModalProps) {
+  const { toast } = useToast();
+  const [copiedMsg, setCopiedMsg] = useState(false);
   const totalPrice = inv.totalPrice || 0;
 
   // Match paket untuk ambil fitur, durasi & nominal DP
@@ -77,14 +81,14 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
     printDocument('printable-invoice', `Invoice Official - INV-${inv.bookingCode}`);
   };
 
-  const generateWaInvoiceMsg = () => {
+  const getRawWaInvoiceMsg = () => {
     const statusText = isPaidFull ? 'LUNAS' : isDpPaid ? 'DP TERBAYAR' : 'BELUM DP';
     const studioName = studioSettings.studioName || 'Margasera Photography';
     const bankName = (studioSettings.bankName || 'BCA').toUpperCase();
     const bankAcc = studioSettings.bankAccountNumber || '1234567890';
     const bankHolder = (studioSettings.bankAccountHolder || 'MARGASERA CREATIVE').toUpperCase();
 
-    const msg = encodeURIComponent(
+    return (
       `Halo kak ${inv.customerName},\n\n` +
       `Berikut rincian Invoice Pemesanan ${studioName}:\n\n` +
       `📄 *INVOICE:* INV-${inv.bookingCode}\n` +
@@ -100,7 +104,23 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
       `🏦 *${bankName}: ${bankAcc}* a.n *${bankHolder}*\n\n` +
       `Terima kasih telah mempercayakan momen berharga kamu bersama ${studioName}! ✨`
     );
-    return `https://wa.me/${inv.whatsapp.replace(/[^0-9]/g, '')}?text=${msg}`;
+  };
+
+  const generateWaInvoiceMsg = () => {
+    return getWhatsAppUrl(inv.whatsapp, getRawWaInvoiceMsg());
+  };
+
+  const handleCopyWaMsg = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(getRawWaInvoiceMsg());
+        setCopiedMsg(true);
+        toast.success('Pesan invoice disalin ke clipboard! Siap dipaste ke WhatsApp.', 'Pesan Disalin');
+        setTimeout(() => setCopiedMsg(false), 2000);
+      }
+    } catch {
+      toast.error('Gagal menyalin pesan invoice.');
+    }
   };
 
   return (
@@ -291,7 +311,16 @@ export function InvoiceModal({ booking: inv, packages, studioSettings, onClose }
           >
             Tutup
           </button>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+            <button
+              type="button"
+              onClick={handleCopyWaMsg}
+              className="flex-1 sm:flex-none px-3.5 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Salin teks pesan invoice untuk iPad/PC"
+            >
+              {copiedMsg ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              <span>{copiedMsg ? 'Tersalin' : 'Salin Pesan'}</span>
+            </button>
             <a
               href={generateWaInvoiceMsg()}
               target="_blank"

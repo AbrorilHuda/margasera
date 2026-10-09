@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { X, Loader2, DollarSign, Tag, Calendar, User, FileText, CreditCard, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Loader2, DollarSign, Tag, Calendar, User, FileText, CreditCard, AlertCircle, Search, Building2, Check } from 'lucide-react';
 import { createExpense, updateExpense } from '@/lib/actions/finance';
 import { putLocalExpense } from '@/lib/offline';
 import { formatCurrency } from '@/lib/utils';
@@ -40,6 +40,65 @@ export function ExpenseModal({
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'other'>('transfer');
   const [notes, setNotes] = useState<string>('');
 
+  // Booking Search State
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [isBookingDropdownOpen, setIsBookingDropdownOpen] = useState(false);
+  const bookingDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bookingDropdownRef.current && !bookingDropdownRef.current.contains(e.target as Node)) {
+        setIsBookingDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Selected Booking details
+  const selectedBooking = useMemo(() => {
+    if (!bookingId) return null;
+    const found = bookings.find((b) => b.id === bookingId);
+    if (found) return found;
+    if (editingExpense?.bookingId === bookingId && editingExpense?.bookingCode) {
+      return {
+        id: bookingId,
+        bookingCode: editingExpense.bookingCode,
+        customerName: editingExpense.customerName || 'Klien',
+        serviceName: '',
+        packageName: '',
+        bookingDate: '',
+      } as unknown as Booking;
+    }
+    return null;
+  }, [bookings, bookingId, editingExpense]);
+
+  // Filter bookings: abaikan cancelled kecuali booking yang sedang terpilih, limit maks 15 hasil
+  const filteredBookings = useMemo(() => {
+    const activeList = bookings.filter((b) => b.status !== 'cancelled' || b.id === bookingId);
+    if (!bookingSearchQuery.trim()) {
+      return activeList.slice(0, 15);
+    }
+    const query = bookingSearchQuery.toLowerCase().trim();
+    return activeList
+      .filter((b) => {
+        const code = (b.bookingCode || '').toLowerCase();
+        const name = (b.customerName || '').toLowerCase();
+        const phone = (b.whatsapp || '').toLowerCase();
+        const service = (b.serviceName || b.packageName || '').toLowerCase();
+        const date = (b.bookingDate || '').toLowerCase();
+        return (
+          code.includes(query) ||
+          name.includes(query) ||
+          phone.includes(query) ||
+          service.includes(query) ||
+          date.includes(query)
+        );
+      })
+      .slice(0, 15);
+  }, [bookings, bookingId, bookingSearchQuery]);
+
   // Populate form if editing
   useEffect(() => {
     if (editingExpense) {
@@ -52,6 +111,8 @@ export function ExpenseModal({
       setBookingId(editingExpense.bookingId || '');
       setPaymentMethod(editingExpense.paymentMethod || 'transfer');
       setNotes(editingExpense.notes || '');
+      setBookingSearchQuery('');
+      setIsBookingDropdownOpen(false);
     } else {
       // Reset form
       setType('expense');
@@ -63,6 +124,8 @@ export function ExpenseModal({
       setBookingId('');
       setPaymentMethod('transfer');
       setNotes('');
+      setBookingSearchQuery('');
+      setIsBookingDropdownOpen(false);
     }
   }, [editingExpense, isOpen]);
 
@@ -88,9 +151,6 @@ export function ExpenseModal({
     }
 
     setIsSubmitting(true);
-
-    // Dapatkan data booking jika ada relasi
-    const selectedBooking = bookings.find((b) => b.id === bookingId);
 
     const payload = {
       type,
@@ -294,28 +354,153 @@ export function ExpenseModal({
           </div>
 
           {/* Hubungkan ke Booking Klien (Opsional) */}
-          <div>
+          <div className="relative" ref={bookingDropdownRef}>
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-zinc-400" />
                 Terkait Project / Booking (Opsional)
               </span>
               <span className="text-[10px] text-zinc-400 font-normal">
-                Pilih jika pengeluaran ini untuk project klien tertentu
+                Pilih jika pengeluaran ini untuk project klien
               </span>
             </label>
-            <select
-              value={bookingId}
-              onChange={(e) => setBookingId(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-hidden focus:border-[#0066CC] focus:ring-1 focus:ring-[#0066CC] transition-colors"
-            >
-              <option value="">🏢 Pengeluaran Umum Studio (Tidak terikat project)</option>
-              {bookings.map((b) => (
-                <option key={b.id} value={b.id}>
-                  [{b.bookingCode}] {b.customerName} - {b.serviceName || b.packageName || 'Booking'} ({b.bookingDate})
-                </option>
-              ))}
-            </select>
+
+            {bookingId && selectedBooking ? (
+              /* Kartu Booking Terpilih */
+              <div className="flex items-center justify-between p-2.5 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 rounded-xl">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#0066CC]/10 text-[#0066CC] dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-xs font-bold text-[#0066CC] dark:text-blue-400">
+                        [{selectedBooking.bookingCode}]
+                      </span>
+                      <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                        {selectedBooking.customerName}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                      {selectedBooking.serviceName || selectedBooking.packageName || 'Booking'} {selectedBooking.bookingDate ? `• ${selectedBooking.bookingDate}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingId('');
+                    setBookingSearchQuery('');
+                  }}
+                  className="px-2.5 py-1 text-[11px] text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer shrink-0 ml-2 font-medium flex items-center gap-1 border border-zinc-200/60 dark:border-zinc-700/60"
+                  title="Lepas keterkaitan project (Jadikan umum)"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Lepas</span>
+                </button>
+              </div>
+            ) : (
+              /* Input Pencarian Booking */
+              <div className="relative">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={bookingSearchQuery}
+                    onChange={(e) => {
+                      setBookingSearchQuery(e.target.value);
+                      setIsBookingDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsBookingDropdownOpen(true)}
+                    placeholder="🏢 Umum Studio (Ketik nama klien / kode booking...)"
+                    className="w-full pl-9 pr-8 py-2 text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-hidden focus:border-[#0066CC] focus:ring-1 focus:ring-[#0066CC] transition-colors placeholder:text-zinc-400 text-zinc-800 dark:text-zinc-200"
+                  />
+                  {bookingSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setBookingSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-md cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Popover */}
+                {isBookingDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 flex flex-col animate-in fade-in zoom-in-95 duration-100">
+                    <div className="overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                      {/* Opsi: Pengeluaran Umum */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingId('');
+                          setIsBookingDropdownOpen(false);
+                          setBookingSearchQuery('');
+                        }}
+                        className={`w-full px-3.5 py-2.5 text-left text-xs flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer ${
+                          !bookingId ? 'bg-zinc-50 dark:bg-zinc-800/40 text-[#0066CC] font-semibold' : 'text-zinc-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-zinc-400 shrink-0" />
+                          <span>🏢 Pengeluaran Umum Studio (Bukan project klien)</span>
+                        </div>
+                        {!bookingId && <Check className="w-3.5 h-3.5 text-[#0066CC]" />}
+                      </button>
+
+                      {/* List Booking Terfilter */}
+                      {filteredBookings.length > 0 ? (
+                        filteredBookings.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              setBookingId(b.id);
+                              setIsBookingDropdownOpen(false);
+                              setBookingSearchQuery('');
+                            }}
+                            className="w-full px-3.5 py-2.5 text-left hover:bg-blue-50/60 dark:hover:bg-blue-950/30 transition-colors cursor-pointer flex items-center justify-between group"
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono text-xs font-bold text-[#0066CC] dark:text-blue-400">
+                                  [{b.bookingCode}]
+                                </span>
+                                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                  {b.customerName}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                                {b.serviceName || b.packageName || 'Booking'} • {b.bookingDate}
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 capitalize shrink-0">
+                              {b.status}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-center text-xs text-zinc-400">
+                          Tidak ada booking yang cocok dengan "{bookingSearchQuery}"
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 text-[10px] text-zinc-400 flex items-center justify-between">
+                      <span>Maksimal 15 data ditampilkan</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsBookingDropdownOpen(false)}
+                        className="text-[#0066CC] hover:underline cursor-pointer"
+                      >
+                        Tutup
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Metode Bayar & Catatan */}

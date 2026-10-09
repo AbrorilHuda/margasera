@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import {
   Calendar,
   MessageCircle,
@@ -20,8 +21,11 @@ import {
   CalendarClock,
   Images,
   MoreHorizontal,
+  Copy,
+  Check,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-context';
+import { formatCurrency, formatDate, getWhatsAppUrl } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus } from '@/lib/types';
 
@@ -106,18 +110,55 @@ export function BookingTable({
   onDelete,
   onEdit,
 }: BookingTableProps) {
+  const { toast } = useToast();
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = React.useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+  const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
 
-  // Close dropdown menu when clicking outside
   React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (openMenuId && !(e.target as Element).closest('.action-menu-dropdown')) {
-        setOpenMenuId(null);
+    setMounted(true);
+  }, []);
+
+  const handleCopyBookingCode = async (e: React.MouseEvent, code: string) => {
+    e.stopPropagation();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(code);
+        toast.success(`Kode booking ${code} berhasil disalin!`, 'Disalin');
+        setTimeout(() => {
+          setCopiedCode((prev) => (prev === code ? null : prev));
+        }, 2000);
       }
+    } catch {
+      toast.error('Gagal menyalin kode booking');
+    }
+  };
+
+  // Close dropdown menu when clicking outside, scrolling, or resizing
+  React.useEffect(() => {
+    if (!openMenuId) return;
+
+    const handleClose = () => {
+      setOpenMenuId(null);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    document.addEventListener('click', handleClose);
+
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+      document.removeEventListener('click', handleClose);
+    };
   }, [openMenuId]);
+
+  const activeBooking = React.useMemo(
+    () => paginatedBookings.find((b) => b.id === openMenuId) || null,
+    [paginatedBookings, openMenuId]
+  );
 
   const hasActiveFilter =
     bookingStatusFilter !== 'all' ||
@@ -179,6 +220,18 @@ export function BookingTable({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
                       <span>{b.bookingCode}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyBookingCode(e, b.bookingCode)}
+                        className="p-1 rounded-md text-zinc-400 hover:text-[#0066CC] hover:bg-blue-50 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors cursor-pointer active:scale-90"
+                        title="Salin Kode Booking"
+                      >
+                        {copiedCode === b.bookingCode ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                       {(b as any).isOfflineDraft && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                           Offline Draft
@@ -186,11 +239,10 @@ export function BookingTable({
                       )}
                       {(b as any).syncStatus === 'failed' && (
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
-                            (b as any).lastError?.includes('KONFLIK')
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${(b as any).lastError?.includes('KONFLIK')
                               ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                               : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                          }`}
+                            }`}
                           title={(b as any).lastError || 'Gagal sinkron'}
                         >
                           {(b as any).lastError?.includes('KONFLIK') ? '⚠ Konflik Server' : 'Sync Gagal'}
@@ -208,7 +260,7 @@ export function BookingTable({
                       <div className="flex flex-col min-w-0">
                         <span className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight truncate">{b.customerName}</span>
                         <a
-                          href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
+                          href={getWhatsAppUrl(b.whatsapp)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono hover:underline flex items-center gap-1"
@@ -316,90 +368,32 @@ export function BookingTable({
                       )}
 
                       {/* Dropdown Menu Titik Tiga (Aksi Sekunder) */}
-                      <div className="relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === b.id ? null : b.id);
-                          }}
-                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                            openMenuId === b.id
-                              ? 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
-                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (openMenuId === b.id) {
+                            setOpenMenuId(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const openUpwards = spaceBelow < 230;
+
+                            setMenuPosition({
+                              top: openUpwards ? undefined : rect.bottom + 6,
+                              bottom: openUpwards ? window.innerHeight - rect.top + 6 : undefined,
+                              right: window.innerWidth - rect.right,
+                            });
+                            setOpenMenuId(b.id);
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${openMenuId === b.id
+                            ? 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                            : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                           }`}
-                          title="Opsi & Aksi Lainnya"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-
-                        {openMenuId === b.id && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150 text-left"
-                          >
-                            <button
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                onInvoice(b);
-                              }}
-                              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-[#0066CC] dark:hover:text-blue-300 flex items-center gap-2.5 transition-colors cursor-pointer"
-                            >
-                              <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                              <span>Invoice Pembayaran</span>
-                            </button>
-
-                            {onOpenGallery && (
-                              <button
-                                onClick={() => {
-                                  setOpenMenuId(null);
-                                  onOpenGallery(b);
-                                }}
-                                className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300 flex items-center gap-2.5 transition-colors cursor-pointer"
-                              >
-                                <Images className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
-                                <span>Kelola Galeri Foto</span>
-                              </button>
-                            )}
-
-                            <a
-                              href={generateGoogleCalendarUrl(b)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => setOpenMenuId(null)}
-                              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-300 flex items-center gap-2.5 transition-colors"
-                            >
-                              <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                              <span>Google Calendar</span>
-                            </a>
-
-                            {onEdit && b.status !== 'completed' && (
-                              <button
-                                onClick={() => {
-                                  setOpenMenuId(null);
-                                  onEdit(b);
-                                }}
-                                className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors cursor-pointer"
-                              >
-                                <CalendarClock className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
-                                <span>Pindah Tgl / Edit</span>
-                              </button>
-                            )}
-
-                            <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
-
-                            <button
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                onDelete(b.id, b.bookingCode);
-                              }}
-                              className="w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                              <span>Hapus Booking</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                        title="Opsi & Aksi Lainnya"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -457,6 +451,18 @@ export function BookingTable({
                 <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#0066CC] flex-wrap">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0066CC]" />
                   <span>{b.bookingCode}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopyBookingCode(e, b.bookingCode)}
+                    className="p-1 rounded-md text-zinc-400 hover:text-[#0066CC] hover:bg-blue-50 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors cursor-pointer active:scale-90"
+                    title="Salin Kode Booking"
+                  >
+                    {copiedCode === b.bookingCode ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
                   {(b as any).isOfflineDraft && (
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                       Offline
@@ -464,11 +470,10 @@ export function BookingTable({
                   )}
                   {(b as any).syncStatus === 'failed' && (
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-                        (b as any).lastError?.includes('KONFLIK')
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${(b as any).lastError?.includes('KONFLIK')
                           ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                           : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                      }`}
+                        }`}
                       title={(b as any).lastError || 'Gagal sinkron'}
                     >
                       {(b as any).lastError?.includes('KONFLIK') ? '⚠ Konflik Server' : 'Sync Gagal'}
@@ -693,6 +698,83 @@ export function BookingTable({
           </div>
         )}
       </div>
+
+      {/* Portaled Action Dropdown (agar tidak terpotong oleh overflow-x table saat row sedikit / 1 user) */}
+      {mounted && openMenuId && menuPosition && activeBooking && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: menuPosition.top !== undefined ? `${menuPosition.top}px` : undefined,
+            bottom: menuPosition.bottom !== undefined ? `${menuPosition.bottom}px` : undefined,
+            right: `${menuPosition.right}px`,
+            zIndex: 9999,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+        >
+          <button
+            onClick={() => {
+              setOpenMenuId(null);
+              onInvoice(activeBooking);
+            }}
+            className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-[#0066CC] dark:hover:text-blue-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>Invoice Pembayaran</span>
+          </button>
+
+          {onOpenGallery && (
+            <button
+              onClick={() => {
+                setOpenMenuId(null);
+                onOpenGallery(activeBooking);
+              }}
+              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <Images className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
+              <span>Kelola Galeri Foto</span>
+            </button>
+          )}
+
+          <a
+            href={generateGoogleCalendarUrl(activeBooking)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpenMenuId(null)}
+            className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-300 flex items-center gap-2.5 transition-colors"
+          >
+            <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Google Calendar</span>
+          </a>
+
+          {onEdit && activeBooking.status !== 'completed' && (
+            <button
+              onClick={() => {
+                setOpenMenuId(null);
+                onEdit(activeBooking);
+              }}
+              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <CalendarClock className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+              <span>Pindah Tgl / Edit</span>
+            </button>
+          )}
+
+          <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+          <button
+            onClick={() => {
+              setOpenMenuId(null);
+              onDelete(activeBooking.id, activeBooking.bookingCode);
+            }}
+            className="w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+            <span>Hapus Booking</span>
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

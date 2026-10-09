@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Calendar,
 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getWhatsAppUrl } from '@/lib/utils';
 import type { Booking } from '@/lib/types';
 
 interface ShareTestimonialModalProps {
@@ -27,18 +27,16 @@ export function ShareTestimonialModal({
   onClose,
 }: ShareTestimonialModalProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
 
   if (!isOpen || !booking) return null;
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://margasera.id';
   const testimonialUrl = `${origin}/testimoni?code=${encodeURIComponent(booking.bookingCode)}`;
 
-  const cleanPhone = booking.whatsapp.replace(/[^0-9]/g, '');
-  const waPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
-
   const waMessage = `Halo Kak ${booking.customerName}! ✨\n\nTerima kasih banyak telah mempercayakan momen berharga Anda kepada tim Margasera Photography.\n\nSesi dokumentasi Anda telah kami tandai *Selesai (Completed)*. Kami akan sangat berbahagia jika Kakak berkenan membagikan sedikit ulasan dan cerita bahagia Anda melalui tautan resmi berikut:\n\n👉 ${testimonialUrl}\n\n*(Kode Booking Kakak: ${booking.bookingCode} otomatis terverifikasi)*\n\n"Moment Satu Hari Untuk Selamanya"\nSalam hangat,\nTim Margasera Photography`;
 
-  const waShareUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`;
+  const waShareUrl = getWhatsAppUrl(booking.whatsapp, waMessage);
 
   const handleCopy = async () => {
     try {
@@ -49,6 +47,18 @@ export function ShareTestimonialModal({
       }
     } catch (err) {
       console.error('Failed to copy', err);
+    }
+  };
+
+  const handleCopyMessage = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(waMessage);
+        setCopiedMessage(true);
+        setTimeout(() => setCopiedMessage(false), 2500);
+      }
+    } catch (err) {
+      console.error('Failed to copy message', err);
     }
   };
 
@@ -148,6 +158,16 @@ export function ShareTestimonialModal({
 
         {/* Action Buttons: WhatsApp & Direct Preview */}
         <div className="mt-6 flex flex-col sm:flex-row gap-2.5">
+          <button
+            type="button"
+            onClick={handleCopyMessage}
+            className="py-3 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+            title="Salin template pesan untuk iPad/PC"
+          >
+            {copiedMessage ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedMessage ? 'Tersalin' : 'Salin Pesan'}</span>
+          </button>
+
           <a
             href={waShareUrl}
             target="_blank"

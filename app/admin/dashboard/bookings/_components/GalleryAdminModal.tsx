@@ -21,6 +21,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/toast-context';
+import { getWhatsAppUrl } from '@/lib/utils';
 import { saveBookingGallerySettings } from '@/lib/actions/bookings';
 import { syncBookingGalleryFromDrive, getAdminGallerySelections, clearBookingGalleryDrive } from '@/lib/actions/client-gallery';
 import { formatDate } from '@/lib/utils';
@@ -280,14 +281,15 @@ export function GalleryAdminModal({
     }
   };
 
-  // Send WhatsApp Link
-  const handleSendWhatsApp = async () => {
-    const cleanWa = b.whatsapp.replace(/\D/g, '');
-    const targetWa = cleanWa.startsWith('0') ? '62' + cleanWa.slice(1) : cleanWa;
-    const url = `https://wa.me/${targetWa}?text=${encodeURIComponent(waTemplate)}`;
+  // Send WhatsApp Link (Optimized for iOS/iPadOS Safari & Android)
+  const handleSendWhatsApp = () => {
+    const url = getWhatsAppUrl(b.whatsapp, waTemplate);
 
-    // Update gallery_sent_at in background
-    await saveBookingGallerySettings(b.id, {
+    // Buka WhatsApp langsung di user gesture event agar tidak diblokir popup blocker iOS Safari
+    window.open(url, '_blank');
+
+    // Update gallery_sent_at in background tanpa await memblokir gesture
+    saveBookingGallerySettings(b.id, {
       driveFolderUrl: driveUrl,
       selectionMaxCount: maxCount,
       selectionDeadline: new Date(deadline).toISOString(),
@@ -295,9 +297,8 @@ export function GalleryAdminModal({
       gallerySlug,
       galleryToken,
       gallerySentAt: new Date().toISOString(),
-    });
+    }).catch((err) => console.error('Failed to update gallerySentAt in background:', err));
 
-    window.open(url, '_blank');
     toast.success('WhatsApp dibuka! Status galeri diperbarui menjadi "Terkirim".');
   };
 
@@ -643,15 +644,36 @@ export function GalleryAdminModal({
                 />
               </div>
 
-              {/* WhatsApp Action Button */}
-              <button
-                type="button"
-                onClick={handleSendWhatsApp}
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Kirim Link via WhatsApp ({b.whatsapp})</span>
-              </button>
+              {/* WhatsApp Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                        await navigator.clipboard.writeText(waTemplate);
+                        toast.success('Template pesan WhatsApp disalin ke clipboard!');
+                      }
+                    } catch {
+                      toast.error('Gagal menyalin pesan.');
+                    }
+                  }}
+                  className="py-3 px-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl font-semibold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                  title="Salin template pesan untuk iPad/PC"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Salin Pesan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Kirim Link via WhatsApp ({b.whatsapp})</span>
+                </button>
+              </div>
             </div>
           )}
 

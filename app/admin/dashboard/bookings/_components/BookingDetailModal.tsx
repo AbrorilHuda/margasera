@@ -16,7 +16,7 @@ import {
   CreditCard,
   AlertCircle,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getWhatsAppUrl } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 
@@ -130,7 +130,7 @@ export function BookingDetailModal({
                 <span>INFORMASI KLIEN</span>
               </span>
               <a
-                href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
+                href={getWhatsAppUrl(b.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 active:scale-95 transition-colors"
@@ -406,7 +406,7 @@ export function BookingDetailModal({
           </a>
 
           <a
-            href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}`}
+            href={getWhatsAppUrl(b.whatsapp)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase text-center rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98]"

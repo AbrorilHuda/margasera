@@ -276,8 +276,8 @@ export default function AdminTestimonialsPage() {
           <button
             onClick={() => setStatusFilter('all')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'all'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
           >
             Semua ({metrics.total})
@@ -285,8 +285,8 @@ export default function AdminTestimonialsPage() {
           <button
             onClick={() => setStatusFilter('published')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'published'
-                ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
           >
             Publik ({metrics.published})
@@ -294,8 +294,8 @@ export default function AdminTestimonialsPage() {
           <button
             onClick={() => setStatusFilter('hidden')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'hidden'
-                ? 'bg-amber-600 text-white shadow-2xs font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              ? 'bg-amber-600 text-white shadow-2xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
           >
             Disembunyikan ({metrics.hidden})
@@ -376,8 +376,8 @@ export default function AdminTestimonialsPage() {
               <div
                 key={item.id}
                 className={`p-5 sm:p-6 bg-white dark:bg-zinc-900/70 border rounded-2xl transition-all duration-200 shadow-2xs ${item.isPublished
-                    ? 'border-zinc-200/90 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700'
-                    : 'border-amber-300/60 dark:border-amber-900/40 bg-amber-50/20 dark:bg-amber-950/10'
+                  ? 'border-zinc-200/90 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  : 'border-amber-300/60 dark:border-amber-900/40 bg-amber-50/20 dark:bg-amber-950/10'
                   }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -452,7 +452,7 @@ export default function AdminTestimonialsPage() {
                       </div>
 
                       {/* Quote Text Box */}
-                      <div className="mt-3.5 p-3.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800/60 text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed font-serif italic">
+                      <div className="mt-3.5 p-3.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800/60 text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed italic">
                         &ldquo;{item.message}&rdquo;
                       </div>
                     </div>
@@ -470,8 +470,8 @@ export default function AdminTestimonialsPage() {
                           : 'Klik untuk menampilkan ulasan ini ke publik'
                       }
                       className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs cursor-pointer ${item.isPublished
-                          ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
-                          : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                        ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                        : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
                         }`}
                     >
                       {isUpdating ? (

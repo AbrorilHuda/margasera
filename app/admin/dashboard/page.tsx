@@ -24,7 +24,7 @@ import { getServices, getPackages } from '@/lib/actions/services';
 import { getAllExpenses } from '@/lib/actions/finance';
 import { cacheMasterData, getCachedMasterData } from '@/lib/offline-queue';
 import { getAllLocalBookings, getAllLocalExpenses, saveLocalExpenses, getMasterDataLocal } from '@/lib/offline';
-import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount } from '@/lib/utils';
+import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount, getWhatsAppUrl } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package, Expense } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
 
@@ -140,10 +140,8 @@ export default function AdminOverviewPage() {
 
   // Helper WhatsApp link
   const getWhatsAppLink = (phone: string, customerName: string, dateStr: string) => {
-    const clean = phone.replace(/\D/g, '');
-    const num = clean.startsWith('0') ? `62${clean.slice(1)}` : clean;
     const msg = `Halo Kak ${customerName}, kami dari Studio Margasera ingin mengonfirmasi sesi pemotretan Anda untuk jadwal ${formatDate(dateStr)}.`;
-    return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+    return getWhatsAppUrl(phone, msg);
   };
 
   // Helper label tanggal relatif
