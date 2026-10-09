@@ -173,7 +173,7 @@ export function BookingFilterBottomSheet({
           {/* Sort By */}
           <div className="flex flex-col gap-1.5">
             <label className="font-mono text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-              Sort By
+              Urutkan Berdasarkan
             </label>
             <div className="relative">
               <select
@@ -181,9 +181,9 @@ export function BookingFilterBottomSheet({
                 onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
                 className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
               >
-                <option value="newest">Latest Booking</option>
-                <option value="upcoming_event">Upcoming Event</option>
-                <option value="oldest">Oldest Booking</option>
+                <option value="newest">Pemesanan Masuk Terbaru</option>
+                <option value="upcoming_event">Jadwal Acara Terdekat (Hari-H)</option>
+                <option value="oldest">Pemesanan Paling Lama</option>
               </select>
               <ChevronRight className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -192,7 +192,7 @@ export function BookingFilterBottomSheet({
           {/* Show Limit */}
           <div className="flex flex-col gap-1.5">
             <label className="font-mono text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-              Show
+              Limit Baris Per Halaman
             </label>
             <div className="relative">
               <select

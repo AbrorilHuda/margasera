@@ -82,6 +82,7 @@ export function BookingFilters({
   const [mounted, setMounted] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -262,63 +263,99 @@ export function BookingFilters({
       )}
 
       {/* =========================================
-          DESKTOP VIEW (≥ 768px): Full toolbar
+          DESKTOP VIEW (≥ 768px): Clean & Streamlined
           ========================================= */}
-      <div className="hidden md:flex flex-col gap-5">
-
-
-        {/* Row 1: Status Filters & Main Action Buttons */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 uppercase font-mono tracking-wider shrink-0 mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-[#0066CC]" /> Status:
-            </span>
-            {STATUS_TABS.map((st) => {
-              const count = statusCounts[st.id];
-              const isActive = bookingStatusFilter === st.id;
-              return (
+      <div className="hidden md:flex flex-col gap-4">
+        {/* Main Row: Search + Status Chips + Action Buttons */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          {/* Sisi Kiri: Search Input + Status Tabs */}
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+            {/* Search Input Utama */}
+            <div className="relative w-64 lg:w-72 shrink-0">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Cari Kode, Client, WA..."
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+                className="w-full bg-zinc-100/90 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] text-zinc-900 dark:text-zinc-100 pl-9 pr-8 py-2 rounded-xl text-xs focus:outline-none transition-colors placeholder:text-zinc-400 shadow-2xs"
+              />
+              {bookingSearch && (
                 <button
-                  key={st.id}
-                  onClick={() => setBookingStatusFilter(st.id)}
-                  className={`px-3.5 py-1.5 text-xs tracking-wide rounded-lg transition-all whitespace-nowrap font-medium flex items-center gap-1.5 cursor-pointer ${
-                    isActive
-                      ? 'bg-[#0066CC] text-white font-semibold shadow-md'
-                      : 'bg-zinc-100 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800'
-                  }`}
+                  onClick={() => setBookingSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer"
                 >
-                  <span>{st.label}</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                      isActive ? 'bg-black/30 text-white' : 'bg-zinc-200 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-400'
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Status Tabs */}
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+              {STATUS_TABS.map((st) => {
+                const count = statusCounts[st.id];
+                const isActive = bookingStatusFilter === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    onClick={() => setBookingStatusFilter(st.id)}
+                    className={`px-3 py-1.5 text-xs tracking-wide rounded-xl transition-all whitespace-nowrap font-medium flex items-center gap-1.5 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#0066CC] text-white font-semibold shadow-xs'
+                        : 'bg-zinc-100/80 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800'
                     }`}
                   >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                    <span>{st.label}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
+                        isActive ? 'bg-black/25 text-white' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Action Buttons: Export PDF & Add Booking */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Sisi Kanan: Toggle Filter Lanjutan + Export PDF + Tambah Booking */}
+          <div className="flex items-center gap-2 shrink-0 self-end xl:self-auto">
+            {/* Toggle Filter Lanjutan */}
             <button
-              onClick={onOpenPdfRekap}
-              className="px-3.5 py-2 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300 hover:border-zinc-400 dark:border-zinc-700/80 dark:hover:border-zinc-600 text-zinc-800 dark:text-zinc-100 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-xs hover:shadow-sm cursor-pointer group"
-              title="Cetak & Export Rekapitulasi Laporan PDF"
+              onClick={() => setShowAdvancedFilters((v) => !v)}
+              className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                showAdvancedFilters || activeSecondaryFilterCount > 0
+                  ? 'bg-blue-50 dark:bg-blue-950/60 border-[#0066CC]/50 text-[#0066CC] dark:text-blue-300'
+                  : 'bg-zinc-100/90 dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800'
+              }`}
+              title="Buka / Tutup Filter Lanjutan (Bulan, Layanan, Urutan, Tanggal)"
             >
-              <div className="w-5 h-5 rounded flex items-center justify-center bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform">
-                <FileText className="w-3.5 h-3.5" />
-              </div>
-              <span>Export PDF</span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60">
-                {filteredCount}
-              </span>
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filter</span>
+              {activeSecondaryFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#0066CC] text-white text-[10px] font-mono flex items-center justify-center">
+                  {activeSecondaryFilterCount}
+                </span>
+              )}
             </button>
 
+            {/* Export PDF Button */}
+            <button
+              onClick={onOpenPdfRekap}
+              className="px-3.5 py-2 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300 hover:border-zinc-400 dark:border-zinc-700/80 dark:hover:border-zinc-600 text-zinc-800 dark:text-zinc-100 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 shadow-2xs cursor-pointer group"
+              title="Cetak & Export Rekapitulasi Laporan PDF"
+            >
+              <div className="w-4 h-4 rounded flex items-center justify-center text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+              <span>PDF</span>
+            </button>
+
+            {/* Tambah Booking */}
             <button
               onClick={onOpenAddBooking}
-              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer"
+              className="px-4 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-xs hover:shadow-sm cursor-pointer active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Booking</span>
@@ -326,159 +363,158 @@ export function BookingFilters({
           </div>
         </div>
 
-        {/* Row 2: Secondary Filters & Limit Selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/80">
-          {/* MONTH FILTER */}
-          <div className="flex items-center gap-2 bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 px-3 py-2 rounded-lg">
-            <Calendar className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Filter Bulan Acara:</span>
-              <select
-                value={monthFilter}
-                onChange={(e) => setMonthFilter(e.target.value)}
-                className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Semua Bulan Acara</option>
-                {availableMonths.map((ym) => (
-                  <option key={ym} value={ym} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                    {formatMonthLabel(ym)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {monthFilter !== 'all' && (
-              <button onClick={() => setMonthFilter('all')} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer" title="Reset Filter Bulan">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* SERVICE FILTER */}
-          <div className="flex items-center gap-2 bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 px-3 py-2 rounded-lg">
-            <SlidersHorizontal className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Filter Layanan:</span>
-              <select
-                value={serviceFilter}
-                onChange={(e) => setServiceFilter(e.target.value)}
-                className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Semua Layanan</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {serviceFilter !== 'all' && (
-              <button onClick={() => setServiceFilter('all')} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer" title="Reset Filter Layanan">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* SORT SELECTOR */}
-          <div className="flex items-center gap-2 bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 px-3 py-2 rounded-lg">
-            <ArrowUpDown className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Urutkan Data:</span>
-              <select
-                value={bookingSort}
-                onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
-                className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value="newest" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Booking Terbaru</option>
-                <option value="upcoming_event" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Jadwal Acara Terdekat</option>
-                <option value="oldest" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Booking Terlama</option>
-              </select>
-            </div>
-          </div>
-
-          {/* PAGE SIZE / LIMIT SELECTOR */}
-          <div className="flex items-center gap-2 bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 px-3 py-2 rounded-lg">
-            <ListFilter className="w-4 h-4 text-[#0066CC] shrink-0" />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Tampilkan:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
-              >
-                <option value={5} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">5 Data per Hal</option>
-                <option value={10} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">10 Data per Hal</option>
-                <option value={25} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">25 Data per Hal</option>
-                <option value={50} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">50 Data per Hal</option>
-                <option value={9999} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Semua Data</option>
-              </select>
-            </div>
-          </div>
-
-          {/* SEARCH INPUT */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Cari Kode, Client, WA..."
-              value={bookingSearch}
-              onChange={(e) => setBookingSearch(e.target.value)}
-              className="w-full h-full bg-zinc-100/90 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] text-zinc-900 dark:text-zinc-100 pl-9 pr-8 py-2 rounded-lg text-xs focus:outline-none transition-colors placeholder:text-zinc-400"
-            />
-            {bookingSearch && (
-              <button
-                onClick={() => setBookingSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Custom Date Range Row (Desktop) */}
-        {(setStartDate && setEndDate) && (
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] font-medium flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#0066CC]" /> Rentang Tanggal Acara:
+        {/* Collapsible Panel Filter Lanjutan */}
+        {showAdvancedFilters && (
+          <div className="p-4 bg-zinc-50/90 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#0066CC]" />
+                Filter &amp; Pengaturan Tampilan
               </span>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="date"
-                  value={startDate || ''}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (monthFilter !== 'all') setMonthFilter('all');
-                  }}
-                  className="px-2.5 py-1 text-xs bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
-                  title="Tanggal Mulai"
-                />
-                <span className="text-zinc-400 font-mono">–</span>
-                <input
-                  type="date"
-                  value={endDate || ''}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    if (monthFilter !== 'all') setMonthFilter('all');
-                  }}
-                  className="px-2.5 py-1 text-xs bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800/80 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
-                  title="Tanggal Selesai"
-                />
-              </div>
-              {(startDate || endDate) && (
+              {activeSecondaryFilterCount > 0 && (
                 <button
-                  type="button"
-                  onClick={() => {
-                    setStartDate('');
-                    setEndDate('');
-                  }}
-                  className="p-1 text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer"
-                  title="Hapus filter rentang tanggal"
+                  onClick={handleResetSecondaryFilters}
+                  className="text-xs text-[#0066CC] dark:text-blue-400 hover:underline flex items-center gap-1 font-medium cursor-pointer"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
+                  <span>Reset Filter Sekunder</span>
                 </button>
               )}
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* MONTH FILTER */}
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl">
+                <Calendar className="w-4 h-4 text-[#0066CC] shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Bulan Acara:</span>
+                  <select
+                    value={monthFilter}
+                    onChange={(e) => setMonthFilter(e.target.value)}
+                    className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Semua Bulan</option>
+                    {availableMonths.map((ym) => (
+                      <option key={ym} value={ym} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                        {formatMonthLabel(ym)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {monthFilter !== 'all' && (
+                  <button onClick={() => setMonthFilter('all')} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer" title="Reset">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* SERVICE FILTER */}
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl">
+                <SlidersHorizontal className="w-4 h-4 text-[#0066CC] shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Layanan:</span>
+                  <select
+                    value={serviceFilter}
+                    onChange={(e) => setServiceFilter(e.target.value)}
+                    className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Semua Layanan</option>
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {serviceFilter !== 'all' && (
+                  <button onClick={() => setServiceFilter('all')} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer" title="Reset">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* SORT SELECTOR */}
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl">
+                <ArrowUpDown className="w-4 h-4 text-[#0066CC] shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Urutkan:</span>
+                  <select
+                    value={bookingSort}
+                    onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
+                    className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value="newest" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Pemesanan Masuk Terbaru</option>
+                    <option value="upcoming_event" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Jadwal Acara Terdekat (Hari-H)</option>
+                    <option value="oldest" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Pemesanan Paling Lama</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* PAGE SIZE / LIMIT SELECTOR */}
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl">
+                <ListFilter className="w-4 h-4 text-[#0066CC] shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[9px] font-mono uppercase text-zinc-500 dark:text-zinc-400 font-semibold">Limit Baris:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="bg-transparent text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value={5} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">5 baris / hal</option>
+                    <option value={10} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">10 baris / hal</option>
+                    <option value={25} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">25 baris / hal</option>
+                    <option value={50} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">50 baris / hal</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Date Range Row */}
+            {(setStartDate && setEndDate) && (
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/60 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] font-medium flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#0066CC]" /> Rentang Tanggal Acara:
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={startDate || ''}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        if (monthFilter !== 'all') setMonthFilter('all');
+                      }}
+                      className="px-2.5 py-1 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
+                      title="Tanggal Mulai"
+                    />
+                    <span className="text-zinc-400 font-mono">–</span>
+                    <input
+                      type="date"
+                      value={endDate || ''}
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                        if (monthFilter !== 'all') setMonthFilter('all');
+                      }}
+                      className="px-2.5 py-1 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 cursor-pointer"
+                      title="Tanggal Selesai"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      className="p-1 text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer"
+                      title="Hapus filter rentang tanggal"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

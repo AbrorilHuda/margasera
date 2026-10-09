@@ -268,8 +268,26 @@ function BookingsContent() {
           return new Date(b.createdAt || b.bookingDate).getTime() - new Date(a.createdAt || a.bookingDate).getTime();
         if (bookingSort === 'oldest')
           return new Date(a.createdAt || a.bookingDate).getTime() - new Date(b.createdAt || b.bookingDate).getTime();
-        if (bookingSort === 'upcoming_event')
-          return new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime();
+        if (bookingSort === 'upcoming_event') {
+          const now = new Date();
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const aDate = a.bookingDate || '';
+          const bDate = b.bookingDate || '';
+          const aIsUpcoming = aDate >= todayStr;
+          const bIsUpcoming = bDate >= todayStr;
+
+          // 1. Acara yang akan datang (>= hari ini) diprioritaskan di atas acara lampau (< hari ini)
+          if (aIsUpcoming && !bIsUpcoming) return -1;
+          if (!aIsUpcoming && bIsUpcoming) return 1;
+
+          // 2. Jika sama-sama akan datang, urutkan kronologis dari yang paling dekat dengan hari ini (ascending)
+          if (aIsUpcoming && bIsUpcoming) {
+            return aDate.localeCompare(bDate);
+          }
+
+          // 3. Jika sama-sama sudah lewat, urutkan dari yang paling baru saja lewat (descending)
+          return bDate.localeCompare(aDate);
+        }
         return 0;
       });
   }, [bookings, bookingStatusFilter, monthFilter, startDate, endDate, serviceFilter, bookingSearch, bookingSort]);

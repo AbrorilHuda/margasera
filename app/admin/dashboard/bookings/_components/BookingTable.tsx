@@ -19,6 +19,7 @@ import {
   Share2,
   CalendarClock,
   Images,
+  MoreHorizontal,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
@@ -105,6 +106,19 @@ export function BookingTable({
   onDelete,
   onEdit,
 }: BookingTableProps) {
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
+
+  // Close dropdown menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openMenuId && !(e.target as Element).closest('.action-menu-dropdown')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuId]);
+
   const hasActiveFilter =
     bookingStatusFilter !== 'all' ||
     monthFilter !== 'all' ||
@@ -258,73 +272,25 @@ export function BookingTable({
                     </div>
                   </td>
 
-                  {/* Actions Toolbar */}
-                  <td className="py-3 px-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {/* Detail Modal */}
+                  {/* Actions Toolbar (Sleek & Uncluttered) */}
+                  <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1.5 relative action-menu-dropdown">
+                      {/* Tombol Utama: Detail */}
                       <button
                         onClick={() => onDetail(b)}
-                        className="p-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-[#0066CC] text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC] dark:hover:text-white rounded-lg transition-all cursor-pointer"
-                        title="Lihat Detail Booking"
+                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 text-[#0066CC] dark:text-blue-300 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                        title="Lihat Detail Lengkap Booking"
                       >
                         <Eye className="w-3.5 h-3.5" />
+                        <span>Detail</span>
                       </button>
 
-                      {/* Google Calendar Link */}
-                      <a
-                        href={generateGoogleCalendarUrl(b)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors"
-                        title="Tambah ke Google Calendar"
-                      >
-                        <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                        <span className="hidden xl:inline">Gcal</span>
-                      </a>
-
-                      {/* Invoice Button */}
-                      <button
-                        onClick={() => onInvoice(b)}
-                        className="px-2 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer"
-                        title="Lihat / Cetak Invoice Pembayaran"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                        <span className="hidden xl:inline">Invoice</span>
-                      </button>
-
-                      {/* Galeri Seleksi Button */}
-                      {onOpenGallery && (
-                        <button
-                          onClick={() => onOpenGallery(b)}
-                          className={`px-2 py-1 border rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer ${
-                            b.driveFolderUrl
-                              ? 'bg-blue-50 dark:bg-blue-500/15 border-blue-300 dark:border-blue-500/40 text-[#0066CC] dark:text-[#3399FF]'
-                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-[#0066CC]'
-                          }`}
-                          title="Kelola Galeri Seleksi Foto Klien"
-                        >
-                          <Images className="w-3.5 h-3.5 text-[#0066CC]" />
-                          <span className="hidden xl:inline">Galeri</span>
-                        </button>
-                      )}
-
-                      {/* Edit / Reschedule Button */}
-                      {onEdit && b.status !== 'completed' && (
-                        <button
-                          onClick={() => onEdit(b)}
-                          className="px-2 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer"
-                          title="Edit Booking / Pindah Tanggal Acara"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                          <span className="hidden xl:inline">Pindah Tgl</span>
-                        </button>
-                      )}
-
-                      {/* Quick Confirm */}
+                      {/* Tombol Cepat: Quick Status Action */}
                       {b.status === 'pending' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'confirmed')}
-                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold uppercase tracking-wider rounded-lg transition-all shadow-xs cursor-pointer active:scale-95"
+                          title="Konfirmasi Pesanan Ini"
                         >
                           Confirm
                         </button>
@@ -332,31 +298,108 @@ export function BookingTable({
                       {b.status === 'confirmed' && (
                         <button
                           onClick={() => onUpdateStatus(b.id, 'completed')}
-                          className="px-2 py-1 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer"
+                          className="px-2.5 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[11px] font-semibold uppercase tracking-wider rounded-lg transition-all shadow-xs cursor-pointer active:scale-95"
                           title="Selesaikan Booking & Kirim Link Testimoni"
                         >
-                          Complete
+                          Selesai
                         </button>
                       )}
                       {b.status === 'completed' && onShareTestimonial && (
                         <button
                           onClick={() => onShareTestimonial(b)}
-                          className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-                          title="Kirim / Salin Tautan Testimoni untuk Klien Ini"
+                          className="px-2 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                          title="Salin Tautan Ulasan / Testimoni"
                         >
                           <Share2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          <span className="hidden xl:inline">Link Ulasan</span>
+                          <span>Ulasan</span>
                         </button>
                       )}
 
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => onDelete(b.id, b.bookingCode)}
-                        className="p-1.5 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
-                        title="Hapus Booking"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Dropdown Menu Titik Tiga (Aksi Sekunder) */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === b.id ? null : b.id);
+                          }}
+                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                            openMenuId === b.id
+                              ? 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                          }`}
+                          title="Opsi & Aksi Lainnya"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+
+                        {openMenuId === b.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150 text-left"
+                          >
+                            <button
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onInvoice(b);
+                              }}
+                              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-[#0066CC] dark:hover:text-blue-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                              <span>Invoice Pembayaran</span>
+                            </button>
+
+                            {onOpenGallery && (
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onOpenGallery(b);
+                                }}
+                                className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+                              >
+                                <Images className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
+                                <span>Kelola Galeri Foto</span>
+                              </button>
+                            )}
+
+                            <a
+                              href={generateGoogleCalendarUrl(b)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenMenuId(null)}
+                              className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-300 flex items-center gap-2.5 transition-colors"
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span>Google Calendar</span>
+                            </a>
+
+                            {onEdit && b.status !== 'completed' && (
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onEdit(b);
+                                }}
+                                className="w-full px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                              >
+                                <CalendarClock className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                                <span>Pindah Tgl / Edit</span>
+                              </button>
+                            )}
+
+                            <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+                            <button
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onDelete(b.id, b.bookingCode);
+                              }}
+                              className="w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Hapus Booking</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
