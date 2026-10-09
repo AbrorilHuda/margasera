@@ -1,6 +1,7 @@
 'use server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
+import { logAdminAudit } from '@/lib/audit-logger';
 import type { StudioSettings } from '@/lib/types';
 import { fetchStudioSettings } from '@/lib/data/settings';
 
@@ -35,6 +36,11 @@ export async function updateStudioSettings(
         .eq('id', settings.id);
 
       if (error) return { success: false, error: error.message };
+      await logAdminAudit('UPDATE_STUDIO_SETTINGS', settings.id, {
+        studioName: settings.studioName,
+        bankName: settings.bankName,
+        bankAccountNumber: settings.bankAccountNumber,
+      });
       return { success: true };
     } else {
       const { data: existing } = await supabase
@@ -49,6 +55,11 @@ export async function updateStudioSettings(
           .eq('id', existing[0].id);
 
         if (error) return { success: false, error: error.message };
+        await logAdminAudit('UPDATE_STUDIO_SETTINGS', existing[0].id, {
+          studioName: settings.studioName,
+          bankName: settings.bankName,
+          bankAccountNumber: settings.bankAccountNumber,
+        });
         return { success: true };
       } else {
         const { error } = await supabase
@@ -56,6 +67,11 @@ export async function updateStudioSettings(
           .insert(payload);
 
         if (error) return { success: false, error: error.message };
+        await logAdminAudit('CREATE_STUDIO_SETTINGS', undefined, {
+          studioName: settings.studioName,
+          bankName: settings.bankName,
+          bankAccountNumber: settings.bankAccountNumber,
+        });
         return { success: true };
       }
     }

@@ -591,6 +591,7 @@ export async function cancelBookingByClient(
       .eq('id', bookingId);
 
     if (error) return { success: false, error: error.message };
+    await logAdminAudit('CLIENT_CANCEL_BOOKING', bookingId, { reason, bookingCode: cleanCode });
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Gagal membatalkan pemesanan.' };

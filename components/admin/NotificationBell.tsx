@@ -20,6 +20,7 @@ import {
   getFirebaseMessaging,
   onMessage,
 } from '@/lib/firebase/client';
+import { useToast } from '@/components/ui/toast-context';
 
 interface Notification {
   id: string;
@@ -76,6 +77,7 @@ function getNotificationVisual(type: Notification['type']) {
 
 export function NotificationBell() {
   const router = useRouter();
+  const { confirmModal } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -247,24 +249,31 @@ export function NotificationBell() {
     }
   };
 
-  const handleClearAll = async (e: React.MouseEvent) => {
+  const handleClearAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Hapus semua riwayat notifikasi?')) return;
-    setLoading(true);
-    const prevList = [...notifications];
-    setNotifications([]);
-    try {
-      const res = await fetch('/api/admin/notifications', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deleteAll: true }),
-      });
-      if (!res.ok) setNotifications(prevList);
-    } catch {
-      setNotifications(prevList);
-    } finally {
-      setLoading(false);
-    }
+    confirmModal({
+      title: 'Hapus Semua Notifikasi?',
+      message: 'Apakah Anda yakin ingin menghapus seluruh riwayat notifikasi? Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Ya, Hapus Semua',
+      variant: 'danger',
+      onConfirm: async () => {
+        setLoading(true);
+        const prevList = [...notifications];
+        setNotifications([]);
+        try {
+          const res = await fetch('/api/admin/notifications', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deleteAll: true }),
+          });
+          if (!res.ok) setNotifications(prevList);
+        } catch {
+          setNotifications(prevList);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   const handleItemClick = async (notif: Notification) => {

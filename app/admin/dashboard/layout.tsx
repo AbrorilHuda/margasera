@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Calendar,
@@ -24,6 +24,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Wallet,
+  Terminal,
 } from 'lucide-react';
 import { signOutAdmin } from '@/lib/actions/admin';
 import { clearAllLocalOfflineData } from '@/lib/offline/db';
@@ -62,16 +63,90 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard/pricing': 'Packages & Pricing',
   '/admin/dashboard/calendar': 'Availability Calendar',
   '/admin/dashboard/settings': 'Studio Settings',
+  '/admin/dashboard/logs': 'Axiom Audit Logs',
 };
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { confirmModal } = useToast();
+  const router = useRouter();
+  const { toast, confirmModal } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(DEFAULT_STUDIO_SETTINGS);
+  const [isAuditMode, setIsAuditMode] = useState(false);
+
+  const logoClickCountRef = useRef(0);
+  const logoClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Baca status audit mode dari sessionStorage
+  useEffect(() => {
+    try {
+      const active = sessionStorage.getItem('margasera_audit_mode_active') === 'true';
+      setIsAuditMode(active);
+    } catch {}
+
+    const handleModeChange = () => {
+      try {
+        const active = sessionStorage.getItem('margasera_audit_mode_active') === 'true';
+        setIsAuditMode(active);
+      } catch {}
+    };
+
+    window.addEventListener('margasera_audit_mode_change', handleModeChange);
+    return () => window.removeEventListener('margasera_audit_mode_change', handleModeChange);
+  }, []);
+
+  // Shortcut rahasia: Tekan logo 5 kali untuk unlock/lock mode audit log
+  const handleLogoSecretClick = (e: React.MouseEvent) => {
+    logoClickCountRef.current += 1;
+
+    if (logoClickTimerRef.current) {
+      clearTimeout(logoClickTimerRef.current);
+    }
+
+    logoClickTimerRef.current = setTimeout(() => {
+      logoClickCountRef.current = 0;
+    }, 2500);
+
+    if (logoClickCountRef.current === 3) {
+      toast.info('⚡ 2 ketukan lagi untuk Secret Mode...');
+    } else if (logoClickCountRef.current === 4) {
+      toast.info('⚡ 1 ketukan lagi...');
+    } else if (logoClickCountRef.current >= 5) {
+      e.preventDefault();
+      logoClickCountRef.current = 0;
+      const nextMode = !isAuditMode;
+      if (nextMode) {
+        sessionStorage.setItem('margasera_audit_mode_active', 'true');
+        setIsAuditMode(true);
+        toast.success('🔓 Secret Mode Aktif! Membuka Axiom Audit Logs...');
+        router.push('/admin/dashboard/logs');
+      } else {
+        sessionStorage.removeItem('margasera_audit_mode_active');
+        setIsAuditMode(false);
+        toast.info('🔒 Secret Audit Mode dinonaktifkan.');
+        if (pathname === '/admin/dashboard/logs') {
+          router.push('/admin/dashboard');
+        }
+      }
+      window.dispatchEvent(new Event('margasera_audit_mode_change'));
+    }
+  };
+
+  const currentNavItems = useMemo(() => {
+    if (!isAuditMode) return NAV_ITEMS;
+    return [
+      ...NAV_ITEMS,
+      {
+        href: '/admin/dashboard/logs',
+        label: 'Audit Logs (Axiom)',
+        shortLabel: 'Logs',
+        icon: Terminal,
+      },
+    ];
+  }, [isAuditMode]);
 
   // Baca preferensi sidebar dari localStorage & adaptasi ukuran layar iPad
   useEffect(() => {
@@ -185,16 +260,20 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         <div className="flex flex-col gap-6">
           {/* Logo & Toggle Header */}
           <div className={`flex items-center justify-between ${isCollapsed ? 'md:hidden' : ''}`}>
-            <Link href="/" className="flex items-center gap-3">
+            <div
+              onClick={handleLogoSecretClick}
+              className="flex items-center gap-3 cursor-pointer select-none active:scale-95 transition-transform"
+              title="Ketuk 5 kali untuk membuka Secret Audit Mode"
+            >
               <Image
                 src="/logo.png"
                 alt="Margasera Logo"
                 width={160}
                 height={48}
-                className="h-9 w-auto object-contain dark:brightness-100"
+                className="h-9 w-auto object-contain dark:brightness-100 pointer-events-none"
                 priority
               />
-            </Link>
+            </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -217,11 +296,15 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           {/* Desktop Collapsed Header */}
           {isCollapsed && (
             <div className="hidden md:flex w-full flex-col items-center gap-2">
-              <Link href="/" className="group flex items-center justify-center" title="Margasera Photography">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0066CC] to-[#004C99] text-white flex items-center justify-center font-bold font-serif text-lg shadow-md shadow-[#0066CC]/25 group-hover:scale-105 transition-transform">
+              <div
+                onClick={handleLogoSecretClick}
+                className="group flex items-center justify-center cursor-pointer select-none"
+                title="Ketuk 5 kali untuk membuka Secret Audit Mode"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0066CC] to-[#004C99] text-white flex items-center justify-center font-bold font-serif text-lg shadow-md shadow-[#0066CC]/25 group-hover:scale-105 active:scale-95 transition-transform">
                   M
                 </div>
-              </Link>
+              </div>
               <button
                 onClick={toggleCollapse}
                 className="hidden md:flex p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
@@ -273,7 +356,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             <span className={`text-[10px] font-mono text-zinc-500 uppercase tracking-[0.2em] px-3 mb-1.5 font-medium ${isCollapsed ? 'md:hidden' : ''}`}>
               Navigation Menu
             </span>
-            {NAV_ITEMS.map((item) => {
+            {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
 
@@ -428,7 +511,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
               )}
             </button>
 
-            <div className="min-w-0">
+            <div
+              onClick={handleLogoSecretClick}
+              className="min-w-0 cursor-pointer select-none active:scale-[0.99] transition-transform"
+              title="Ketuk 5 kali untuk membuka Secret Audit Mode"
+            >
               <span className="text-[9px] sm:text-[10px] font-mono tracking-[0.2em] text-[#0066CC] uppercase font-semibold block truncate">
                 Margasera Control Center
               </span>
@@ -439,6 +526,17 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {isAuditMode && (
+              <Link
+                href="/admin/dashboard/logs"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/40 hover:bg-purple-500/25 transition-all shadow-xs shrink-0 animate-pulse"
+                title="Axiom Audit Mode Aktif! Klik untuk buka log"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping shrink-0" />
+                <span className="hidden sm:inline">AUDIT MODE</span>
+                <span className="sm:hidden">LOGS</span>
+              </Link>
+            )}
             <OfflineSyncStatus />
             <NotificationBell />
             <ThemeToggle />

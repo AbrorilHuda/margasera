@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
 import { sendAdminNotification } from '@/lib/notifications';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logAdminAudit } from '@/lib/audit-logger';
 
 export interface SubmitTestimonialPayload {
   name: string;
@@ -159,6 +160,7 @@ export async function toggleTestimonialPublishStatus(
 
     if (error) return { success: false, error: error.message };
 
+    await logAdminAudit('TOGGLE_TESTIMONIAL_PUBLISH', id, { isPublished });
     revalidatePath('/');
     revalidatePath('/admin/dashboard/testimonials');
     return { success: true };
@@ -181,6 +183,7 @@ export async function deleteTestimonialAdmin(
 
     if (error) return { success: false, error: error.message };
 
+    await logAdminAudit('DELETE_TESTIMONIAL', id);
     revalidatePath('/');
     revalidatePath('/admin/dashboard/testimonials');
     return { success: true };

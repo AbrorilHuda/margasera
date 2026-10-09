@@ -4,6 +4,7 @@ import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/actions/admin';
 import { isValidUUID } from '@/lib/utils';
+import { logAdminAudit } from '@/lib/audit-logger';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Service, Package } from '@/lib/types';
 
@@ -107,6 +108,10 @@ export async function upsertService(
     : await supabase.from('services').insert(insertPayload);
 
   if (error) return { success: false, error: error.message };
+  await logAdminAudit(isValidUUID(service.id) ? 'UPDATE_SERVICE' : 'CREATE_SERVICE', service.id, {
+    name: service.name,
+    slug: service.slug,
+  });
   return { success: true };
 }
 
@@ -121,6 +126,7 @@ export async function deleteService(
 
   const { error } = await supabase.from('services').delete().eq('id', targetId);
   if (error) return { success: false, error: error.message };
+  await logAdminAudit('DELETE_SERVICE', targetId);
   return { success: true };
 }
 
@@ -222,6 +228,11 @@ export async function upsertPackage(
     : await supabase.from('packages').insert(payload);
 
   if (error) return { success: false, error: error.message };
+  await logAdminAudit(isValidUUID(pkg.id) ? 'UPDATE_PACKAGE' : 'CREATE_PACKAGE', pkg.id, {
+    name: pkg.name,
+    price: pkg.price,
+    serviceId: targetServiceId,
+  });
   return { success: true };
 }
 
@@ -236,5 +247,6 @@ export async function deletePackage(
 
   const { error } = await supabase.from('packages').delete().eq('id', targetId);
   if (error) return { success: false, error: error.message };
+  await logAdminAudit('DELETE_PACKAGE', targetId);
   return { success: true };
 }
