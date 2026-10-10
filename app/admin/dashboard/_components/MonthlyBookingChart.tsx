@@ -224,14 +224,14 @@ export function MonthlyBookingChart({ bookings }: MonthlyBookingChartProps) {
                 {/* Floating Tooltip Card */}
                 {isHovered && (
                   <div className="absolute bottom-full mb-3 z-30 pointer-events-none transition-all">
-                    <div className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 p-2.5 rounded-xl shadow-xl text-center flex flex-col gap-1 min-w-[130px] border border-zinc-700 dark:border-zinc-200">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0066CC]">
+                    <div className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 p-2.5 rounded-xl shadow-xl dark:shadow-2xl text-center flex flex-col gap-1 min-w-[135px] border border-zinc-200 dark:border-zinc-800">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0066CC] dark:text-blue-400">
                         {m.monthName} {selectedYear}
                       </span>
-                      <div className="text-xs font-bold">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                         {m.count} Pesanan
                       </div>
-                      <div className="text-[10px] font-mono text-emerald-400 dark:text-emerald-700 font-semibold">
+                      <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                         Kas: {formatCurrency(m.revenue)}
                       </div>
                       {isPeak && (

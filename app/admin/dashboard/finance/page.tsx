@@ -43,6 +43,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, DEFAULT_STUDIO_SETTINGS } 
 import { useToast } from '@/components/ui/toast-context';
 import { ExpenseModal } from './_components/ExpenseModal';
 import { FinancePdfReportModal } from './_components/FinancePdfReportModal';
+import { MonthlyCashflowStockChart } from './_components/MonthlyCashflowStockChart';
 import type { Booking, Expense, StudioSettings } from '@/lib/types';
 
 export default function FinanceDashboardPage() {
@@ -451,6 +452,9 @@ export default function FinanceDashboardPage() {
           </span>
         </div>
       </div>
+
+      {/* ===== GRAFIK TREN ARUS KAS BULANAN (STOCK-STYLE AREA CHART) ===== */}
+      <MonthlyCashflowStockChart bookings={bookings} expenses={expenses} />
 
       {/* ===== FILTER TOOLBAR ===== */}
       <div className="p-4 bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-xs space-y-3">

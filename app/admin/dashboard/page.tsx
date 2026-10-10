@@ -27,6 +27,7 @@ import { getAllLocalBookings, getAllLocalExpenses, saveLocalExpenses, getMasterD
 import { formatCurrency, formatDate, getBookingPaidAmount, getBookingRemainingAmount, getWhatsAppUrl } from '@/lib/utils';
 import type { Booking, GalleryProject, Service, Package, Expense } from '@/lib/types';
 import { MonthlyBookingChart } from './_components/MonthlyBookingChart';
+import { ServicePackagePopularityChart } from './_components/ServicePackagePopularityChart';
 
 export default function AdminOverviewPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -538,6 +539,15 @@ export default function AdminOverviewPage() {
           4. GRAFIK BULANAN ANALYTICS
           ============================================================ */}
       <MonthlyBookingChart bookings={bookings} />
+
+      {/* ============================================================
+          4b. POPULARITAS LAYANAN & PAKET (SPLIT ANALYTICS)
+          ============================================================ */}
+      <ServicePackagePopularityChart
+        bookings={bookings}
+        services={services}
+        packages={packages}
+      />
 
       {/* ============================================================
           5. PESANAN TERBARU (DESKTOP TABLE + MOBILE iOS CARDS)

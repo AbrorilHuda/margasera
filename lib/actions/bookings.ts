@@ -7,6 +7,7 @@ import { isValidUUID, isWeddingService, getTodayDateString, generateBookingCode 
 import type { Database } from '@/lib/supabase/database.types';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 import { sendAdminNotification } from '@/lib/notifications';
+import { sendBookingConfirmationEmail, sendThankYouReviewEmail } from '@/lib/email/resend';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logAdminAudit } from '@/lib/audit-logger';
 
@@ -81,6 +82,15 @@ export async function createBooking(
   formData: Omit<Booking, 'id' | 'bookingCode' | 'status' | 'createdAt'>
 ): Promise<{ success: boolean; bookingCode?: string; error?: string }> {
   const supabase = await createClient();
+
+  // 0. Cegah spam / abuse booking berulang (maks 5 kali per menit per IP)
+  const isAllowed = await checkRateLimit('create-booking', 5, 60_000);
+  if (!isAllowed) {
+    return {
+      success: false,
+      error: 'Terlalu banyak permintaan pemesanan dalam waktu singkat. Mohon tunggu 1 menit lalu coba kembali.',
+    };
+  }
 
   // Validasi ketersediaan tanggal & bentrok jam di database Supabase
   if (formData.bookingDate) {
@@ -221,6 +231,29 @@ export async function createBooking(
     url: `/admin/dashboard/bookings?search=${encodeURIComponent(bookingCode)}&openDetail=true`,
   });
 
+  // Kirim email konfirmasi ke klien (non-blocking) jika klien mengisi alamat email valid
+  const clientEmail = (formData.email || '').trim();
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail);
+  if (isValidEmail) {
+    sendBookingConfirmationEmail({
+      to: clientEmail,
+      customerName: formData.customerName,
+      bookingCode,
+      serviceName: formData.serviceName || 'Sesi Foto',
+      packageName: formData.packageName || 'Paket Standar',
+      bookingDate: formData.bookingDate,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      notes: formData.notes,
+      totalPrice: formData.totalPrice,
+      downPayment: formData.downPayment,
+      remainingAmount: formData.remainingAmount,
+    }).catch((err) => {
+      console.error('[Booking Email] Gagal mengirim email konfirmasi booking:', err);
+    });
+  }
+
   return { success: true, bookingCode };
 }
 
@@ -273,6 +306,13 @@ export async function updateBookingStatus(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
+  // Ambil record sebelum update untuk cek email & status sebelumnya
+  const { data: currentBooking } = await supabase
+    .from('bookings')
+    .select('customer_name, email, booking_code, service_name, package_name, booking_date, total_price, paid_amount, status, payment_status')
+    .eq('id', id)
+    .single();
+
   const payload = {
     status,
     updated_at: new Date().toISOString(),
@@ -282,6 +322,24 @@ export async function updateBookingStatus(
   if (error) return { success: false, error: error.message };
 
   await logAdminAudit('UPDATE_BOOKING_STATUS', id, { status });
+
+  // Kirim email terima kasih & ulasan jika status diubah ke 'completed' dan klien menginputkan email
+  if (status === 'completed' && currentBooking && currentBooking.status !== 'completed' && currentBooking.email?.trim()) {
+    sendThankYouReviewEmail({
+      to: currentBooking.email.trim(),
+      customerName: currentBooking.customer_name,
+      bookingCode: currentBooking.booking_code,
+      serviceName: currentBooking.service_name || 'Layanan Studio',
+      packageName: currentBooking.package_name || 'Paket Standar',
+      bookingDate: currentBooking.booking_date,
+      totalPrice: currentBooking.total_price,
+      paidAmount: currentBooking.paid_amount,
+      triggerType: 'completed',
+    }).catch((err) => {
+      console.error('[Email] Gagal mengirim thank-you review email (completed):', err);
+    });
+  }
+
   return { success: true };
 }
 
@@ -294,6 +352,13 @@ export async function updatePaymentStatus(
   if (!(await requireAdmin())) return { success: false, error: 'Unauthorized' };
   const supabase = createAdminClient();
 
+  // Ambil record sebelum update untuk cek email & status pembayaran sebelumnya
+  const { data: currentBooking } = await supabase
+    .from('bookings')
+    .select('customer_name, email, booking_code, service_name, package_name, booking_date, total_price, paid_amount, status, payment_status')
+    .eq('id', id)
+    .single();
+
   const payload = {
     payment_status: paymentStatus,
     updated_at: new Date().toISOString(),
@@ -304,6 +369,24 @@ export async function updatePaymentStatus(
   if (error) return { success: false, error: error.message };
 
   await logAdminAudit('UPDATE_PAYMENT_STATUS', id, { paymentStatus, paidAmount });
+
+  // Kirim email terima kasih & ulasan jika status pembayaran diubah ke 'paid_full' dan klien menginputkan email
+  if (paymentStatus === 'paid_full' && currentBooking && currentBooking.payment_status !== 'paid_full' && currentBooking.email?.trim()) {
+    sendThankYouReviewEmail({
+      to: currentBooking.email.trim(),
+      customerName: currentBooking.customer_name,
+      bookingCode: currentBooking.booking_code,
+      serviceName: currentBooking.service_name || 'Layanan Studio',
+      packageName: currentBooking.package_name || 'Paket Standar',
+      bookingDate: currentBooking.booking_date,
+      totalPrice: currentBooking.total_price,
+      paidAmount: paidAmount ?? currentBooking.total_price ?? currentBooking.paid_amount,
+      triggerType: 'paid_full',
+    }).catch((err) => {
+      console.error('[Email] Gagal mengirim thank-you review email (paid_full):', err);
+    });
+  }
+
   return { success: true };
 }
 
@@ -456,6 +539,13 @@ export async function updateBooking(
   if (payload.paidAmount !== undefined) updateData.paid_amount = payload.paidAmount;
   if (payload.remainingAmount !== undefined) updateData.remaining_amount = payload.remainingAmount;
 
+  // Ambil data status sebelumnya untuk mengecek apakah status benar-benar baru berubah
+  const { data: previousBooking } = await supabase
+    .from('bookings')
+    .select('status, payment_status')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase
     .from('bookings')
     .update(updateData)
@@ -469,6 +559,37 @@ export async function updateBooking(
     status: payload.status,
     paymentStatus: payload.paymentStatus,
   });
+
+  // Kirim email terima kasih & ulasan HANYA jika status baru saja berubah ke 'completed' atau 'paid_full'
+  const statusChangedToCompleted =
+    payload.status === 'completed' && previousBooking?.status !== 'completed';
+  const paymentChangedToPaidFull =
+    payload.paymentStatus === 'paid_full' && previousBooking?.payment_status !== 'paid_full';
+
+  if (statusChangedToCompleted || paymentChangedToPaidFull) {
+    const { data: updatedRec } = await supabase
+      .from('bookings')
+      .select('customer_name, email, booking_code, service_name, package_name, booking_date, total_price, paid_amount')
+      .eq('id', id)
+      .single();
+
+    if (updatedRec?.email?.trim()) {
+      sendThankYouReviewEmail({
+        to: updatedRec.email.trim(),
+        customerName: updatedRec.customer_name,
+        bookingCode: updatedRec.booking_code,
+        serviceName: updatedRec.service_name || 'Layanan Studio',
+        packageName: updatedRec.package_name || 'Paket Standar',
+        bookingDate: updatedRec.booking_date,
+        totalPrice: updatedRec.total_price,
+        paidAmount: updatedRec.paid_amount,
+        triggerType: statusChangedToCompleted ? 'completed' : 'paid_full',
+      }).catch((err) => {
+        console.error('[Email] Gagal mengirim thank-you review email via updateBooking:', err);
+      });
+    }
+  }
+
   return { success: true };
 }
 
