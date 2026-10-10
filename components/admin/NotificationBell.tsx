@@ -85,6 +85,7 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fcmTokenRef = useRef<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastSoundTimeRef = useRef<number>(0);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -101,6 +102,11 @@ export function NotificationBell() {
     if (typeof window === 'undefined') return;
     const isMuted = localStorage.getItem('margasera_sound_enabled') === 'false';
     if (!force && isMuted) return;
+
+    // Cooldown 1.2 detik agar suara tidak bertabrakan jika Realtime & FCM trigger berdekatan
+    const now = Date.now();
+    if (!force && now - lastSoundTimeRef.current < 1200) return;
+    lastSoundTimeRef.current = now;
 
     try {
       const audio = new Audio('/sounds/notification.mp3');

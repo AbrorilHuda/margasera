@@ -215,9 +215,15 @@ export async function createBooking(
 
   // Retry jika kode bentrok (unique violation 23505)
   let error: any = null;
+  let insertedBookingId: string | null = null;
   for (let i = 0; i < 3; i++) {
-    ({ error } = await supabase.from('bookings').insert(payload));
-    if (!error || error.code !== '23505') break;
+    const res = await supabase.from('bookings').insert(payload).select('id').single();
+    error = res.error;
+    if (!error) {
+      insertedBookingId = res.data?.id ?? null;
+      break;
+    }
+    if (error.code !== '23505') break;
     payload.booking_code = bookingCode = generateBookingCode(formData.bookingDate);
   }
   if (error) return { success: false, error: error.message };
@@ -227,7 +233,7 @@ export async function createBooking(
     type: 'booking',
     title: '📅 Booking Baru Masuk',
     body: `${formData.customerName} memesan ${formData.serviceName || formData.packageName || 'sesi foto'} pada ${formData.bookingDate}`,
-    bookingId: bookingCode,
+    bookingId: insertedBookingId || undefined,
     url: `/admin/dashboard/bookings?search=${encodeURIComponent(bookingCode)}&openDetail=true`,
   });
 
@@ -265,18 +271,20 @@ export async function getBookingByCode(
     return { booking: null, error: 'Terlalu banyak percobaan. Coba lagi dalam 1 menit.' };
   }
 
+  const cleanCode = code.trim();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*')
-    .eq('booking_code', code.toUpperCase().trim())
-    .single();
+  let query = supabase.from('bookings').select('*');
+  const isUuid: boolean = isValidUUID(cleanCode);
+  if (isUuid) {
+    query = query.or(`id.eq.${cleanCode},booking_code.eq.${cleanCode.toUpperCase()}`);
+  } else {
+    query = query.eq('booking_code', cleanCode.toUpperCase());
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return { booking: null, error: 'Kode booking tidak ditemukan.' };
-    }
     return { booking: null, error: error.message };
   }
 

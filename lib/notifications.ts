@@ -3,6 +3,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getFirebaseAdminMessaging } from '@/lib/firebase/admin';
+import { isValidUUID } from '@/lib/utils';
 
 export type NotificationType = 'booking' | 'testimonial' | 'gallery_selection';
 
@@ -22,18 +23,40 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
   try {
     const supabase = createAdminClient();
 
+    // Validasi & normalisasi booking_id (kolom di DB bertipe UUID).
+    // Jika dikirim booking_code (misal "MS-..."), cari UUID aslinya dari tabel bookings.
+    let validBookingId: string | null = null;
+    if (payload.bookingId) {
+      const candidate = payload.bookingId.trim();
+      const isUuid: boolean = isValidUUID(candidate);
+      if (isUuid) {
+        validBookingId = candidate;
+      } else {
+        const { data: bkg } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('booking_code', candidate.toUpperCase())
+          .maybeSingle();
+        if (bkg?.id && isValidUUID(bkg.id)) {
+          validBookingId = bkg.id;
+        }
+      }
+    }
+
     // 1. Simpan ke tabel notifications
     const { error: insertErr } = await supabase.from('notifications').insert({
       type: payload.type,
       title: payload.title,
       body: payload.body,
-      booking_id: payload.bookingId || null,
+      booking_id: validBookingId,
       url: payload.url || null,
       is_read: false,
     });
 
     if (insertErr) {
       console.error('[notification] Gagal menyimpan notifikasi ke DB:', insertErr.message);
+      // Jangan lanjutkan kirim FCM jika simpan DB gagal agar tidak muncul suara notifikasi tanpa ada datanya
+      return;
     }
 
     // 2. Ambil semua FCM tokens yang aktif

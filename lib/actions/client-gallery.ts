@@ -610,7 +610,7 @@ export async function submitClientGallerySelections(
       type: 'gallery_selection',
       title: '🖼️ Klien Pilih Foto',
       body: `${booking.customer_name} telah memilih ${validFileIds.length} foto dari galeri mereka`,
-      bookingId: targetCode,
+      bookingId: booking.id,
       url: `/admin/dashboard/bookings?search=${encodeURIComponent(targetCode)}&openGallery=true`,
     });
 
