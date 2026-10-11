@@ -3,6 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Navbar } from '@/components/navigation/navbar';
+import { AiChatWidget } from '@/components/ai/AiChatWidget';
 
 export function LayoutWrapper({
   children,
@@ -32,6 +33,7 @@ export function LayoutWrapper({
         {children}
       </main>
       {footer}
+      <AiChatWidget />
     </>
   );
 }
