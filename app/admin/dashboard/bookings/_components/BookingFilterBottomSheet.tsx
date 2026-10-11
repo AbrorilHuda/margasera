@@ -104,7 +104,7 @@ export function BookingFilterBottomSheet({
               <select
                 value={monthFilter}
                 onChange={(e) => setMonthFilter(e.target.value)}
-                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
+                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
               >
                 <option value="all">All Months</option>
                 {availableMonths.map((ym) => (
@@ -131,7 +131,7 @@ export function BookingFilterBottomSheet({
                     setStartDate(e.target.value);
                     if (monthFilter !== 'all') setMonthFilter('all');
                   }}
-                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC]"
+                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC]"
                   title="Mulai"
                 />
                 <input
@@ -141,7 +141,7 @@ export function BookingFilterBottomSheet({
                     setEndDate(e.target.value);
                     if (monthFilter !== 'all') setMonthFilter('all');
                   }}
-                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC]"
+                  className="w-full p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC]"
                   title="Selesai"
                 />
               </div>
@@ -157,7 +157,7 @@ export function BookingFilterBottomSheet({
               <select
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
-                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
+                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
               >
                 <option value="all">All Services</option>
                 {services.map((s) => (
@@ -179,7 +179,7 @@ export function BookingFilterBottomSheet({
               <select
                 value={bookingSort}
                 onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
-                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
+                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
               >
                 <option value="newest">Pemesanan Masuk Terbaru</option>
                 <option value="upcoming_event">Jadwal Acara Terdekat (Hari-H)</option>
@@ -198,7 +198,7 @@ export function BookingFilterBottomSheet({
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
+                className="w-full p-3.5 pr-10 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-base sm:text-xs font-medium focus:outline-none focus:border-[#0066CC] appearance-none cursor-pointer"
               >
                 <option value={5}>5 per page</option>
                 <option value={10}>10 per page</option>

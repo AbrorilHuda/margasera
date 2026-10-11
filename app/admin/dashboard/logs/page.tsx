@@ -10,6 +10,10 @@ import {
   Lock,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Copy,
   Check,
   Activity,
@@ -22,7 +26,7 @@ import {
   testAxiomAction,
   checkAxiomStatusAction,
 } from '@/lib/actions/audit';
-import type { AuditLogEntry } from '@/lib/audit-logger';
+import { cleanPayload, type AuditLogEntry } from '@/lib/audit-logger';
 import { useToast } from '@/components/ui/toast-context';
 
 export default function AdminAuditLogsPage() {
@@ -37,6 +41,8 @@ export default function AdminAuditLogsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   const [axiomStatus, setAxiomStatus] = useState<{
     isConfigured: boolean;
@@ -67,7 +73,7 @@ export default function AdminAuditLogsPage() {
     try {
       const [statusRes, logsRes] = await Promise.all([
         checkAxiomStatusAction(),
-        fetchAuditLogsAction(),
+        fetchAuditLogsAction(100),
       ]);
 
       setAxiomStatus(statusRes);
@@ -89,6 +95,11 @@ export default function AdminAuditLogsPage() {
       loadData();
     }
   }, [isUnlocked, loadData]);
+
+  // Reset pagination saat search/filter/pageSize berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, pageSize]);
 
   // 3. Test kirim event log ke Axiom
   const handleTestAxiom = async () => {
@@ -122,8 +133,9 @@ export default function AdminAuditLogsPage() {
   };
 
   const copyDetails = (id: string, details?: Record<string, unknown>) => {
-    if (!details) return;
-    navigator.clipboard.writeText(JSON.stringify(details, null, 2));
+    const cleaned = cleanPayload(details);
+    if (!cleaned) return;
+    navigator.clipboard.writeText(JSON.stringify(cleaned, null, 2));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
     toast.success('Payload data berhasil disalin ke clipboard');
@@ -152,6 +164,13 @@ export default function AdminAuditLogsPage() {
       return true;
     });
   }, [logs, categoryFilter, searchQuery]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage, pageSize]);
 
   // Format Helper
   const getActionBadgeColor = (action: string) => {
@@ -388,9 +407,10 @@ export default function AdminAuditLogsPage() {
           </div>
         ) : (
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
-            {filteredLogs.map((item) => {
+            {paginatedLogs.map((item) => {
               const isExpanded = expandedId === item.id;
-              const hasDetails = item.details && Object.keys(item.details).length > 0;
+              const cleaned = cleanPayload(item.details);
+              const hasDetails = Boolean(cleaned && Object.keys(cleaned).length > 0);
               const dateObj = new Date(item.timestamp);
               const formattedTime = !isNaN(dateObj.getTime())
                 ? dateObj.toLocaleString('id-ID', {
@@ -456,7 +476,7 @@ export default function AdminAuditLogsPage() {
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800/80 text-[10px] text-zinc-400">
                         <span>PAYLOAD AUDIT DATA</span>
                         <button
-                          onClick={() => copyDetails(item.id, item.details)}
+                          onClick={() => copyDetails(item.id, cleaned)}
                           className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
                         >
                           {copiedId === item.id ? (
@@ -473,13 +493,99 @@ export default function AdminAuditLogsPage() {
                         </button>
                       </div>
                       <pre className="text-emerald-400 whitespace-pre-wrap leading-relaxed">
-                        {JSON.stringify(item.details, null, 2)}
+                        {JSON.stringify(cleaned, null, 2)}
                       </pre>
                     </div>
                   )}
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ============================================================
+            PAGINATION TOOLBAR
+            ============================================================ */}
+        {!loading && filteredLogs.length > 0 && (
+          <div className="p-3.5 sm:px-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400">
+            {/* Info count */}
+            <div className="flex items-center gap-2 font-mono text-center sm:text-left">
+              <span>
+                Menampilkan{' '}
+                <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">
+                  {(currentPage - 1) * pageSize + 1}
+                </strong>
+                -
+                <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">
+                  {Math.min(filteredLogs.length, currentPage * pageSize)}
+                </strong>{' '}
+                dari{' '}
+                <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">
+                  {filteredLogs.length}
+                </strong>{' '}
+                log (Buffer server: {logs.length})
+              </span>
+            </div>
+
+            {/* Controls: Page size & Page nav */}
+            <div className="flex items-center gap-3">
+              {/* Page size selector */}
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span>Baris:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-1 focus:ring-purple-500 cursor-pointer text-xs"
+                >
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
+              {/* Nav buttons */}
+              <div className="flex items-center gap-1 font-mono">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  title="Halaman Pertama"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="px-2 py-1 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
+                  {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  title="Halaman Berikutnya"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage >= totalPages}
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  title="Halaman Terakhir"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

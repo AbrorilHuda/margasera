@@ -533,68 +533,83 @@ export function BookingTable({
                 </div>
               </div>
 
-              {/* Mobile Quick Actions */}
+              {/* Mobile Quick Actions (Clean, Safe & Thumb-Friendly) */}
               <div
-                className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/60"
+                className="flex items-center gap-2 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/60"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Primary Action Button */}
                 {b.status === 'pending' && (
                   <button
+                    type="button"
                     onClick={() => onUpdateStatus(b.id, 'confirmed')}
-                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center shadow-xs cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl text-center shadow-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
                   >
-                    Confirm
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Konfirmasi</span>
                   </button>
                 )}
                 {b.status === 'confirmed' && (
                   <button
+                    type="button"
                     onClick={() => onUpdateStatus(b.id, 'completed')}
-                    className="flex-1 py-1.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center shadow-xs cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl text-center shadow-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
                   >
-                    Complete &amp; Link
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Selesaikan</span>
                   </button>
                 )}
                 {b.status === 'completed' && onShareTestimonial && (
                   <button
+                    type="button"
                     onClick={() => onShareTestimonial(b)}
-                    className="flex-1 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
                   >
-                    <Share2 className="w-3 h-3" />
-                    <span>Link Testimoni</span>
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Link Ulasan</span>
                   </button>
                 )}
+                {b.status === 'cancelled' && (
+                  <button
+                    type="button"
+                    onClick={() => onDetail(b)}
+                    className="flex-1 py-2 px-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold rounded-xl text-center shadow-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Lihat Detail</span>
+                  </button>
+                )}
+
+                {/* Secondary Quick Buttons */}
                 <button
+                  type="button"
                   onClick={() => onInvoice(b)}
-                  className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[10px] font-mono rounded-lg cursor-pointer"
+                  className="py-2 px-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-2xs"
+                  title="Lihat Invoice"
                 >
-                  Invoice
+                  <FileText className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>Invoice</span>
                 </button>
+
                 {onOpenGallery && (
                   <button
+                    type="button"
                     onClick={() => onOpenGallery(b)}
-                    className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#0066CC] dark:text-[#3399FF] text-[10px] font-mono rounded-lg flex items-center gap-1 cursor-pointer"
+                    className="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/60 text-[#0066CC] dark:text-[#3399FF] text-xs font-semibold rounded-xl flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-2xs"
                     title="Kelola Galeri Seleksi Klien"
                   >
-                    <Images className="w-3 h-3 text-[#0066CC]" />
-                    <span>Galeri</span>
+                    <Images className="w-3.5 h-3.5 text-[#0066CC]" />
+                    <span className="hidden xs:inline">Galeri</span>
                   </button>
                 )}
-                {onEdit && b.status !== 'completed' && (
-                  <button
-                    onClick={() => onEdit(b)}
-                    className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400 text-[10px] font-mono rounded-lg flex items-center gap-1 cursor-pointer"
-                    title="Pindah Tanggal / Edit Jadwal"
-                  >
-                    <CalendarClock className="w-3 h-3" />
-                    <span>Pindah Tgl</span>
-                  </button>
-                )}
+
                 <button
-                  onClick={() => onDelete(b.id, b.bookingCode)}
-                  className="p-1.5 bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/50 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer shrink-0 ml-auto"
-                  title="Hapus Booking"
+                  type="button"
+                  onClick={() => onDetail(b)}
+                  className="p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                  title="Detail Lengkap & Opsi Lainnya"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Eye className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -639,62 +654,92 @@ export function BookingTable({
 
         {/* Pagination Navigation Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center gap-1.5">
-            {/* First Page */}
-            <button
-              disabled={currentPage === 1}
-              onClick={() => onPageChange(1)}
-              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Halaman Pertama"
-            >
-              <ChevronsLeft className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Mobile-only compact pagination: Prev / Hal X dari Y / Next */}
+            <div className="flex sm:hidden items-center justify-between w-full gap-2 pt-1">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => onPageChange(currentPage - 1)}
+                className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-2xs"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Sebelumnya</span>
+              </button>
 
-            {/* Prev Page */}
-            <button
-              disabled={currentPage === 1}
-              onClick={() => onPageChange(currentPage - 1)}
-              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Halaman Sebelumnya"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              <span className="text-xs font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+                Hal {currentPage} / {totalPages}
+              </span>
 
-            {/* Page Number Buttons */}
-            <div className="flex items-center gap-1">
-              {getPageNumbers().map((p) => (
-                <button
-                  key={p}
-                  onClick={() => onPageChange(p)}
-                  className={`w-7 h-7 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${currentPage === p
-                    ? 'bg-[#0066CC] text-white shadow-xs'
-                    : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                    }`}
-                >
-                  {p}
-                </button>
-              ))}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+                className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-2xs"
+              >
+                <span>Selanjutnya</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Next Page */}
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => onPageChange(currentPage + 1)}
-              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Halaman Selanjutnya"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* Desktop / Tablet full numeric pagination (hidden on mobile) */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              {/* First Page */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => onPageChange(1)}
+                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                title="Halaman Pertama"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
 
-            {/* Last Page */}
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => onPageChange(totalPages)}
-              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Halaman Terakhir"
-            >
-              <ChevronsRight className="w-4 h-4" />
-            </button>
+              {/* Prev Page */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => onPageChange(currentPage - 1)}
+                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Page Number Buttons */}
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => onPageChange(p)}
+                    className={`w-7 h-7 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${currentPage === p
+                      ? 'bg-[#0066CC] text-white shadow-xs'
+                      : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* Next Page */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                title="Halaman Selanjutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Last Page */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(totalPages)}
+                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                title="Halaman Terakhir"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

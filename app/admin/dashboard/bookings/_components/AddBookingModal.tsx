@@ -198,8 +198,8 @@ export function AddBookingModal({ services: propServices, packages: propPackages
     }
   };
 
-  const inputClass = 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none transition-colors';
-  const selectClass = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none transition-colors';
+  const inputClass = 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none transition-colors text-base sm:text-xs';
+  const selectClass = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:border-[#0066CC] p-3 rounded-xl text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none transition-colors text-base sm:text-xs';
   const labelClass = 'text-zinc-600 dark:text-zinc-400 uppercase font-mono font-medium text-[10px]';
 
   return (
@@ -334,7 +334,7 @@ export function AddBookingModal({ services: propServices, packages: propPackages
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Status Pembayaran</label>
               <select value={form.paymentStatus} onChange={(e) => patch({ paymentStatus: e.target.value as typeof form.paymentStatus })}
-                className={`${inputClass} font-mono text-xs`}>
+                className={`${inputClass} font-mono`}>
                 <option value="unpaid">Belum DP (Unpaid)</option>
                 <option value="dp_paid">DP Terbayar (DP Paid)</option>
                 <option value="paid_full">Lunas (Paid Full)</option>

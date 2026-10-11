@@ -10,7 +10,7 @@ export interface AuditLogEntry {
   details?: Record<string, unknown>;
 }
 
-// In-memory buffer untuk 100 log aktivitas admin terakhir di server (fallback & fast read)
+// In-memory buffer untuk log aktivitas admin terakhir di server (fallback & fast read)
 const memoryAuditLogs: AuditLogEntry[] = [];
 
 // Inisialisasi Axiom client (aktif jika AXIOM_TOKEN disetel di .env.local)
@@ -23,6 +23,30 @@ const axiom = axiomToken
       axiomClient: 'margasera-studio/1.0',
     })
   : null;
+
+/**
+ * Membersihkan payload audit log dari property bernilai null, undefined, atau string kosong.
+ * Mencegah Axiom menampilkan deretan properti schema kosong yang tidak relevan.
+ */
+export function cleanPayload(obj?: Record<string, unknown> | null): Record<string, unknown> | undefined {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return undefined;
+  const cleaned: Record<string, unknown> = {};
+
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === null || val === undefined || val === '') continue;
+
+    if (typeof val === 'object' && !Array.isArray(val)) {
+      const nested = cleanPayload(val as Record<string, unknown>);
+      if (nested && Object.keys(nested).length > 0) {
+        cleaned[key] = nested;
+      }
+    } else {
+      cleaned[key] = val;
+    }
+  }
+
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+}
 
 /**
  * Mencatat aktivitas penting admin (perubahan status, pembayaran, hapus data, keuangan).
@@ -38,25 +62,27 @@ export async function logAdminAudit(
     const session = await getAdminSession();
     const actor = session.email || session.name || 'admin@margasera.internal';
     const timestamp = new Date().toISOString();
+    const cleanedDetails = cleanPayload(details);
+
     const entry: AuditLogEntry = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       timestamp,
       actor,
       action,
       targetId,
-      details,
+      details: cleanedDetails,
     };
 
-    // 1. Simpan di in-memory buffer lokal
+    // 1. Simpan di in-memory buffer lokal (tampung minimal 200 data)
     memoryAuditLogs.unshift(entry);
-    if (memoryAuditLogs.length > 100) {
+    if (memoryAuditLogs.length > 200) {
       memoryAuditLogs.pop();
     }
 
     // 2. Output ke console log server
     console.info(`[AUDIT] [${timestamp}] [Actor: ${actor}] [${action}]`, {
       targetId,
-      details,
+      details: cleanedDetails,
     });
 
     // 3. Kirim ke Axiom Cloud (non-blocking agar tidak memperlambat respon admin)
@@ -69,7 +95,7 @@ export async function logAdminAudit(
             actor,
             action,
             targetId: targetId ?? null,
-            details: details ?? {},
+            details: cleanedDetails ?? {},
             source: 'margasera-admin',
             environment: process.env.NODE_ENV || 'production',
           },
@@ -86,11 +112,13 @@ export async function logAdminAudit(
   }
 }
 
-/** Ambil log aktivitas admin terbaru (dari Axiom Cloud atau fallback memori server) */
-export async function getRecentAuditLogs(): Promise<AuditLogEntry[]> {
+/** Ambil log aktivitas admin terbaru (dari Axiom Cloud atau fallback memori server, minimal 100 data) */
+export async function getRecentAuditLogs(limit = 100): Promise<AuditLogEntry[]> {
+  const safeLimit = Math.max(100, Math.min(500, limit));
+
   if (axiom && axiomToken) {
     try {
-      const res = await axiom.query(`['${axiomDataset}'] | order by _time desc | limit 50`, { format: 'legacy' });
+      const res = await axiom.query(`['${axiomDataset}'] | order by _time desc | limit ${safeLimit}`, { format: 'legacy' });
       if (res && res.matches && res.matches.length > 0) {
         return res.matches.map((m: any) => {
           const d = m.data || {};
@@ -100,7 +128,7 @@ export async function getRecentAuditLogs(): Promise<AuditLogEntry[]> {
             actor: String(d.actor || 'admin'),
             action: String(d.action || 'UNKNOWN'),
             targetId: d.targetId ? String(d.targetId) : undefined,
-            details: d.details || undefined,
+            details: cleanPayload(d.details),
           };
         });
       }
@@ -112,7 +140,7 @@ export async function getRecentAuditLogs(): Promise<AuditLogEntry[]> {
       }
     }
   }
-  return memoryAuditLogs.slice(0, 50);
+  return memoryAuditLogs.slice(0, safeLimit);
 }
 
 /** Uji coba kirim event log ke Axiom untuk verifikasi koneksi */

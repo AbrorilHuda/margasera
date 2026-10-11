@@ -16,7 +16,7 @@ import {
   CreditCard,
   AlertCircle,
 } from 'lucide-react';
-import { formatCurrency, formatDate, getWhatsAppUrl } from '@/lib/utils';
+import { formatCurrency, formatDate, getWhatsAppUrl, getBookingPaidAmount } from '@/lib/utils';
 import { generateGoogleCalendarUrl } from './BookingHelpers';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
 
@@ -71,6 +71,13 @@ export function BookingDetailModal({
 }: BookingDetailModalProps) {
   const isDpPaid = b.paymentStatus === 'dp_paid';
   const isPaidFull = b.paymentStatus === 'paid_full';
+  const totalPrice = b.totalPrice ?? 0;
+  const paidAmount = getBookingPaidAmount(b);
+  const remainingAmount = isPaidFull
+    ? 0
+    : typeof b.remainingAmount === 'number' && b.remainingAmount >= 0
+      ? b.remainingAmount
+      : Math.max(0, totalPrice - paidAmount);
 
   const paymentStatusStyle = isPaidFull
     ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40'
@@ -246,11 +253,43 @@ export function BookingDetailModal({
               </span>
             </div>
 
-            <div className="flex items-baseline justify-between pt-1">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">Total Biaya Layanan:</span>
-              <strong className="text-[#0066CC] dark:text-[#38bdf8] font-mono text-lg font-extrabold">
-                {b.totalPrice ? formatCurrency(b.totalPrice) : '-'}
-              </strong>
+            {/* Rincian Finansial: Total, Terbayar, dan Sisa Piutang */}
+            <div className="flex flex-col gap-2 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80">
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Total Investasi Layanan:</span>
+                <strong className="text-zinc-900 dark:text-zinc-100 font-mono text-sm font-bold">
+                  {totalPrice > 0 ? formatCurrency(totalPrice) : '-'}
+                </strong>
+              </div>
+
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Dana Masuk (Terbayar):</span>
+                <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  {paidAmount > 0 ? formatCurrency(paidAmount) : 'Rp 0'}
+                  {isDpPaid && <span className="text-[10px] ml-1 font-sans font-normal text-zinc-400">(DP)</span>}
+                  {isPaidFull && <span className="text-[10px] ml-1 font-sans font-normal text-zinc-400">(100%)</span>}
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Sisa Pelunasan (Piutang):
+                  </span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                    {remainingAmount === 0 ? '✓ Pembayaran Lunas' : 'Wajib dilunasi saat / sebelum event'}
+                  </span>
+                </div>
+                <strong
+                  className={`font-mono text-base font-extrabold ${
+                    remainingAmount > 0
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {remainingAmount > 0 ? formatCurrency(remainingAmount) : 'Rp 0 (Lunas)'}
+                </strong>
+              </div>
             </div>
 
             {/* Quick Button Ubah Status Pembayaran */}

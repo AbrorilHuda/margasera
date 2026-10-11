@@ -312,9 +312,9 @@ export function EditBookingModal({
   };
 
   const inputClass =
-    'w-full px-3.5 py-2.5 bg-zinc-50 dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:border-[#0066CC] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#0066CC]/15 dark:focus:ring-blue-500/20 transition-all font-sans [color-scheme:light] dark:[color-scheme:dark]';
+    'w-full px-3.5 py-2.5 bg-zinc-50 dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:border-[#0066CC] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#0066CC]/15 dark:focus:ring-blue-500/20 transition-all font-sans [color-scheme:light] dark:[color-scheme:dark]';
   const selectClass =
-    'w-full px-3.5 py-2.5 bg-white dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:border-[#0066CC] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#0066CC]/15 dark:focus:ring-blue-500/20 transition-all cursor-pointer font-sans [color-scheme:light] dark:[color-scheme:dark]';
+    'w-full px-3.5 py-2.5 bg-white dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:border-[#0066CC] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#0066CC]/15 dark:focus:ring-blue-500/20 transition-all cursor-pointer font-sans [color-scheme:light] dark:[color-scheme:dark]';
   const labelClass =
     'text-[10px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-mono';
 

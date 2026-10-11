@@ -80,7 +80,7 @@ export function PdfRekapModal({
           <div className="flex items-center gap-2">
             <button
               onClick={printRekap}
-              className="px-3.5 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+              className="hidden sm:flex px-3.5 py-2 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak PDF</span>
@@ -251,16 +251,16 @@ export function PdfRekapModal({
         </div>
 
         {/* Sticky Bottom Actions */}
-        <div className="no-print p-4 sm:p-5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10 pb-safe">
+        <div className="no-print p-4 sm:p-5 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 shrink-0 sticky bottom-0 z-10 pb-safe">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-2.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
           >
             Tutup
           </button>
           <button
             onClick={printRekap}
-            className="px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+            className="flex-1 sm:flex-none px-5 py-2.5 bg-[#0066CC] hover:bg-[#0052A3] text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak / Save PDF (A4)</span>

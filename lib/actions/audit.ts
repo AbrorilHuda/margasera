@@ -8,7 +8,7 @@ import {
   type AuditLogEntry,
 } from '@/lib/audit-logger';
 
-export async function fetchAuditLogsAction(): Promise<{
+export async function fetchAuditLogsAction(limit = 100): Promise<{
   success: boolean;
   logs: AuditLogEntry[];
   error?: string;
@@ -17,7 +17,7 @@ export async function fetchAuditLogsAction(): Promise<{
     return { success: false, logs: [], error: 'Unauthorized' };
   }
   try {
-    const logs = await getRecentAuditLogs();
+    const logs = await getRecentAuditLogs(limit);
     return { success: true, logs };
   } catch (err: any) {
     return { success: false, logs: [], error: err.message || 'Gagal memuat log audit' };

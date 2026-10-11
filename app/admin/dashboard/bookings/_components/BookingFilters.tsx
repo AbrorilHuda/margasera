@@ -133,7 +133,7 @@ export function BookingFilters({
               placeholder="Search booking..."
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
-              className="w-full bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] text-zinc-900 dark:text-zinc-100 pl-9 pr-8 py-2.5 rounded-xl text-xs focus:outline-none transition-colors placeholder:text-zinc-400"
+              className="w-full bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:border-[#0066CC] text-zinc-900 dark:text-zinc-100 pl-9 pr-8 py-2.5 rounded-xl text-base sm:text-xs focus:outline-none transition-colors placeholder:text-zinc-400"
             />
             {bookingSearch && (
               <button
