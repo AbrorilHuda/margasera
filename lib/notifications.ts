@@ -83,6 +83,10 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
       // otomatis menampilkan notifikasi. Hanya onBackgroundMessage di SW
       // yang akan menampilkan notifikasi → tidak dobel.
       webpush: {
+        headers: {
+          Urgency: 'high',
+          TTL: '3600',
+        },
         fcmOptions: {
           link: payload.url || '/admin/dashboard',
         },
@@ -98,8 +102,12 @@ export async function sendAdminNotification(payload: SendNotificationPayload): P
 
     // Bersihkan token FCM kedaluwarsa secara otomatis
     const invalidTokens: string[] = [];
+    const deadCodes = [
+      'messaging/registration-token-not-registered',
+      'messaging/invalid-registration-token',
+    ];
     response.responses.forEach((resp, idx) => {
-      if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+      if (!resp.success && resp.error?.code && deadCodes.includes(resp.error.code)) {
         invalidTokens.push(tokenList[idx]);
       }
     });
